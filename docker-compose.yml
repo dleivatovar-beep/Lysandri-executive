@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: lysandri-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: lysandri_db
+      POSTGRES_USER: lysandri_admin
+      POSTGRES_PASSWORD: lysandri_secret_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - lysandri-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: lysandri-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - lysandri-net
+
+networks:
+  lysandri-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
