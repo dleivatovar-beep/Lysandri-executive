@@ -11,7 +11,22 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+<<<<<<< HEAD
       - ./database/migrations/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+=======
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - lysandri-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: lysandri-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+>>>>>>> origin/feature/danny-desarrollo
     networks:
       - lysandri-net
 
@@ -20,4 +35,9 @@ networks:
     driver: bridge
 
 volumes:
+<<<<<<< HEAD
   pgdata:
+=======
+  pgdata:
+  redisdata:
+>>>>>>> origin/feature/danny-desarrollo
