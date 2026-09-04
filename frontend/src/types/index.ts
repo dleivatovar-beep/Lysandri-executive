@@ -5,6 +5,7 @@ export type TierLevel = 'ESSENTIAL' | 'ADVANCED' | 'ENTERPRISE';
 export interface Playbook {
   id: string;
   title: string;
+  coverUrl: string;
   slug: string;
   description: string;
   category: string;
@@ -33,7 +34,8 @@ export interface Category {
   count: number;
 }
 
-export type ActiveView = 'MARKETPLACE' | 'CHAT';
+// ¡Esta es la línea clave que agregamos!
+export type ActiveView = 'MARKETPLACE' | 'CHAT' | 'LIBROS' | 'TAREAS' | 'LOGIN';
 
 export interface UserProfile {
   name: string;
