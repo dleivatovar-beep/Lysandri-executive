@@ -77,3 +77,337 @@
 .animate-pulse-cyan {
   animation: pulse-cyan 2.5s infinite ease-in-out;
 }
+
+.lysandri-login-grid {
+  opacity: 0.38;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 20%,
+    black 75%,
+    transparent
+  );
+}
+
+.lysandri-login-intro {
+  animation: lysandri-reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lysandri-auth-shell {
+  border-left: 1px solid rgba(34, 211, 238, 0.22);
+  padding-left: 1.5rem;
+  animation: lysandri-reveal 700ms 100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lysandri-auth-form {
+  animation: lysandri-form-switch 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lysandri-field {
+  position: relative;
+}
+
+.lysandri-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: rgb(203 213 225);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: color 180ms ease;
+}
+
+.lysandri-field input {
+  width: 100%;
+  height: 3rem;
+  border: 1px solid rgba(71, 85, 105, 0.8);
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.58);
+  padding: 0 1rem;
+  color: white;
+  font-size: 0.875rem;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.lysandri-field input::placeholder {
+  color: rgb(71 85 105);
+}
+
+.lysandri-field input:hover {
+  border-color: rgba(100, 116, 139, 0.95);
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.lysandri-field input:focus {
+  border-color: rgba(34, 211, 238, 0.72);
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.08);
+  transform: translateY(-1px);
+}
+
+.lysandri-field:focus-within label {
+  color: rgb(103 232 249);
+}
+
+.lysandri-field-line {
+  position: absolute;
+  bottom: 0;
+  left: 12%;
+  width: 76%;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 211, 238, 0.9),
+    transparent
+  );
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+  transform: scaleX(0.5);
+}
+
+.lysandri-field:focus-within .lysandri-field-line {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.lysandri-field input:not(:placeholder-shown):valid {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.lysandri-field input:not(:placeholder-shown):invalid {
+  border-color: rgba(248, 113, 113, 0.72);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.06);
+}
+
+.lysandri-submit-button {
+  position: relative;
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  background: linear-gradient(100deg, #06b6d4, #2563eb 54%, #4f46e5);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(6, 182, 212, 0.12);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.lysandri-submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(6, 182, 212, 0.22);
+  filter: brightness(1.06);
+}
+
+.lysandri-submit-button:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.lysandri-submit-button:focus-visible {
+  outline: 2px solid rgb(103 232 249);
+  outline-offset: 3px;
+}
+
+.lysandri-submit-glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 28%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 72%
+  );
+  transform: translateX(-120%);
+  transition: transform 650ms ease;
+}
+
+.lysandri-submit-button:hover .lysandri-submit-glow {
+  transform: translateX(120%);
+}
+
+@keyframes lysandri-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lysandri-form-switch {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lysandri-login-intro,
+  .lysandri-auth-shell,
+  .lysandri-auth-form {
+    animation: none;
+  }
+
+  .lysandri-field input,
+  .lysandri-field-line,
+  .lysandri-submit-button,
+  .lysandri-submit-glow {
+    transition: none;
+  }
+
+  .lysandri-submit-button:hover,
+  .lysandri-field input:focus {
+    transform: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .lysandri-auth-shell {
+    border-left: 0;
+    border-top: 1px solid rgba(34, 211, 238, 0.2);
+    padding-left: 0;
+    padding-top: 1.5rem;
+  }
+}
+
+/* Light mode: identidad Lysandri */
+html:not(.dark) body {
+  background: #f3f8fc;
+  color: #12213a;
+}
+
+html:not(.dark) header {
+  background: rgba(248, 252, 255, 0.92) !important;
+  border-bottom-color: rgba(6, 182, 212, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.05);
+}
+
+html:not(.dark) main {
+  background:
+    radial-gradient(circle at 92% 4%, rgba(34, 211, 238, 0.08), transparent 24rem),
+    radial-gradient(circle at 8% 95%, rgba(79, 70, 229, 0.05), transparent 28rem),
+    #f3f8fc;
+}
+
+/* Tarjetas, hero, buscador y superficies claras */
+html:not(.dark) main .bg-white,
+html:not(.dark) main .bg-slate-50,
+html:not(.dark) main .bg-slate-100 {
+  background-color: rgba(252, 254, 255, 0.92) !important;
+  border-color: #cfe0ed !important;
+}
+
+/* Hero principal */
+html:not(.dark) main > div > div:first-child {
+  border-color: rgba(34, 211, 238, 0.26) !important;
+  box-shadow:
+    0 10px 30px rgba(30, 64, 175, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Tarjetas de playbooks */
+html:not(.dark) main .group[class*="rounded"] {
+  box-shadow: 0 8px 22px rgba(30, 64, 175, 0.045);
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    transform 220ms ease;
+}
+
+html:not(.dark) main .group[class*="rounded"]:hover {
+  border-color: rgba(6, 182, 212, 0.55) !important;
+  box-shadow:
+    0 14px 30px rgba(6, 182, 212, 0.1),
+    0 4px 12px rgba(79, 70, 229, 0.06);
+  transform: translateY(-2px);
+}
+
+/* Bordes internos, separadores y etiquetas */
+html:not(.dark) .border-slate-200,
+html:not(.dark) .border-slate-300 {
+  border-color: #cfe0ed !important;
+}
+
+html:not(.dark) .border-t,
+html:not(.dark) .border-b,
+html:not(.dark) .border-l,
+html:not(.dark) .border-r {
+  border-color: rgba(148, 177, 201, 0.38) !important;
+}
+
+html:not(.dark) .bg-slate-100 {
+  background-color: #eff7fc !important;
+}
+
+html:not(.dark) .bg-slate-50 {
+  background-color: #f7fbfe !important;
+}
+
+/* Controles de la navbar */
+html:not(.dark) header button,
+html:not(.dark) header .bg-slate-50,
+html:not(.dark) header .bg-slate-100 {
+  border-color: #c7dceb !important;
+  background-color: #f4f9fd !important;
+}
+
+html:not(.dark) header button:hover {
+  border-color: rgba(6, 182, 212, 0.55) !important;
+  background-color: #ecfaff !important;
+}
+
+/* Inputs y buscadores */
+html:not(.dark) input,
+html:not(.dark) textarea {
+  border-color: #c7dceb !important;
+  background-color: #f7fbfe !important;
+}
+
+html:not(.dark) input:hover,
+html:not(.dark) textarea:hover {
+  border-color: rgba(6, 182, 212, 0.45) !important;
+}
+
+html:not(.dark) input:focus,
+html:not(.dark) textarea:focus {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1) !important;
+}
+
+/* Chips y elementos secundarios */
+html:not(.dark) [class*="rounded"][class*="border"] {
+  border-color: rgba(148, 177, 201, 0.42);
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #55708e !important;
+}
+
+html:not(.dark) .text-slate-400 {
+  color: #7790aa !important;
+}
