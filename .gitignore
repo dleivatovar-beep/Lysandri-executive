@@ -13,6 +13,21 @@ dist/
 # Compiled class file
 *.class
 
+# Maven build directory
+target/
+**/target/
+backend/target/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
@@ -28,3 +43,4 @@ dist/
 # Virtual machine crash logs
 hs_err_pid*
 replay_pid*
+

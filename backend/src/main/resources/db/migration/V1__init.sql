@@ -1,210 +1,159 @@
 CREATE EXTENSION IF NOT EXISTS "vector";
 
--- Usuario
-CREATE TABLE IF NOT EXISTS usuario (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    nombre_completo VARCHAR(255) NOT NULL,
-    rol VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER',
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- Eliminar tablas previas en el orden adecuado de dependencias
+DROP TABLE IF EXISTS CHAT_MENSAJES CASCADE;
+DROP TABLE IF EXISTS PROGRESO_LECCION CASCADE;
+DROP TABLE IF EXISTS INSCRIPCIONES CASCADE;
+DROP TABLE IF EXISTS SUSCRIPCIONES CASCADE;
+DROP TABLE IF EXISTS DETALLE_ORDENES CASCADE;
+DROP TABLE IF EXISTS ORDENES CASCADE;
+DROP TABLE IF EXISTS LECCION CASCADE;
+DROP TABLE IF EXISTS PROGRAMA CASCADE;
+DROP TABLE IF EXISTS INSTRUCTOR CASCADE;
+DROP TABLE IF EXISTS USUARIOS CASCADE;
+
+-- Limpieza de tablas del esquema antiguo por si existen en el entorno
+DROP TABLE IF EXISTS auditoria CASCADE;
+DROP TABLE IF EXISTS reseñas CASCADE;
+DROP TABLE IF EXISTS progreso CASCADE;
+DROP TABLE IF EXISTS asesorias CASCADE;
+DROP TABLE IF EXISTS suscripciones CASCADE;
+DROP TABLE IF EXISTS detalle CASCADE;
+DROP TABLE IF EXISTS ordenes CASCADE;
+DROP TABLE IF EXISTS empresa CASCADE;
+DROP TABLE IF EXISTS artefacto CASCADE;
+DROP TABLE IF EXISTS playbook CASCADE;
+DROP TABLE IF EXISTS dominio CASCADE;
+DROP TABLE IF EXISTS embeddings CASCADE;
+DROP TABLE IF EXISTS documento CASCADE;
+DROP TABLE IF EXISTS mensaje CASCADE;
+DROP TABLE IF EXISTS sesion CASCADE;
+DROP TABLE IF EXISTS usuario CASCADE;
+DROP TABLE IF EXISTS ejecutivo CASCADE;
+DROP TABLE IF EXISTS EJECUTIVO CASCADE;
+
+-- 1. USUARIOS (Roles: 'ESTUDIANTE', 'INSTRUCTOR', 'ADMIN')
+CREATE TABLE USUARIOS (
+    id_user SERIAL PRIMARY KEY,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    passw VARCHAR(255) NOT NULL,
+    telefono VARCHAR(20),
+    rol VARCHAR(20) NOT NULL CHECK (rol IN ('ESTUDIANTE', 'INSTRUCTOR', 'ADMIN'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_usuario_email ON usuario(email);
+CREATE INDEX idx_usuarios_email ON USUARIOS(email);
 
--- Sesión y Mensajes
-CREATE TABLE IF NOT EXISTS sesion (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-    titulo VARCHAR(255) NOT NULL DEFAULT 'Nueva conversación',
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 2. INSTRUCTOR
+CREATE TABLE INSTRUCTOR (
+    id_instructor_dni VARCHAR(20) PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    especialidad VARCHAR(150),
+    direccion_instructor VARCHAR(200)
 );
 
-CREATE INDEX IF NOT EXISTS idx_sesion_usuario_id ON sesion(usuario_id);
+CREATE INDEX idx_instructor_id_user ON INSTRUCTOR(id_user);
 
-CREATE OR REPLACE FUNCTION actualizar_marca_tiempo()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.actualizado_en = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_sesion_actualizado_en ON sesion;
-CREATE TRIGGER trg_sesion_actualizado_en
-    BEFORE UPDATE ON sesion
-    FOR EACH ROW
-    EXECUTE FUNCTION actualizar_marca_tiempo();
-
-CREATE TABLE IF NOT EXISTS mensaje (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    sesion_id UUID NOT NULL REFERENCES sesion(id) ON DELETE CASCADE,
-    tipo_remitente VARCHAR(20) NOT NULL CHECK (tipo_remitente IN ('USER', 'ASSISTANT', 'SYSTEM')),
-    contenido TEXT NOT NULL,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 4. PROGRAMA
+CREATE TABLE PROGRAMA (
+    id_programa SERIAL PRIMARY KEY,
+    id_instructor_dni VARCHAR(20) NOT NULL REFERENCES INSTRUCTOR(id_instructor_dni) ON DELETE CASCADE,
+    titulo_programa VARCHAR(200) NOT NULL,
+    duracion_programa VARCHAR(50),
+    tipo_programa VARCHAR(50),
+    level VARCHAR(20),
+    fecha_inicio_global DATE,
+    fecha_final_global DATE,
+    requisitos TEXT,
+    metodologia TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_mensaje_sesion_id_creado ON mensaje(sesion_id, creado_en ASC);
+CREATE INDEX idx_programa_id_instructor_dni ON PROGRAMA(id_instructor_dni);
 
--- Documento y Embeddings RAG
-CREATE TABLE IF NOT EXISTS documento (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    titulo VARCHAR(255) NOT NULL,
-    tipo_fuente VARCHAR(20) NOT NULL CHECK (tipo_fuente IN ('PDF', 'TXT', 'MANUAL')),
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 5. LECCION
+CREATE TABLE LECCION (
+    id_leccion SERIAL PRIMARY KEY,
+    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
+    titulo_leccion VARCHAR(200) NOT NULL,
+    tipo_contenido VARCHAR(50),
+    media_url VARCHAR(255),
+    duracion_leccion VARCHAR(20)
 );
 
-CREATE TABLE IF NOT EXISTS embeddings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    documento_id UUID NOT NULL REFERENCES documento(id) ON DELETE CASCADE,
-    fragmento_texto TEXT NOT NULL,
-    embedding vector(1536) NOT NULL,
-    numero_chunk INT NOT NULL DEFAULT 0,
-    cantidad_tokens INT NOT NULL DEFAULT 0,
-    tsv_chunk tsvector GENERATED ALWAYS AS (to_tsvector('spanish', fragmento_texto)) STORED,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE INDEX idx_leccion_id_programa ON LECCION(id_programa);
+
+-- 6. ORDENES
+CREATE TABLE ORDENES (
+    id_ordenes SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    fecha_orden TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    estado_order VARCHAR(30),
+    total DECIMAL(10, 2) NOT NULL,
+    metodo_pago VARCHAR(50),
+    direccion_envio VARCHAR(255)
 );
 
-CREATE INDEX IF NOT EXISTS idx_embeddings_documento_id ON embeddings(documento_id);
-CREATE INDEX IF NOT EXISTS idx_embeddings_vector_hnsw ON embeddings USING hnsw (embedding vector_cosine_ops);
-CREATE INDEX IF NOT EXISTS idx_embeddings_tsv ON embeddings USING gin(tsv_chunk);
+CREATE INDEX idx_ordenes_id_user ON ORDENES(id_user);
 
--- Dominio, Playbook y Artefacto
-CREATE TABLE IF NOT EXISTS dominio (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(255) NOT NULL UNIQUE,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    descripcion TEXT,
-    rol_objetivo VARCHAR(100),
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 7. DETALLE_ORDENES
+CREATE TABLE DETALLE_ORDENES (
+    id_detalle_ordenes SERIAL PRIMARY KEY,
+    id_ordenes INT NOT NULL REFERENCES ORDENES(id_ordenes) ON DELETE CASCADE,
+    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE RESTRICT,
+    precio_unitario DECIMAL(10, 2) NOT NULL,
+    cantidad INT NOT NULL,
+    subtotal DECIMAL(10, 2) NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS playbook (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    dominio_id UUID NOT NULL REFERENCES dominio(id) ON DELETE CASCADE,
-    titulo VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    resumen_ejecutivo TEXT,
-    stack_arquitectura TEXT,
-    tipo_playbook VARCHAR(50) NOT NULL,
-    precio NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
-    esta_publicado BOOLEAN NOT NULL DEFAULT FALSE,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE INDEX idx_detalle_ordenes_id_ordenes ON DETALLE_ORDENES(id_ordenes);
+CREATE INDEX idx_detalle_ordenes_id_programa ON DETALLE_ORDENES(id_programa);
+
+-- 8. SUSCRIPCIONES
+CREATE TABLE SUSCRIPCIONES (
+    id_suscripcion SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    tipo_plan VARCHAR(50),
+    fecha_inicio DATE NOT NULL,
+    fecha_finalizacion DATE,
+    estado VARCHAR(30)
 );
 
-CREATE INDEX IF NOT EXISTS idx_playbook_dominio_id ON playbook(dominio_id);
+CREATE INDEX idx_suscripciones_id_user ON SUSCRIPCIONES(id_user);
 
-DROP TRIGGER IF EXISTS trg_playbook_actualizado_en ON playbook;
-CREATE TRIGGER trg_playbook_actualizado_en
-    BEFORE UPDATE ON playbook
-    FOR EACH ROW
-    EXECUTE FUNCTION actualizar_marca_tiempo();
-
-CREATE TABLE IF NOT EXISTS artefacto (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    playbook_id UUID NOT NULL REFERENCES playbook(id) ON DELETE CASCADE,
-    titulo VARCHAR(255) NOT NULL,
-    tipo_artefacto VARCHAR(50) NOT NULL,
-    url_recurso VARCHAR(500) NOT NULL,
-    orden INT NOT NULL DEFAULT 0,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 9. INSCRIPCIONES
+CREATE TABLE INSCRIPCIONES (
+    id_inscripcion SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
+    fecha_inscripcion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    fecha_limite_acceso DATE,
+    estatus VARCHAR(30),
+    porcentaje_progreso DECIMAL(5, 2) DEFAULT 0.00
 );
 
-CREATE INDEX IF NOT EXISTS idx_artefacto_playbook_id ON artefacto(playbook_id);
+CREATE INDEX idx_inscripciones_id_user ON INSCRIPCIONES(id_user);
+CREATE INDEX idx_inscripciones_id_programa ON INSCRIPCIONES(id_programa);
 
--- Empresa, Órdenes, Detalle y Suscripciones B2B
-CREATE TABLE IF NOT EXISTS empresa (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(255) NOT NULL,
-    identificacion_fiscal VARCHAR(100) NOT NULL UNIQUE,
-    industria VARCHAR(100),
-    email_contacto VARCHAR(255) NOT NULL,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- 10. PROGRESO_LECCION
+CREATE TABLE PROGRESO_LECCION (
+    id_progreso SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    id_leccion INT NOT NULL REFERENCES LECCION(id_leccion) ON DELETE CASCADE,
+    completado BOOLEAN DEFAULT FALSE,
+    fecha_completado TIMESTAMPTZ
 );
 
-CREATE TABLE IF NOT EXISTS ordenes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    empresa_id UUID REFERENCES empresa(id) ON DELETE SET NULL,
-    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-    monto_total NUMERIC(10, 2) NOT NULL,
-    moneda VARCHAR(10) NOT NULL DEFAULT 'USD',
-    estado VARCHAR(50) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'PAGADO', 'CANCELADO', 'REEMBOLSADO')),
-    ref_pasarela_pago VARCHAR(255),
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE INDEX idx_progreso_leccion_id_user ON PROGRESO_LECCION(id_user);
+CREATE INDEX idx_progreso_leccion_id_leccion ON PROGRESO_LECCION(id_leccion);
+
+-- 11. CHAT_MENSAJES
+CREATE TABLE CHAT_MENSAJES (
+    id_mensaje SERIAL PRIMARY KEY,
+    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
+    pregunta TEXT NOT NULL,
+    respuesta_ia TEXT NOT NULL,
+    fecha TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_ordenes_empresa_id ON ordenes(empresa_id);
-CREATE INDEX IF NOT EXISTS idx_ordenes_usuario_id ON ordenes(usuario_id);
-
-CREATE TABLE IF NOT EXISTS detalle (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    orden_id UUID NOT NULL REFERENCES ordenes(id) ON DELETE CASCADE,
-    playbook_id UUID NOT NULL REFERENCES playbook(id),
-    precio_unitario NUMERIC(10, 2) NOT NULL,
-    cantidad_licencias INT NOT NULL DEFAULT 1
-);
-
-CREATE INDEX IF NOT EXISTS idx_detalle_orden_id ON detalle(orden_id);
-
-CREATE TABLE IF NOT EXISTS suscripciones (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    empresa_id UUID NOT NULL REFERENCES empresa(id) ON DELETE CASCADE,
-    nivel_plan VARCHAR(50) NOT NULL,
-    estado VARCHAR(50) NOT NULL DEFAULT 'ACTIVO' CHECK (estado IN ('ACTIVO', 'EXPIRADO', 'CANCELADO', 'SUSPENDIDO')),
-    fecha_inicio TIMESTAMPTZ NOT NULL,
-    fecha_fin TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_suscripciones_empresa_id ON suscripciones(empresa_id);
-
--- Asesorías, Progreso, Reseñas y Auditoría
-CREATE TABLE IF NOT EXISTS asesorias (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-    playbook_id UUID REFERENCES playbook(id) ON DELETE SET NULL,
-    fecha_programada TIMESTAMPTZ NOT NULL,
-    url_reunion VARCHAR(500),
-    estado VARCHAR(50) NOT NULL DEFAULT 'PROGRAMADA' CHECK (estado IN ('PROGRAMADA', 'COMPLETADA', 'CANCELADA', 'REPROGRAMADA')),
-    notas_ejecutivas TEXT,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_asesorias_usuario_id ON asesorias(usuario_id);
-
-CREATE TABLE IF NOT EXISTS progreso (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-    playbook_id UUID NOT NULL REFERENCES playbook(id) ON DELETE CASCADE,
-    artefacto_id UUID NOT NULL REFERENCES artefacto(id) ON DELETE CASCADE,
-    esta_completado BOOLEAN NOT NULL DEFAULT FALSE,
-    ultimo_acceso_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_usuario_artefacto UNIQUE (usuario_id, artefacto_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_progreso_usuario_id ON progreso(usuario_id);
-
-CREATE TABLE IF NOT EXISTS reseñas (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID NOT NULL REFERENCES usuario(id) ON DELETE CASCADE,
-    playbook_id UUID NOT NULL REFERENCES playbook(id) ON DELETE CASCADE,
-    calificacion INT NOT NULL CHECK (calificacion >= 1 AND calificacion <= 5),
-    comentario TEXT,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_usuario_playbook UNIQUE (usuario_id, playbook_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_reseñas_playbook_id ON reseñas(playbook_id);
-
-CREATE TABLE IF NOT EXISTS auditoria (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    usuario_id UUID REFERENCES usuario(id) ON DELETE SET NULL,
-    accion VARCHAR(100) NOT NULL,
-    recurso_afectado VARCHAR(255) NOT NULL,
-    direccion_ip VARCHAR(50),
-    agente_usuario TEXT,
-    creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_auditoria_usuario_id ON auditoria(usuario_id);
+CREATE INDEX idx_chat_mensajes_id_user ON CHAT_MENSAJES(id_user);
