@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -47,7 +48,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .nombres(request.getNombres())
                 .apellidos(request.getApellidos())
                 .email(request.getEmail())
-                .passw(request.getPassw())
+                .passw(passwordEncoder.encode(request.getPassw()))
                 .telefono(request.getTelefono())
                 .rol(request.getRol())
                 .build();
