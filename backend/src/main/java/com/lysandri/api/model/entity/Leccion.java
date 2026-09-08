@@ -24,6 +24,9 @@ public class Leccion {
     @Column(name = "titulo_leccion", nullable = false, length = 200)
     private String tituloLeccion;
 
+    @Column(name = "descripcion", columnDefinition = "TEXT")
+    private String descripcion;
+
     @Column(name = "tipo_contenido", length = 50)
     private String tipoContenido;
 
@@ -32,4 +35,7 @@ public class Leccion {
 
     @Column(name = "duracion_leccion", length = 20)
     private String duracionLeccion;
+
+    @Column(name = "orden")
+    private Integer orden;
 }

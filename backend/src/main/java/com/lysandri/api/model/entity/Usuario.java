@@ -50,7 +50,6 @@ public class Usuario implements UserDetails {
     @Column(name = "rol", nullable = false, length = 20)
     private Rol rol;
 
-    // Conveniencia para APIs que usan id y nombre completo
     public Integer getId() {
         return this.idUser;
     }
@@ -61,7 +60,6 @@ public class Usuario implements UserDetails {
         return (n + " " + a).trim();
     }
 
-    // Métodos requeridos por Spring Security UserDetails
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (rol == null) {

@@ -33,7 +33,6 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/v3/api-docs/**",
@@ -41,11 +40,10 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/error"
                         ).permitAll()
-                        // Reglas de autorización por rol
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/programas/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")
                         .requestMatchers("/api/v1/profesor/**").hasAnyRole("INSTRUCTOR", "PROFESOR", "ADMIN", "ADMINISTRADOR")
                         .requestMatchers("/api/v1/estudiante/**").hasRole("ESTUDIANTE")
-                        // Resto de endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
