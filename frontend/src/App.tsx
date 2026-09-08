@@ -1,232 +1,755 @@
-// src/App.tsx
-import React, { useEffect, useState } from 'react';
-import { ActiveView, Playbook, Category, ChatMessage } from './types';
-import { INITIAL_USER } from './services/mockData';
-import { PlaybookService, ChatService } from './services/api';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import {
+  Bot,
+  CircleAlert,
+  Database,
+} from 'lucide-react';
+
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+
+import companyLogo from './assets/mi-logo.png';
+
+import { LoginView } from './components/auth/LoginView';
+import { ChatContainer } from './components/chat/ChatContainer';
+import { Footer } from './components/layout/Footer';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
-import { Footer } from './components/layout/Footer';
+
+import { useAuth } from './context/AuthContext';
+
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { InstructorCourses } from './pages/instructor/InstructorCourses';
+import { StudentCourses } from './pages/student/StudentCourses';
 import { MarketplaceView } from './pages/MarketplaceView';
-import { ChatView } from './pages/ChatView';
-import { LoginView } from './components/auth/LoginView';
-import { CheckCircle2, X, Bot, BookOpen, ClipboardList } from 'lucide-react';
 
-export const App: React.FC = () => {
-  const [activeView, setActiveView] =
-    useState<ActiveView>('MARKETPLACE');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] =
-    useState<boolean>(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 
-  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
-  const [selectedPlaybook, setSelectedPlaybook] =
-    useState<Playbook | null>(null);
+import {
+  INITIAL_CATEGORIES,
+  INITIAL_PLAYBOOKS,
+} from './services/mockData';
 
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+import {
+  ActiveView,
+  AuthUser,
+  ChatMessage,
+  Playbook,
+  UserProfile,
+  UserRole,
+} from './types';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const playbooksData = await PlaybookService.getAll();
-      const categoriesData = await PlaybookService.getCategories();
-      const messagesData = await ChatService.getMessages(
-        'session-executive-01'
-      );
+type Theme = 'light' | 'dark';
 
-      setPlaybooks(playbooksData);
-      setCategories(categoriesData);
-      setMessages(messagesData);
-    };
+interface AppLayoutProps {
+  theme: Theme;
+  onThemeToggle: () => void;
+}
 
-    fetchData();
-  }, []);
+interface EmptySectionContent {
+  eyebrow: string;
+  title: string;
+  description: string;
+  emptyTitle: string;
+  emptyDescription: string;
+}
 
-  const handleSendMessage = async (content: string) => {
-    const userMessage: ChatMessage = {
-      id: `msg-user-${Date.now()}`,
-      sessionId: 'session-executive-01',
-      sender: 'USER',
-      content,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    };
+const EMPTY_SECTIONS: Partial<
+  Record<ActiveView, EmptySectionContent>
+> = {
+  PROGRESS: {
+    eyebrow: 'Área del ejecutivo',
+    title: 'Mi progreso',
+    description:
+      'Consulta el avance real de tus cursos y programas.',
+    emptyTitle: 'No hay información de progreso',
+    emptyDescription:
+      'El progreso aparecerá cuando el backend registre tus avances y actividades completadas.',
+  },
 
-    setMessages((previous) => [...previous, userMessage]);
-    setIsChatLoading(true);
+  LIBROS: {
+    eyebrow: 'Recursos académicos',
+    title: 'Biblioteca ejecutiva',
+    description:
+      'Consulta libros, documentos y materiales académicos.',
+    emptyTitle: 'No hay recursos publicados',
+    emptyDescription:
+      'Los materiales aparecerán cuando sean publicados por los profesores.',
+  },
 
-    try {
-      const aiResponse = await ChatService.sendMessage(
-        content,
-        'session-executive-01'
-      );
+  INSTRUCTOR_DASHBOARD: {
+    eyebrow: 'Área del profesor',
+    title: 'Panel docente',
+    description:
+      'Consulta la información general de tus cursos.',
+    emptyTitle: 'No hay métricas disponibles',
+    emptyDescription:
+      'Las estadísticas aparecerán cuando el backend habilite los datos de actividad docente.',
+  },
 
-      setMessages((previous) => [...previous, aiResponse]);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
+  CONTENT: {
+    eyebrow: 'Área del profesor',
+    title: 'Contenido académico',
+    description:
+      'Gestiona módulos, lecciones, documentos y evaluaciones.',
+    emptyTitle: 'No hay contenidos disponibles',
+    emptyDescription:
+      'Esta sección se habilitará cuando esté disponible el servicio de contenidos académicos.',
+  },
 
-  const handleSelectCourse = (playbook: Playbook) => {
-    if (!isLoggedIn) {
-      setActiveView('LOGIN');
-      return;
-    }
+  STUDENTS: {
+    eyebrow: 'Área del profesor',
+    title: 'Estudiantes',
+    description:
+      'Consulta los estudiantes inscritos en tus cursos.',
+    emptyTitle: 'No hay estudiantes disponibles',
+    emptyDescription:
+      'Los estudiantes aparecerán cuando el backend habilite las inscripciones por curso.',
+  },
 
-    setSelectedPlaybook(playbook);
+  ENROLLMENTS: {
+    eyebrow: 'Administración',
+    title: 'Inscripciones',
+    description:
+      'Consulta y administra las matrículas de los programas.',
+    emptyTitle: 'No hay inscripciones disponibles',
+    emptyDescription:
+      'Las inscripciones aparecerán cuando el backend habilite su servicio de matrículas.',
+  },
 
-    setTimeout(() => {
-      setSelectedPlaybook(null);
-    }, 4000);
-  };
+  REPORTS: {
+    eyebrow: 'Administración',
+    title: 'Reportes y métricas',
+    description:
+      'Consulta información verificable sobre la actividad de la plataforma.',
+    emptyTitle: 'No hay reportes disponibles',
+    emptyDescription:
+      'Los reportes aparecerán cuando existan datos suficientes proporcionados por el backend.',
+  },
+};
 
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
-    setActiveView('MARKETPLACE');
-  };
+const VIEW_PATHS: Record<
+  UserRole,
+  Partial<Record<ActiveView, string>>
+> = {
+  ESTUDIANTE: {
+    MARKETPLACE: '/estudiante/cursos',
+    MY_COURSES: '/estudiante/mis-cursos',
+    PROGRESS: '/estudiante/progreso',
+    LIBROS: '/estudiante/biblioteca',
+    CHAT: '/estudiante/chat',
+  },
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setActiveView('MARKETPLACE');
-  };
+  INSTRUCTOR: {
+    INSTRUCTOR_DASHBOARD: '/profesor/dashboard',
+    MANAGE_COURSES: '/profesor/cursos',
+    CONTENT: '/profesor/contenido',
+    STUDENTS: '/profesor/estudiantes',
+  },
 
-  if (activeView === 'LOGIN') {
+  ADMIN: {
+    ADMIN_DASHBOARD: '/admin/dashboard',
+    USERS: '/admin/usuarios',
+    MANAGE_COURSES: '/admin/cursos',
+    ENROLLMENTS: '/admin/inscripciones',
+    REPORTS: '/admin/reportes',
+  },
+};
+
+const PATH_VIEWS: Record<string, ActiveView> = {
+  '/estudiante/cursos': 'MARKETPLACE',
+  '/estudiante/mis-cursos': 'MY_COURSES',
+  '/estudiante/progreso': 'PROGRESS',
+  '/estudiante/biblioteca': 'LIBROS',
+  '/estudiante/chat': 'CHAT',
+
+  '/profesor/dashboard': 'INSTRUCTOR_DASHBOARD',
+  '/profesor/cursos': 'MANAGE_COURSES',
+  '/profesor/contenido': 'CONTENT',
+  '/profesor/estudiantes': 'STUDENTS',
+
+  '/admin/dashboard': 'ADMIN_DASHBOARD',
+  '/admin/usuarios': 'USERS',
+  '/admin/cursos': 'MANAGE_COURSES',
+  '/admin/inscripciones': 'ENROLLMENTS',
+  '/admin/reportes': 'REPORTS',
+};
+
+const toNavbarUser = (
+  user: AuthUser,
+): UserProfile => ({
+  id: String(user.id),
+  name: user.nombre,
+  role: user.rol,
+
+  jobTitle:
+    user.rol === 'ADMIN'
+      ? 'Administrador'
+      : user.rol === 'INSTRUCTOR'
+        ? 'Profesor'
+        : 'Ejecutivo',
+
+  company: 'Lysandri Global Tech',
+  avatarUrl: companyLogo,
+});
+
+interface EmptySectionPageProps {
+  view: ActiveView;
+}
+
+const EmptySectionPage: React.FC<
+  EmptySectionPageProps
+> = ({ view }) => {
+  const content = EMPTY_SECTIONS[view];
+
+  if (!content) {
     return (
-      <div
-        className={`min-h-screen w-full font-sans transition-colors duration-500 ${
-          theme === 'dark' ? 'dark' : ''
-        }`}
-      >
-        <LoginView
-          onLoginSuccess={handleLoginSuccess}
-          onBack={() => setActiveView('MARKETPLACE')}
-        />
+      <div className="rounded-2xl border border-cyan-500/10 bg-white p-8 text-center dark:border-slate-800 dark:bg-[#0c111a]">
+        <p className="text-sm text-slate-500">
+          Esta sección todavía no tiene contenido.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-slate-50 font-sans text-slate-900 transition-colors duration-500 dark:bg-[#07090e] dark:text-slate-100">
+    <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+
+        <div className="pointer-events-none absolute -bottom-24 right-1/4 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+
+        <div className="relative">
+          <span className="inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
+            {content.eyebrow}
+          </span>
+
+          <h1 className="mt-5 text-3xl font-black text-slate-950 dark:text-white">
+            {content.title}
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+            {content.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl border border-dashed border-cyan-500/20 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-[#0c111a]">
+        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 text-cyan-500">
+          <Database className="h-7 w-7" />
+        </span>
+
+        <h2 className="mt-5 text-lg font-black text-slate-950 dark:text-white">
+          {content.emptyTitle}
+        </h2>
+
+        <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+          {content.emptyDescription}
+        </p>
+      </div>
+    </section>
+  );
+};
+
+const MarketplacePage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [message, setMessage] = useState('');
+
+  const handleSelect = (
+    playbook: Playbook,
+  ) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user.rol !== 'ESTUDIANTE') {
+      setMessage(
+        'La inscripción solamente está disponible para ejecutivos.',
+      );
+
+      return;
+    }
+
+    setMessage(
+      `La inscripción a “${playbook.title}” todavía no está conectada al backend.`,
+    );
+  };
+
+  useEffect(() => {
+    if (!message) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setMessage('');
+    }, 4500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [message]);
+
+  return (
+    <>
+      <MarketplaceView
+        playbooks={INITIAL_PLAYBOOKS}
+        categories={INITIAL_CATEGORIES}
+        onSelectPlaybook={handleSelect}
+      />
+
+      {message && (
+        <div className="fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border border-amber-500/20 bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl">
+          <CircleAlert className="h-4 w-4 shrink-0 text-amber-400" />
+
+          <span>{message}</span>
+        </div>
+      )}
+    </>
+  );
+};
+
+const ChatPage: React.FC = () => {
+  const [messages, setMessages] = useState<
+    ChatMessage[]
+  >([]);
+
+  const [isLoading, setIsLoading] =
+    useState(false);
+
+  const handleSendMessage = (
+    content: string,
+  ) => {
+    const normalizedContent = content.trim();
+
+    if (!normalizedContent || isLoading) {
+      return;
+    }
+
+    const sessionId = 'local-session';
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        id: `user-${Date.now()}`,
+        sessionId,
+        sender: 'USER',
+        content: normalizedContent,
+
+        timestamp:
+          new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+      },
+    ]);
+
+    setIsLoading(true);
+
+    window.setTimeout(() => {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: `assistant-${Date.now()}`,
+          sessionId,
+          sender: 'ASSISTANT',
+
+          content:
+            'El asistente de inteligencia artificial todavía no está conectado al backend.',
+
+          timestamp:
+            new Date().toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+
+          sources: [],
+        },
+      ]);
+
+      setIsLoading(false);
+    }, 500);
+  };
+
+  const handleClearHistory = () => {
+    setMessages([]);
+    setIsLoading(false);
+  };
+
+  return (
+    <ChatContainer
+      messages={messages}
+      onSendMessage={handleSendMessage}
+      isLoading={isLoading}
+      onClearHistory={handleClearHistory}
+    />
+  );
+};
+
+const ProtectedLayout: React.FC<
+  AppLayoutProps
+> = ({ theme, onThemeToggle }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { user, logout } = useAuth();
+
+  const activeView = useMemo<ActiveView>(
+    () =>
+      PATH_VIEWS[location.pathname] ??
+      'MARKETPLACE',
+    [location.pathname],
+  );
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  const handleViewChange = (
+    view: ActiveView,
+  ) => {
+    const path =
+      VIEW_PATHS[user.rol][view];
+
+    if (path) {
+      navigate(path);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+
+    navigate('/', {
+      replace: true,
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
       <Navbar
-        user={INITIAL_USER}
+        user={toNavbarUser(user)}
         theme={theme}
-        onToggleTheme={() =>
-          setTheme(theme === 'dark' ? 'light' : 'dark')
+        onThemeToggle={onThemeToggle}
+        onLoginClick={() =>
+          navigate('/login')
         }
-        isLoggedIn={isLoggedIn}
-        onLoginClick={() => setActiveView('LOGIN')}
         onLogoutClick={handleLogout}
       />
 
-      <div className="flex flex-1 overflow-hidden">
-        {isLoggedIn && (
-          <Sidebar
-            activeView={activeView}
-            setActiveView={setActiveView}
-            isCollapsed={isSidebarCollapsed}
-            setIsCollapsed={setIsSidebarCollapsed}
-          />
-        )}
+      <Sidebar
+        activeView={activeView}
+        role={user.rol}
+        onViewChange={handleViewChange}
+      />
 
-        <main className="relative flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          {activeView === 'MARKETPLACE' && (
-            <MarketplaceView
-              playbooks={playbooks}
-              categories={categories}
-              onSelectPlaybook={handleSelectCourse}
-            />
-          )}
-
-          {activeView === 'CHAT' && (
-            <ChatView
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isLoading={isChatLoading}
-              onClearHistory={() => setMessages([])}
-            />
-          )}
-
-          {activeView === 'LIBROS' && (
-            <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/50 dark:shadow-inner">
-                <BookOpen className="h-12 w-12 text-slate-400 dark:text-cyan-500/40" />
-              </div>
-
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                Sección de Libros
-              </h2>
-
-              <p className="max-w-md text-center text-sm text-slate-500">
-                Esta sección se encuentra en desarrollo. Los libros y manuales
-                se agregarán próximamente.
-              </p>
-            </div>
-          )}
-
-          {activeView === 'TAREAS' && (
-            <div className="flex min-h-[60vh] h-full flex-col items-center justify-center space-y-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800/80 dark:bg-slate-900/50 dark:shadow-inner">
-                <ClipboardList className="h-12 w-12 text-slate-400 dark:text-cyan-500/40" />
-              </div>
-
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                Sección de Tareas
-              </h2>
-
-              <p className="max-w-md text-center text-sm text-slate-500">
-                Esta sección se encuentra en desarrollo. El gestor de tareas se
-                activará en la próxima actualización.
-              </p>
-            </div>
-          )}
-
-          <Footer />
+      <div className="transition-[padding] duration-300 lg:pl-64">
+        <main className="min-h-[calc(100vh-4rem)]">
+          <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
+            <Outlet />
+          </div>
         </main>
+
+        <Footer />
       </div>
 
-      <button
-        onClick={() => setActiveView('CHAT')}
-        title="Consultar Asistente IA"
-        className="group fixed bottom-6 right-6 z-40 flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-indigo-500 p-4 text-white shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:scale-110 hover:from-indigo-500 hover:to-indigo-400 active:scale-90"
-      >
-        <Bot className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
-      </button>
-
-      {selectedPlaybook && (
-        <div className="fixed bottom-24 right-6 z-50 flex items-center space-x-3 rounded-xl border border-cyan-400 bg-white p-4 text-xs font-mono text-slate-800 shadow-lg dark:border-cyan-500/40 dark:bg-[#0f141f] dark:text-slate-100 dark:shadow-glow-cyan">
-          <CheckCircle2 className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
-
-          <div>
-            <span className="block font-bold text-cyan-600 dark:text-cyan-300">
-              ¡Curso seleccionado!
-            </span>
-
-            <span className="text-slate-500 dark:text-slate-400">
-              {selectedPlaybook.title}
-            </span>
-          </div>
-
+      {user.rol === 'ESTUDIANTE' &&
+        activeView !== 'CHAT' && (
           <button
-            onClick={() => setSelectedPlaybook(null)}
-            className="rounded p-1 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-200"
+            type="button"
+            onClick={() =>
+              navigate('/estudiante/chat')
+            }
+            aria-label="Abrir asistente IA"
+            className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95"
           >
-            <X className="h-4 w-4" />
+            <Bot className="h-6 w-6" />
           </button>
-        </div>
-      )}
+        )}
     </div>
+  );
+};
+
+const PublicLayout: React.FC<
+  AppLayoutProps
+> = ({ theme, onThemeToggle }) => {
+  const navigate = useNavigate();
+
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+
+    navigate('/', {
+      replace: true,
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
+      <Navbar
+        user={
+          user ? toNavbarUser(user) : null
+        }
+        theme={theme}
+        onThemeToggle={onThemeToggle}
+        onLoginClick={() =>
+          navigate('/login')
+        }
+        onLogoutClick={handleLogout}
+      />
+
+      <main className="min-h-[calc(100vh-4rem)]">
+        <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
+          <Outlet />
+        </div>
+      </main>
+
+      <Footer />
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const navigate = useNavigate();
+
+  const [theme, setTheme] =
+    useState<Theme>('dark');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      'dark',
+      theme === 'dark',
+    );
+  }, [theme]);
+
+  const layoutProps: AppLayoutProps = {
+    theme,
+
+    onThemeToggle: () => {
+      setTheme((currentTheme) =>
+        currentTheme === 'dark'
+          ? 'light'
+          : 'dark',
+      );
+    },
+  };
+
+  return (
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <LoginView
+            onBack={() => navigate('/')}
+          />
+        }
+      />
+
+      <Route
+        element={
+          <PublicLayout {...layoutProps} />
+        }
+      >
+        <Route
+          index
+          element={<MarketplacePage />}
+        />
+      </Route>
+
+      <Route
+        element={
+          <RoleProtectedRoute
+            allowedRoles={['ESTUDIANTE']}
+          />
+        }
+      >
+        <Route
+          element={
+            <ProtectedLayout
+              {...layoutProps}
+            />
+          }
+        >
+          <Route
+            path="/estudiante"
+            element={
+              <Navigate
+                to="/estudiante/mis-cursos"
+                replace
+              />
+            }
+          />
+
+          <Route
+            path="/estudiante/cursos"
+            element={<MarketplacePage />}
+          />
+
+          <Route
+            path="/estudiante/mis-cursos"
+            element={<StudentCourses />}
+          />
+
+          <Route
+            path="/estudiante/progreso"
+            element={
+              <EmptySectionPage view="PROGRESS" />
+            }
+          />
+
+          <Route
+            path="/estudiante/biblioteca"
+            element={
+              <EmptySectionPage view="LIBROS" />
+            }
+          />
+
+          <Route
+            path="/estudiante/chat"
+            element={<ChatPage />}
+          />
+        </Route>
+      </Route>
+
+      <Route
+        element={
+          <RoleProtectedRoute
+            allowedRoles={['INSTRUCTOR']}
+          />
+        }
+      >
+        <Route
+          element={
+            <ProtectedLayout
+              {...layoutProps}
+            />
+          }
+        >
+          <Route
+            path="/profesor"
+            element={
+              <Navigate
+                to="/profesor/cursos"
+                replace
+              />
+            }
+          />
+
+          <Route
+            path="/profesor/dashboard"
+            element={
+              <EmptySectionPage view="INSTRUCTOR_DASHBOARD" />
+            }
+          />
+
+          <Route
+            path="/profesor/cursos"
+            element={<InstructorCourses />}
+          />
+
+          <Route
+            path="/profesor/contenido"
+            element={
+              <EmptySectionPage view="CONTENT" />
+            }
+          />
+
+          <Route
+            path="/profesor/estudiantes"
+            element={
+              <EmptySectionPage view="STUDENTS" />
+            }
+          />
+        </Route>
+      </Route>
+
+      <Route
+        element={
+          <RoleProtectedRoute
+            allowedRoles={['ADMIN']}
+          />
+        }
+      >
+        <Route
+          element={
+            <ProtectedLayout
+              {...layoutProps}
+            />
+          }
+        >
+          <Route
+            path="/admin"
+            element={
+              <Navigate
+                to="/admin/dashboard"
+                replace
+              />
+            }
+          />
+
+          <Route
+            path="/admin/dashboard"
+            element={<AdminDashboard />}
+          />
+
+          <Route
+            path="/admin/usuarios"
+            element={
+              <AdminDashboard initialSection="users" />
+            }
+          />
+
+          <Route
+            path="/admin/cursos"
+            element={
+              <AdminDashboard initialSection="programs" />
+            }
+          />
+
+          <Route
+            path="/admin/inscripciones"
+            element={
+              <EmptySectionPage view="ENROLLMENTS" />
+            }
+          />
+
+          <Route
+            path="/admin/reportes"
+            element={
+              <EmptySectionPage view="REPORTS" />
+            }
+          />
+        </Route>
+      </Route>
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
+          />
+        }
+      />
+    </Routes>
   );
 };
 

@@ -1,37 +1,82 @@
-// src/components/auth/LoginView.tsx
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  ArrowLeft,
+  CheckCircle2,
+  LoaderCircle,
+  ShieldAlert,
+} from 'lucide-react';
+
+import { useNavigate } from 'react-router-dom';
+
 import animatedLogo from '../../assets/logo-animado.gif';
+import { useAuth } from '../../context/AuthContext';
+import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
+import { getApiErrorMessage } from '../../services/authService';
 
 interface LoginViewProps {
-  onLoginSuccess: () => void;
   onBack: () => void;
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
-  onLoginSuccess,
   onBack,
 }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<
+    'login' | 'request'
+  >('login');
+
   const [typedText, setTypedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState('');
+
+  const [successMessage, setSuccessMessage] =
+    useState('');
+
+  // Inicio de sesión
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Solicitud de información
+  const [fullName, setFullName] = useState('');
+  const [requestEmail, setRequestEmail] =
+    useState('');
+
+  const [phone, setPhone] = useState('');
 
   const fullText = 'Eleva tu flujo de trabajo';
 
   useEffect(() => {
-    let currentIndex = 0;
-    let intervalId: ReturnType<typeof setInterval> | undefined;
-    let finishTimeout: ReturnType<typeof setTimeout> | undefined;
+    let intervalId:
+      | ReturnType<typeof setInterval>
+      | undefined;
 
     const startDelay = setTimeout(() => {
+      let currentIndex = 0;
+
       intervalId = setInterval(() => {
+        setTypedText(
+          fullText.slice(0, currentIndex + 1),
+        );
+
         currentIndex += 1;
-        setTypedText(fullText.slice(0, currentIndex));
 
-        if (currentIndex >= fullText.length) {
-          if (intervalId) clearInterval(intervalId);
+        if (
+          currentIndex >= fullText.length &&
+          intervalId
+        ) {
+          clearInterval(intervalId);
 
-          finishTimeout = setTimeout(() => {
+          setTimeout(() => {
             setIsTyping(false);
           }, 800);
         }
@@ -40,53 +85,105 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     return () => {
       clearTimeout(startDelay);
-      if (intervalId) clearInterval(intervalId);
-      if (finishTimeout) clearTimeout(finishTimeout);
+
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const changeTab = (
+    tab: 'login' | 'request',
+  ) => {
+    setActiveTab(tab);
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
 
-    if (activeTab === 'login') {
-      onLoginSuccess();
-    } else {
-      alert(
-        'Solicitud enviada correctamente. Un asesor se pondrá en contacto pronto.'
+  const clearRequestForm = () => {
+    setFullName('');
+    setRequestEmail('');
+    setPhone('');
+  };
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    setErrorMessage('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
+
+    try {
+      if (activeTab === 'login') {
+        const authenticatedUser = await login({
+          email: email.trim(),
+          password,
+        });
+
+        navigate(
+          getRoleHomePath(authenticatedUser.rol),
+          {
+            replace: true,
+          },
+        );
+
+        return;
+      }
+
+      /*
+       * Envío provisional de la solicitud.
+       * Posteriormente se conectará con el endpoint
+       * correspondiente del backend.
+       */
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 700);
+      });
+
+      setSuccessMessage(
+        'Tu solicitud fue enviada correctamente. Un asesor se pondrá en contacto contigo.',
       );
-      setActiveTab('login');
+
+      clearRequestForm();
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-white dark:bg-[#0a0d14]">
+    <div className="relative flex min-h-screen w-full bg-white dark:bg-[#0a0d14]">
       <button
+        type="button"
         onClick={onBack}
-        className="absolute left-6 top-6 z-50 flex items-center space-x-2 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:bg-slate-900/60 active:scale-95"
+        className="absolute left-6 top-6 z-50 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-slate-900/70 active:scale-95"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>Volver al inicio</span>
       </button>
 
-      {/* IZQUIERDA: sin cambios */}
+      {/* Sección izquierda */}
       <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden border-r border-slate-200 bg-slate-900 dark:border-slate-800 dark:bg-[#07090e] lg:flex">
         <div className="pointer-events-none absolute left-1/4 top-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
+
         <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-indigo-500/10 blur-3xl" />
 
         <div className="relative z-10 flex w-full flex-col items-center justify-center px-12 transition-transform duration-700 hover:scale-105">
           <img
             src={animatedLogo}
-            alt="Lysandri Executive Animado"
+            alt="Lysandri Executive"
             className="mb-8 h-auto w-full max-w-[28rem] object-contain drop-shadow-[0_0_35px_rgba(34,211,238,0.15)] xl:max-w-[34rem]"
           />
 
           <div className="flex h-12 items-center justify-center">
-            <h1 className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-center text-3xl font-bold leading-tight tracking-tight text-transparent drop-shadow-sm xl:text-4xl">
+            <h1 className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-center text-3xl font-bold leading-tight tracking-tight text-transparent xl:text-4xl">
               {typedText}
             </h1>
 
             {isTyping && (
-              <span className="ml-2 inline-block h-8 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)] transition-opacity duration-300 xl:h-10" />
+              <span className="ml-2 inline-block h-8 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)] xl:h-10" />
             )}
           </div>
         </div>
@@ -96,199 +193,231 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
       </div>
 
-      {/* DERECHA */}
-      <div className="lysandri-login-panel relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#0a0d14] px-7 py-20 md:px-14 lg:w-1/2 lg:px-20">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="lysandri-login-grid absolute inset-0" />
-          <div className="absolute right-0 top-0 h-px w-1/2 bg-gradient-to-l from-cyan-400/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 h-px w-1/3 bg-gradient-to-r from-indigo-500/25 to-transparent" />
-          <div className="absolute -right-32 top-1/4 h-72 w-72 rounded-full bg-cyan-500/[0.05] blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-600/[0.05] blur-3xl" />
-        </div>
+      {/* Sección derecha */}
+      <div className="flex w-full items-center justify-center overflow-y-auto bg-white px-6 py-24 dark:bg-[#0a0d14] sm:px-8 md:px-14 lg:w-1/2">
+        <div className="w-full max-w-md">
+          <div className="mb-7">
+            <span className="mb-3 inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
+              {activeTab === 'login'
+                ? 'Acceso corporativo'
+                : 'Nuevos estudiantes'}
+            </span>
 
-        <div className="relative z-10 w-full max-w-md">
-          <div className="lysandri-login-intro mb-10">
-            <div className="mb-5 flex items-center gap-2.5">
-              <span className="h-px w-8 bg-cyan-400/70" />
-              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80">
-                Portal ejecutivo
-              </span>
-            </div>
-
-            <h2 className="text-3xl font-bold tracking-[-0.035em] text-white md:text-[2.15rem]">
+            <h2 className="mb-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
               {activeTab === 'login'
                 ? 'Bienvenido de nuevo'
-                : 'Solicitar Información'}
+                : 'Solicitar información'}
             </h2>
 
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-slate-400">
+            <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
               {activeTab === 'login'
                 ? 'Ingresa tus credenciales corporativas para continuar.'
-                : 'Déjanos tus datos y un asesor se comunicará contigo.'}
+                : 'Déjanos tus datos y un asesor se comunicará contigo para brindarte información.'}
             </p>
           </div>
 
-          <div className="lysandri-auth-shell">
-            <div className="relative mb-8 border-b border-slate-800">
-              <div className="grid grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('login')}
-                  className={`relative z-10 pb-3 text-sm font-semibold transition-colors duration-300 ${
-                    activeTab === 'login'
-                      ? 'text-cyan-300'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  Iniciar sesión
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('register')}
-                  className={`relative z-10 pb-3 text-sm font-semibold transition-colors duration-300 ${
-                    activeTab === 'register'
-                      ? 'text-cyan-300'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  Inscribirse
-                </button>
-              </div>
-
-              <span
-                className={`absolute bottom-0 h-px w-1/2 bg-gradient-to-r from-cyan-400 to-indigo-500 transition-transform duration-500 ease-out ${
-                  activeTab === 'login' ? 'translate-x-0' : 'translate-x-full'
-                }`}
-              />
-            </div>
-
-            <form
-              key={activeTab}
-              onSubmit={handleSubmit}
-              className="lysandri-auth-form space-y-5"
+          {/* Pestañas */}
+          <div className="mb-7 flex border-b border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => changeTab('login')}
+              className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
+                activeTab === 'login'
+                  ? 'text-cyan-600 dark:text-cyan-400'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
+              }`}
             >
-              {activeTab === 'login' ? (
-                <>
-                  <div className="lysandri-field">
-                    <label htmlFor="email">Correo electrónico</label>
+              Iniciar sesión
 
-                    <input
-                      id="email"
-                      type="email"
-                      placeholder="ejemplo@empresa.com"
-                      required
-                    />
+              {activeTab === 'login' && (
+                <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-t-full bg-gradient-to-r from-cyan-400 to-indigo-500" />
+              )}
+            </button>
 
-                    <span className="lysandri-field-line" />
-                  </div>
+            <button
+              type="button"
+              onClick={() => changeTab('request')}
+              className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
+                activeTab === 'request'
+                  ? 'text-cyan-600 dark:text-cyan-400'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
+              }`}
+            >
+              Inscribirse
 
-                  <div className="lysandri-field">
-                    <div className="mb-2 flex items-center justify-between">
-                      <label htmlFor="password">Contraseña</label>
+              {activeTab === 'request' && (
+                <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-t-full bg-gradient-to-r from-cyan-400 to-indigo-500" />
+              )}
+            </button>
+          </div>
 
-                      <a
-                        href="#"
-                        className="text-[11px] font-semibold text-cyan-400/90 transition-colors hover:text-cyan-200 hover:underline"
-                      >
-                        ¿Olvidaste tu contraseña?
-                      </a>
-                    </div>
+          {errorMessage && (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
 
-                    <input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                    />
+          {successMessage && (
+            <div className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
 
-                    <span className="lysandri-field-line" />
-                  </div>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
+            {activeTab === 'login' ? (
+              <>
+                <InputField
+                  id="email"
+                  label="Correo electrónico"
+                  type="email"
+                  value={email}
+                  placeholder="ejemplo@empresa.com"
+                  autoComplete="email"
+                  onChange={setEmail}
+                />
 
-                  <label className="flex cursor-pointer items-center gap-2.5 pt-1 text-xs text-slate-400">
+                <InputField
+                  id="password"
+                  label="Contraseña"
+                  type="password"
+                  value={password}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  onChange={setPassword}
+                />
+
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center">
                     <input
                       id="remember"
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-cyan-500 transition-colors focus:ring-2 focus:ring-cyan-400/25"
-                    />
-                    Mantener sesión iniciada por 30 días
-                  </label>
-                </>
-              ) : (
-                <>
-                  <div className="lysandri-field">
-                    <label htmlFor="fullName">Nombre completo</label>
-
-                    <input
-                      id="fullName"
-                      type="text"
-                      placeholder="Ej. Juan Pérez"
-                      required
+                      className="h-4 w-4 rounded border-slate-300 bg-transparent text-cyan-500 focus:ring-cyan-500/20 dark:border-slate-700"
                     />
 
-                    <span className="lysandri-field-line" />
+                    <label
+                      htmlFor="remember"
+                      className="ml-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400"
+                    >
+                      Mantener sesión iniciada
+                    </label>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="lysandri-field">
-                      <label htmlFor="reqEmail">Correo</label>
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-500 hover:underline dark:text-cyan-400"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <InputField
+                  id="fullName"
+                  label="Nombre completo"
+                  type="text"
+                  value={fullName}
+                  placeholder="Ej. Juan Pérez"
+                  autoComplete="name"
+                  onChange={setFullName}
+                />
 
-                      <input
-                        id="reqEmail"
-                        type="email"
-                        placeholder="correo@empresa.com"
-                        required
-                      />
+                <InputField
+                  id="requestEmail"
+                  label="Correo electrónico"
+                  type="email"
+                  value={requestEmail}
+                  placeholder="correo@empresa.com"
+                  autoComplete="email"
+                  onChange={setRequestEmail}
+                />
 
-                      <span className="lysandri-field-line" />
-                    </div>
+                <InputField
+                  id="phone"
+                  label="Teléfono"
+                  type="tel"
+                  value={phone}
+                  placeholder="+51 999 999 999"
+                  autoComplete="tel"
+                  onChange={setPhone}
+                />
 
-                    <div className="lysandri-field">
-                      <label htmlFor="phone">Teléfono</label>
+                <p className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-500">
+                  Al enviar este formulario autorizas a
+                  Lysandri a comunicarse contigo para
+                  proporcionarte información sobre sus
+                  programas de capacitación.
+                </p>
+              </>
+            )}
 
-                      <input
-                        id="phone"
-                        type="tel"
-                        placeholder="+51 999 999 999"
-                        required
-                      />
-
-                      <span className="lysandri-field-line" />
-                    </div>
-                  </div>
-
-                  <div className="lysandri-field">
-                    <label htmlFor="address">Dirección</label>
-
-                    <input
-                      id="address"
-                      type="text"
-                      placeholder="Av. Principal 123, Ciudad"
-                      required
-                    />
-
-                    <span className="lysandri-field-line" />
-                  </div>
-                </>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-sm font-bold text-white shadow-[0_8px_28px_rgba(6,182,212,0.20)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_36px_rgba(79,70,229,0.28)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+            >
+              {isSubmitting && (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
               )}
 
-              <button type="submit" className="lysandri-submit-button">
-                <span className="lysandri-submit-glow" />
-                <span className="relative z-10">
-                  {activeTab === 'login'
-                    ? 'Ingresar a la Plataforma'
-                    : 'Solicitar Información'}
-                </span>
-              </button>
-            </form>
-          </div>
-
-          <div className="mt-7 flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-600">
-            <span className="h-1.5 w-1.5 rounded-full bg-cyan-500/70" />
-            Entorno corporativo protegido
-          </div>
+              {isSubmitting
+                ? 'Procesando...'
+                : activeTab === 'login'
+                  ? 'Ingresar a la plataforma'
+                  : 'Solicitar información'}
+            </button>
+          </form>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface InputFieldProps {
+  id: string;
+  label: string;
+  type: string;
+  value: string;
+  placeholder: string;
+  autoComplete: string;
+  onChange: (value: string) => void;
+}
+
+const InputField: React.FC<InputFieldProps> = ({
+  id,
+  label,
+  type,
+  value,
+  placeholder,
+  autoComplete,
+  onChange,
+}) => {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+      >
+        {label}
+      </label>
+
+      <input
+        id={id}
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        required
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100 dark:placeholder:text-slate-600"
+      />
     </div>
   );
 };

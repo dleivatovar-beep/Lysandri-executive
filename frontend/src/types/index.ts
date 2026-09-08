@@ -1,6 +1,28 @@
-// src/types/index.ts
+export type TierLevel =
+  | 'ESSENTIAL'
+  | 'ADVANCED'
+  | 'ENTERPRISE';
 
-export type TierLevel = 'ESSENTIAL' | 'ADVANCED' | 'ENTERPRISE';
+export type UserRole =
+  | 'ESTUDIANTE'
+  | 'INSTRUCTOR'
+  | 'ADMIN';
+
+export type ActiveView =
+  | 'MARKETPLACE'
+  | 'MY_COURSES'
+  | 'PROGRESS'
+  | 'CHAT'
+  | 'LIBROS'
+  | 'INSTRUCTOR_DASHBOARD'
+  | 'MANAGE_COURSES'
+  | 'CONTENT'
+  | 'STUDENTS'
+  | 'ADMIN_DASHBOARD'
+  | 'USERS'
+  | 'ENROLLMENTS'
+  | 'REPORTS'
+  | 'LOGIN';
 
 export interface Playbook {
   id: string;
@@ -16,30 +38,83 @@ export interface Playbook {
   tags: string[];
 }
 
-export type SenderType = 'USER' | 'ASSISTANT' | 'SYSTEM';
+export interface Category {
+  id: string;
+  name: string;
+  count: number;
+  iconName: string;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  jobTitle: string;
+  company: string;
+  avatarUrl: string;
+}
+
+export interface AuthUser {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: UserRole;
+}
+
+export interface AuthResponse extends AuthUser {
+  token: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  password: string;
+  telefono?: string;
+  rol: UserRole;
+}
+
+export interface ApiErrorResponse {
+  timestamp?: string;
+  status?: number;
+  error?: string;
+  message?: string;
+  errors?: Record<string, string>;
+}
+
+export interface UsuarioResponse {
+  idUser: number;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono?: string;
+  rol: UserRole;
+}
+
+export interface ProgramaResponse {
+  idPrograma: number;
+  idInstructorDni: string;
+  nombreInstructor: string;
+  tituloPrograma: string;
+  duracionPrograma?: string;
+  tipoPrograma?: string;
+  level?: string;
+  fechaInicioGlobal?: string;
+  fechaFinalGlobal?: string;
+  requisitos?: string;
+  metodologia?: string;
+}
 
 export interface ChatMessage {
   id: string;
   sessionId: string;
-  sender: SenderType;
+  sender: 'USER' | 'ASSISTANT';
   content: string;
   timestamp: string;
   sources?: string[];
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  iconName: string;
-  count: number;
-}
-
-// ¡Esta es la línea clave que agregamos!
-export type ActiveView = 'MARKETPLACE' | 'CHAT' | 'LIBROS' | 'TAREAS' | 'LOGIN';
-
-export interface UserProfile {
-  name: string;
-  role: string;
-  company: string;
-  avatarUrl: string;
 }

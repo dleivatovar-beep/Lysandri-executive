@@ -1,48 +1,188 @@
-// src/components/layout/Sidebar.tsx
 import React from 'react';
-import { Store, BookOpen, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
-import { ActiveView } from '../../types';
+
+import {
+  BarChart3,
+  BookOpen,
+  Bot,
+  ChartNoAxesColumnIncreasing,
+  ClipboardCheck,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  Library,
+  Store,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
+
+import {
+  ActiveView,
+  UserRole,
+} from '../../types';
 
 interface SidebarProps {
   activeView: ActiveView;
-  setActiveView: (view: ActiveView | any) => void;
-  isCollapsed: boolean;
-  setIsCollapsed: (collapsed: boolean) => void;
+  role: UserRole;
+  onViewChange: (view: ActiveView) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, setActiveView, isCollapsed, setIsCollapsed }) => {
+interface NavigationItem {
+  label: string;
+  view: ActiveView;
+  icon: LucideIcon;
+}
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  ESTUDIANTE: 'Espacio ejecutivo',
+  INSTRUCTOR: 'Espacio docente',
+  ADMIN: 'Administración',
+};
+
+const ROLE_NAVIGATION: Record<
+  UserRole,
+  NavigationItem[]
+> = {
+  ESTUDIANTE: [
+    {
+      label: 'Explorar cursos',
+      view: 'MARKETPLACE',
+      icon: Store,
+    },
+    {
+      label: 'Mis cursos',
+      view: 'MY_COURSES',
+      icon: BookOpen,
+    },
+    {
+      label: 'Mi progreso',
+      view: 'PROGRESS',
+      icon: ChartNoAxesColumnIncreasing,
+    },
+    {
+      label: 'Biblioteca',
+      view: 'LIBROS',
+      icon: Library,
+    },
+    {
+      label: 'Asistente IA',
+      view: 'CHAT',
+      icon: Bot,
+    },
+  ],
+
+  INSTRUCTOR: [
+    {
+      label: 'Panel docente',
+      view: 'INSTRUCTOR_DASHBOARD',
+      icon: LayoutDashboard,
+    },
+    {
+      label: 'Mis cursos',
+      view: 'MANAGE_COURSES',
+      icon: GraduationCap,
+    },
+    {
+      label: 'Contenido',
+      view: 'CONTENT',
+      icon: FileText,
+    },
+    {
+      label: 'Estudiantes',
+      view: 'STUDENTS',
+      icon: Users,
+    },
+  ],
+
+  ADMIN: [
+    {
+      label: 'Panel general',
+      view: 'ADMIN_DASHBOARD',
+      icon: LayoutDashboard,
+    },
+    {
+      label: 'Usuarios',
+      view: 'USERS',
+      icon: Users,
+    },
+    {
+      label: 'Cursos',
+      view: 'MANAGE_COURSES',
+      icon: GraduationCap,
+    },
+    {
+      label: 'Inscripciones',
+      view: 'ENROLLMENTS',
+      icon: ClipboardCheck,
+    },
+    {
+      label: 'Reportes',
+      view: 'REPORTS',
+      icon: BarChart3,
+    },
+  ],
+};
+
+export const Sidebar: React.FC<
+  SidebarProps
+> = ({
+  activeView,
+  role,
+  onViewChange,
+}) => {
+  const navigationItems =
+    ROLE_NAVIGATION[role];
+
   return (
-    <aside className={`relative h-[calc(100vh-4rem)] bg-white dark:bg-[#07090e] border-r border-slate-200 dark:border-slate-800/80 transition-all duration-300 ease-in-out flex flex-col justify-between ${isCollapsed ? 'w-16' : 'w-60'}`}>
-      <div className="p-3 space-y-5">
-        <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'} mb-1 transition-all duration-300`}>
-          <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 transition-all duration-300 ease-out hover:text-indigo-600 dark:hover:text-cyan-400 hover:bg-white dark:hover:bg-slate-800 active:scale-90" title={isCollapsed ? "Expandir Menú" : "Colapsar Menú"}>
-            {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-          </button>
+    <aside className="fixed bottom-0 left-0 top-16 z-30 hidden w-64 border-r border-cyan-500/10 bg-white/95 px-4 py-6 backdrop-blur-xl dark:border-slate-800 dark:bg-[#080b12]/95 lg:block">
+      <div className="h-full">
+        <div className="mb-6 px-3">
+          <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-slate-400 dark:text-slate-600">
+            Navegación
+          </p>
+
+          <h2 className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
+            {ROLE_LABELS[role]}
+          </h2>
         </div>
 
-        {!isCollapsed && (
-          <div className="px-3 text-[9px] font-mono uppercase text-slate-500 dark:text-slate-500 tracking-widest font-semibold transition-opacity duration-300">Plataforma C-Suite</div>
-        )}
-
         <nav className="space-y-1.5">
-          <button onClick={() => setActiveView('MARKETPLACE')} className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3 px-3'} py-2.5 rounded-xl transition-all duration-300 ease-out active:scale-95 font-medium text-xs relative ${activeView === 'MARKETPLACE' ? 'bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm dark:shadow-glow-cyan font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/60 border border-transparent hover:translate-x-1'}`}>
-            {activeView === 'MARKETPLACE' && <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-500 dark:bg-cyan-400 rounded-r" />}
-            <Store className={`w-4 h-4 flex-shrink-0 transition-colors duration-300 ${activeView === 'MARKETPLACE' ? 'text-indigo-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}`} />
-            {!isCollapsed && <div className="flex items-center justify-between w-full"><span>Cursos</span><span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">4 Activos</span></div>}
-          </button>
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              activeView === item.view;
 
-          <button onClick={() => setActiveView('LIBROS')} className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3 px-3'} py-2.5 rounded-xl transition-all duration-300 ease-out active:scale-95 font-medium text-xs relative ${activeView === 'LIBROS' ? 'bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm dark:shadow-glow-cyan font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/60 border border-transparent hover:translate-x-1'}`}>
-            {activeView === 'LIBROS' && <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-500 dark:bg-cyan-400 rounded-r" />}
-            <BookOpen className={`w-4 h-4 flex-shrink-0 transition-colors duration-300 ${activeView === 'LIBROS' ? 'text-indigo-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}`} />
-            {!isCollapsed && <div className="flex items-center justify-between w-full"><span>Libros</span></div>}
-          </button>
+            return (
+              <button
+                key={item.view}
+                type="button"
+                onClick={() =>
+                  onViewChange(item.view)
+                }
+                className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-3 text-left text-sm font-semibold transition-all duration-300 ${
+                  isActive
+                    ? 'border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-cyan-700 shadow-[0_8px_24px_rgba(6,182,212,0.08)] dark:text-cyan-300'
+                    : 'border border-transparent text-slate-500 hover:border-cyan-500/10 hover:bg-cyan-500/5 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200'
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full bg-gradient-to-b from-cyan-400 to-indigo-500" />
+                )}
 
-          <button onClick={() => setActiveView('TAREAS')} className={`w-full flex items-center ${isCollapsed ? 'justify-center px-0' : 'justify-start space-x-3 px-3'} py-2.5 rounded-xl transition-all duration-300 ease-out active:scale-95 font-medium text-xs relative ${activeView === 'TAREAS' ? 'bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-cyan-300 border border-slate-200 dark:border-cyan-500/30 shadow-sm dark:shadow-glow-cyan font-semibold' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/60 border border-transparent hover:translate-x-1'}`}>
-            {activeView === 'TAREAS' && <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-500 dark:bg-cyan-400 rounded-r" />}
-            <ClipboardList className={`w-4 h-4 flex-shrink-0 transition-colors duration-300 ${activeView === 'TAREAS' ? 'text-indigo-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}`} />
-            {!isCollapsed && <div className="flex items-center justify-between w-full"><span>Tareas</span></div>}
-          </button>
-        </nav>
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300 ${
+                    isActive
+                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-slate-100 text-slate-400 group-hover:text-cyan-600 dark:bg-slate-900 dark:text-slate-500 dark:group-hover:text-cyan-400'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+               </nav>
       </div>
     </aside>
   );

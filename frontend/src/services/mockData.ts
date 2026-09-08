@@ -1,26 +1,48 @@
-// src/services/mockData.ts
-import { Playbook, Category, ChatMessage, UserProfile } from '../types';
+import {
+  Category,
+  ChatMessage,
+  Playbook,
+  UserProfile,
+  UserRole,
+} from '../types';
 
-export const INITIAL_USER: UserProfile = {
-  name: 'Alexander Vance',
-  role: 'Director de Tecnología (CTO)',
-  company: 'Lysandri Global Tech',
-  avatarUrl:
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+export const MOCK_USERS: Record<UserRole, UserProfile> = {
+  ESTUDIANTE: {
+    id: 'user-executive-001',
+    name: 'Alexander Vance',
+    role: 'ESTUDIANTE',
+    jobTitle: 'Ejecutivo en formación',
+    company: 'Lysandri Global Tech',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=160&q=80',
+  },
+
+  INSTRUCTOR: {
+    id: 'user-instructor-001',
+    name: 'Valeria Torres',
+    role: 'INSTRUCTOR',
+    jobTitle: 'Profesora corporativa',
+    company: 'Lysandri Global Tech',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+  },
+
+  ADMIN: {
+    id: 'user-admin-001',
+    name: 'Daniela Ruiz',
+    role: 'ADMIN',
+    jobTitle: 'Administradora de plataforma',
+    company: 'Lysandri Global Tech',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=160&q=80',
+  },
 };
 
-export const MOCK_CATEGORIES: Category[] = [
-  {
-    id: 'cat-all',
-    name: 'Todos los cursos',
-    iconName: 'Layers',
-    count: 4,
-  },
-];
+export const INITIAL_USER: UserProfile = MOCK_USERS.ESTUDIANTE;
 
 export const MOCK_PLAYBOOKS: Playbook[] = [
   {
-    id: 'pb-001',
+    id: 'course-001',
     title: 'FinOps Empresarial',
     coverUrl: '/courses/curso1.png',
     slug: 'finops-empresarial',
@@ -31,10 +53,16 @@ export const MOCK_PLAYBOOKS: Playbook[] = [
     tier: 'ENTERPRISE',
     rating: 4.95,
     downloadsCount: 1420,
-    tags: ['FinOps', 'Cloud', 'AWS', 'Azure', 'Optimización de Costos'],
+    tags: [
+      'FinOps',
+      'Cloud',
+      'AWS',
+      'Azure',
+      'Optimización de Costos',
+    ],
   },
   {
-    id: 'pb-002',
+    id: 'course-002',
     title: 'Ciberseguridad Corporativa',
     coverUrl: '/courses/curso2.png',
     slug: 'ciberseguridad-corporativa',
@@ -54,7 +82,7 @@ export const MOCK_PLAYBOOKS: Playbook[] = [
     ],
   },
   {
-    id: 'pb-003',
+    id: 'course-003',
     title: 'Liderazgo Estratégico',
     coverUrl: '/courses/curso3.png',
     slug: 'liderazgo-estrategico',
@@ -74,7 +102,7 @@ export const MOCK_PLAYBOOKS: Playbook[] = [
     ],
   },
   {
-    id: 'pb-004',
+    id: 'course-004',
     title: 'Metodologías Ágiles',
     coverUrl: '/courses/curso4.png',
     slug: 'metodologias-agiles',
@@ -89,54 +117,74 @@ export const MOCK_PLAYBOOKS: Playbook[] = [
   },
 ];
 
+export const INITIAL_PLAYBOOKS: Playbook[] = MOCK_PLAYBOOKS;
+
+export const MOCK_CATEGORIES: Category[] = [
+  {
+    id: 'cat-all',
+    name: 'Todos los cursos',
+    count: MOCK_PLAYBOOKS.length,
+    iconName: 'Layers',
+  },
+  {
+    id: 'cat-cloud',
+    name: 'Cloud y FinOps',
+    count: 1,
+    iconName: 'TrendingUp',
+  },
+  {
+    id: 'cat-security',
+    name: 'Seguridad y Cumplimiento',
+    count: 1,
+    iconName: 'ShieldCheck',
+  },
+  {
+    id: 'cat-leadership',
+    name: 'Liderazgo y Gestión',
+    count: 1,
+    iconName: 'Cpu',
+  },
+  {
+    id: 'cat-projects',
+    name: 'Gestión de Proyectos',
+    count: 1,
+    iconName: 'Bot',
+  },
+];
+
+export const INITIAL_CATEGORIES: Category[] = MOCK_CATEGORIES;
+
 export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
   {
-    id: 'msg-001',
-    sessionId: 'session-executive-01',
-    sender: 'USER',
-    content:
-      '¿Cuál es el retorno estimado de inversión (ROI) y los riesgos de migrar nuestro monolito legacy a una arquitectura orientada a eventos con Kafka?',
-    timestamp: '10:14 AM',
-  },
-  {
-    id: 'msg-002',
-    sessionId: 'session-executive-01',
-    sender: 'ASSISTANT',
-    content: `Basado en el análisis de nuestros activos arquitectónicos y reportes de FinOps 2026, los hallazgos ejecutivos son los siguientes:
-
-### 1. Estimación de ROI (Horizonte a 24 meses)
-* **Reducción de Latencia Operativa:** Hasta un **45%** en el procesamiento de transacciones masivas.
-* **Eficiencia de Costos de Cómputo:** Disminución del **28%** en uso de infraestructura serverless al eliminar polling innecesario.
-* **Tiempo de Time-to-Market:** Despliegues independientes de microservicios aceleran el release cycle en un **3.5x**.
-
-### 2. Matriz de Riesgos y Mitigación
-* **Consistencia Eventual:** Riesgo alto en transacciones bancarias/financieras. *Mitigación:* Implementar el patrón **Saga Orchestrator** detallado en la *Suite de Microservicios Orientados a Eventos*.
-* **Monitoreo & Trazabilidad:** Dificultad para rastrear transacciones distribuidas. *Mitigación:* OpenTelemetry y Distributed Tracing obligatorio desde el día 1.`,
-    timestamp: '10:15 AM',
-    sources: [
-      'Reporte_ROI_Arquitectura_Eventos_2026.pdf',
-      'Benchmark_FinOps_Q2_Infraestructura_Nube.xlsx',
-      'Radar_Tecnologico_Lysandri_Microservicios.pdf',
-    ],
-  },
-  {
-    id: 'msg-003',
-    sessionId: 'session-executive-01',
-    sender: 'USER',
-    content:
-      'Excelente. ¿Tenemos un Playbook en la plataforma que cubra el patrón Saga y la infraestructura de resiliencia lista para desplegar?',
-    timestamp: '10:17 AM',
-  },
-  {
-    id: 'msg-004',
+    id: 'message-001',
     sessionId: 'session-executive-01',
     sender: 'ASSISTANT',
     content:
-      "Sí, CTO Vance. El playbook **'Suite de Microservicios Orientados a Eventos y Framework de Resiliencia Patrón Saga'** (Nivel ADVANCED) incluye el código IaC en Terraform, manifiestos de Kubernetes, interceptores de Kafka y la implementación completa del patrón Saga en TypeScript/Go.",
-    timestamp: '10:17 AM',
+      'Hola. Soy el asistente académico de Lysandri. Puedo ayudarte a encontrar cursos, resolver preguntas sobre contenidos y organizar tu aprendizaje.',
+    timestamp: '11:30',
+    sources: [],
+  },
+  {
+    id: 'message-002',
+    sessionId: 'session-executive-01',
+    sender: 'USER',
+    content:
+      '¿Qué curso me recomiendas para mejorar la gestión de proyectos?',
+    timestamp: '11:31',
+  },
+  {
+    id: 'message-003',
+    sessionId: 'session-executive-01',
+    sender: 'ASSISTANT',
+    content:
+      'Te recomiendo **Metodologías Ágiles**. Incluye Scrum, Kanban y principios Lean aplicados a proyectos empresariales.',
+    timestamp: '11:31',
     sources: [
-      'Catalogo_Maestro_Playbooks_2026.json',
-      'Especificaciones_Implementacion_Patron_Saga.md',
+      'Programa_Metodologias_Agiles.pdf',
+      'Guia_Scrum_Kanban_Lean.pdf',
     ],
   },
 ];
+
+export const INITIAL_CHAT_MESSAGES: ChatMessage[] =
+  MOCK_CHAT_MESSAGES;
