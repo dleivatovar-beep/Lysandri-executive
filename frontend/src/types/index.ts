@@ -119,6 +119,20 @@ export interface InscripcionResponse {
   estado: string;
 }
 
+export interface EstudianteInscritoResponse {
+  idInscripcion: number;
+  usuarioId: number;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono?: string;
+  programaId: number;
+  tituloPrograma: string;
+  fechaInscripcion: string;
+  estado: string;
+  porcentajeProgreso: number;
+}
+
 export interface UsuarioRequest {
   nombres: string;
   apellidos: string;

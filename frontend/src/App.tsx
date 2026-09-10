@@ -33,8 +33,9 @@ import { useAuth } from './context/AuthContext';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminEnrollments } from './pages/admin/AdminEnrollments';
 import { InstructorCourses } from './pages/instructor/InstructorCourses';
-import { StudentCourses } from './pages/student/StudentCourses';
+import { InstructorStudents } from './pages/instructor/InstructorStudents';
 import { MarketplaceView } from './pages/MarketplaceView';
+import { StudentCourses } from './pages/student/StudentCourses';
 
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 
@@ -112,26 +113,6 @@ const EMPTY_SECTIONS: Partial<
       'Esta sección se habilitará cuando esté disponible el servicio de contenidos académicos.',
   },
 
-  STUDENTS: {
-    eyebrow: 'Área del profesor',
-    title: 'Estudiantes',
-    description:
-      'Consulta los estudiantes inscritos en tus cursos.',
-    emptyTitle: 'No hay estudiantes disponibles',
-    emptyDescription:
-      'No hay estudiantes inscritos en este momento.',
-  },
-
-  ENROLLMENTS: {
-    eyebrow: 'Administración',
-    title: 'Inscripciones',
-    description:
-      'Consulta y administra las matrículas de los programas.',
-    emptyTitle: 'No hay inscripciones disponibles',
-    emptyDescription:
-      '',
-  },
-
   REPORTS: {
     eyebrow: 'Administración',
     title: 'Reportes y métricas',
@@ -139,7 +120,7 @@ const EMPTY_SECTIONS: Partial<
       'Consulta información verificable sobre la actividad de la plataforma.',
     emptyTitle: 'No hay reportes disponibles',
     emptyDescription:
-      '',
+      'Los reportes aparecerán cuando existan datos suficientes proporcionados por el backend.',
   },
 };
 
@@ -273,19 +254,29 @@ const MarketplacePage: React.FC = () => {
   const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectingId, setSelectingId] = useState<string | null>(null);
+  const [selectingId, setSelectingId] = useState<string | null>(
+    null,
+  );
   const [message, setMessage] = useState('');
-  const [messageTone, setMessageTone] = useState<'success' | 'error'>('success');
+  const [messageTone, setMessageTone] = useState<
+    'success' | 'error'
+  >('success');
 
   const loadPrograms = async () => {
     setIsLoading(true);
     setErrorMessage('');
+
     try {
       const programs = await academicService.getPrograms();
-      setPlaybooks(programs.map(toCatalogCourse));
+
+      setPlaybooks(
+        programs.map(toCatalogCourse),
+      );
     } catch (error) {
       setPlaybooks([]);
-      setErrorMessage(getApiErrorMessage(error));
+      setErrorMessage(
+        getApiErrorMessage(error),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -307,8 +298,8 @@ const MarketplacePage: React.FC = () => {
       setMessage(
         'La inscripción solamente está disponible para ejecutivos.',
       );
-      setMessageTone('error');
 
+      setMessageTone('error');
       return;
     }
 
@@ -318,10 +309,17 @@ const MarketplacePage: React.FC = () => {
       await academicService.enroll({
         programaId: playbook.programId,
       });
-      setMessage(`Te inscribiste correctamente en “${playbook.title}”.`);
+
+      setMessage(
+        `Te inscribiste correctamente en “${playbook.title}”.`,
+      );
+
       setMessageTone('success');
     } catch (error) {
-      setMessage(getApiErrorMessage(error));
+      setMessage(
+        getApiErrorMessage(error),
+      );
+
       setMessageTone('error');
     } finally {
       setSelectingId(null);
@@ -355,8 +353,18 @@ const MarketplacePage: React.FC = () => {
       />
 
       {message && (
-        <div className={`fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl ${messageTone === 'success' ? 'border-emerald-500/30' : 'border-rose-500/30'}`}>
-          {messageTone === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <CircleAlert className="h-4 w-4 shrink-0 text-rose-400" />}
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl ${
+            messageTone === 'success'
+              ? 'border-emerald-500/30'
+              : 'border-rose-500/30'
+          }`}
+        >
+          {messageTone === 'success' ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          ) : (
+            <CircleAlert className="h-4 w-4 shrink-0 text-rose-400" />
+          )}
 
           <span>{message}</span>
         </div>
@@ -366,9 +374,8 @@ const MarketplacePage: React.FC = () => {
 };
 
 const ChatPage: React.FC = () => {
-  const [messages, setMessages] = useState<
-    ChatMessage[]
-  >([]);
+  const [messages, setMessages] =
+    useState<ChatMessage[]>([]);
 
   const [isLoading, setIsLoading] =
     useState(false);
@@ -376,9 +383,13 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = (
     content: string,
   ) => {
-    const normalizedContent = content.trim();
+    const normalizedContent =
+      content.trim();
 
-    if (!normalizedContent || isLoading) {
+    if (
+      !normalizedContent ||
+      isLoading
+    ) {
       return;
     }
 
@@ -393,35 +404,43 @@ const ChatPage: React.FC = () => {
         content: normalizedContent,
 
         timestamp:
-          new Date().toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
+          new Date().toLocaleTimeString(
+            [],
+            {
+              hour: '2-digit',
+              minute: '2-digit',
+            },
+          ),
       },
     ]);
 
     setIsLoading(true);
 
     window.setTimeout(() => {
-      setMessages((currentMessages) => [
-        ...currentMessages,
-        {
-          id: `assistant-${Date.now()}`,
-          sessionId,
-          sender: 'ASSISTANT',
+      setMessages(
+        (currentMessages) => [
+          ...currentMessages,
+          {
+            id: `assistant-${Date.now()}`,
+            sessionId,
+            sender: 'ASSISTANT',
 
-          content:
-            'El asistente de inteligencia artificial todavía no está conectado al backend.',
+            content:
+              'El asistente de inteligencia artificial todavía no está conectado al backend.',
 
-          timestamp:
-            new Date().toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            }),
+            timestamp:
+              new Date().toLocaleTimeString(
+                [],
+                {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                },
+              ),
 
-          sources: [],
-        },
-      ]);
+            sources: [],
+          },
+        ],
+      );
 
       setIsLoading(false);
     }, 500);
@@ -444,7 +463,10 @@ const ChatPage: React.FC = () => {
 
 const ProtectedLayout: React.FC<
   AppLayoutProps
-> = ({ theme, onThemeToggle }) => {
+> = ({
+  theme,
+  onThemeToggle,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -518,7 +540,9 @@ const ProtectedLayout: React.FC<
           <button
             type="button"
             onClick={() =>
-              navigate('/estudiante/chat')
+              navigate(
+                '/estudiante/chat',
+              )
             }
             aria-label="Abrir asistente IA"
             className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95"
@@ -532,7 +556,10 @@ const ProtectedLayout: React.FC<
 
 const PublicLayout: React.FC<
   AppLayoutProps
-> = ({ theme, onThemeToggle }) => {
+> = ({
+  theme,
+  onThemeToggle,
+}) => {
   const navigate = useNavigate();
 
   const { user, logout } = useAuth();
@@ -549,7 +576,9 @@ const PublicLayout: React.FC<
     <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
       <Navbar
         user={
-          user ? toNavbarUser(user) : null
+          user
+            ? toNavbarUser(user)
+            : null
         }
         theme={theme}
         onThemeToggle={onThemeToggle}
@@ -601,26 +630,34 @@ const App: React.FC = () => {
         path="/login"
         element={
           <LoginView
-            onBack={() => navigate('/')}
+            onBack={() =>
+              navigate('/')
+            }
           />
         }
       />
 
       <Route
         element={
-          <PublicLayout {...layoutProps} />
+          <PublicLayout
+            {...layoutProps}
+          />
         }
       >
         <Route
           index
-          element={<MarketplacePage />}
+          element={
+            <MarketplacePage />
+          }
         />
       </Route>
 
       <Route
         element={
           <RoleProtectedRoute
-            allowedRoles={['ESTUDIANTE']}
+            allowedRoles={[
+              'ESTUDIANTE',
+            ]}
           />
         }
       >
@@ -643,17 +680,23 @@ const App: React.FC = () => {
 
           <Route
             path="/estudiante/cursos"
-            element={<MarketplacePage />}
+            element={
+              <MarketplacePage />
+            }
           />
 
           <Route
             path="/estudiante/mis-cursos"
-            element={<StudentCourses />}
+            element={
+              <StudentCourses />
+            }
           />
 
           <Route
             path="/estudiante/progreso"
-            element={<StudentCourses mode="progress" />}
+            element={
+              <StudentCourses mode="progress" />
+            }
           />
 
           <Route
@@ -673,7 +716,9 @@ const App: React.FC = () => {
       <Route
         element={
           <RoleProtectedRoute
-            allowedRoles={['INSTRUCTOR']}
+            allowedRoles={[
+              'INSTRUCTOR',
+            ]}
           />
         }
       >
@@ -703,18 +748,24 @@ const App: React.FC = () => {
 
           <Route
             path="/profesor/cursos"
-            element={<InstructorCourses />}
+            element={
+              <InstructorCourses />
+            }
           />
 
           <Route
             path="/profesor/contenido"
-            element={<InstructorCourses focusContent />}
+            element={
+              <InstructorCourses
+                focusContent
+              />
+            }
           />
 
           <Route
             path="/profesor/estudiantes"
             element={
-              <EmptySectionPage view="STUDENTS" />
+              <InstructorStudents />
             }
           />
         </Route>
@@ -746,7 +797,9 @@ const App: React.FC = () => {
 
           <Route
             path="/admin/dashboard"
-            element={<AdminDashboard />}
+            element={
+              <AdminDashboard />
+            }
           />
 
           <Route
@@ -764,9 +817,11 @@ const App: React.FC = () => {
           />
 
           <Route
-  path="/admin/inscripciones"
-  element={<AdminEnrollments />}
-/>
+            path="/admin/inscripciones"
+            element={
+              <AdminEnrollments />
+            }
+          />
 
           <Route
             path="/admin/reportes"

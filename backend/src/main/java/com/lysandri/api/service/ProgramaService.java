@@ -1,3 +1,4 @@
+
 package com.lysandri.api.service;
 
 import com.lysandri.api.dto.request.ProgramaRequest;
@@ -7,13 +8,26 @@ import java.util.List;
 
 public interface ProgramaService {
 
-    List<ProgramaResponse> getAllProgramas();
+    List<ProgramaResponse>
+    getAllProgramas();
 
-    ProgramaResponse getProgramaById(Integer id);
+    ProgramaResponse getProgramaById(
+        Integer id
+    );
 
-    ProgramaResponse createPrograma(ProgramaRequest request);
+    List<ProgramaResponse>
+    getProgramasByInstructorUserId(
+        Integer usuarioId
+    );
 
-    ProgramaResponse updatePrograma(Integer id, ProgramaRequest request);
+    ProgramaResponse createPrograma(
+        ProgramaRequest request
+    );
+
+    ProgramaResponse updatePrograma(
+        Integer id,
+        ProgramaRequest request
+    );
 
     void deletePrograma(Integer id);
 }

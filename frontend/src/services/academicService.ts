@@ -1,4 +1,5 @@
 import {
+  EstudianteInscritoResponse,
   InscripcionRequest,
   InscripcionResponse,
   LeccionRequest,
@@ -53,7 +54,29 @@ export const academicService = {
 
     return response.data;
   },
+async getInstructorPrograms(): Promise<
+  ProgramaResponse[]
+> {
+  const response =
+    await apiClient.get<
+      ProgramaResponse[]
+    >('/profesor/mis-cursos');
 
+  return response.data;
+},
+
+async getInstructorStudents(
+  programId: number,
+): Promise<EstudianteInscritoResponse[]> {
+  const response =
+    await apiClient.get<
+      EstudianteInscritoResponse[]
+    >(
+      `/profesor/programas/${programId}/estudiantes`,
+    );
+
+  return response.data;
+},
   async enroll(
     data: InscripcionRequest,
   ): Promise<InscripcionResponse> {
