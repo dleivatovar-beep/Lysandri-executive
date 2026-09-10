@@ -1,12 +1,6 @@
-export type TierLevel =
-  | 'ESSENTIAL'
-  | 'ADVANCED'
-  | 'ENTERPRISE';
+export type TierLevel = 'ESSENTIAL' | 'ADVANCED' | 'ENTERPRISE';
 
-export type UserRole =
-  | 'ESTUDIANTE'
-  | 'INSTRUCTOR'
-  | 'ADMIN';
+export type UserRole = 'ESTUDIANTE' | 'INSTRUCTOR' | 'ADMIN';
 
 export type ActiveView =
   | 'MARKETPLACE'
@@ -26,16 +20,16 @@ export type ActiveView =
 
 export interface Playbook {
   id: string;
+  programId: number;
   title: string;
-  coverUrl: string;
+  coverUrl?: string;
   slug: string;
   description: string;
   category: string;
-  price: number;
   tier: TierLevel;
-  rating: number;
-  downloadsCount: number;
   tags: string[];
+  duration?: string;
+  instructor?: string;
 }
 
 export interface Category {
@@ -108,6 +102,63 @@ export interface ProgramaResponse {
   fechaFinalGlobal?: string;
   requisitos?: string;
   metodologia?: string;
+}
+
+export interface InscripcionRequest {
+  programaId: number;
+  usuarioId?: number;
+}
+
+export interface InscripcionResponse {
+  id: number;
+  usuarioId: number;
+  nombreEstudiante: string;
+  programaId: number;
+  tituloPrograma: string;
+  fechaInscripcion: string;
+  estado: string;
+}
+
+export interface UsuarioRequest {
+  nombres: string;
+  apellidos: string;
+  email: string;
+  passw: string;
+  telefono?: string;
+  rol: UserRole;
+}
+
+export interface LeccionRequest {
+  titulo: string;
+  descripcion?: string;
+  contenidoUrl?: string;
+  duracionMinutos?: number;
+  orden: number;
+}
+
+export interface LeccionResponse {
+  id: number;
+  programaId: number;
+  titulo: string;
+  descripcion?: string;
+  contenidoUrl?: string;
+  duracionMinutos?: number;
+  orden: number;
+}
+
+export interface ProgresoResponse {
+  id: number;
+  usuarioId: number;
+  leccionId: number;
+  completado: boolean;
+  fechaCompletado?: string;
+}
+
+export interface ProgresoPorcentajeResponse {
+  programaId: number;
+  totalLecciones: number;
+  leccionesCompletadas: number;
+  porcentaje: number;
 }
 
 export interface ChatMessage {

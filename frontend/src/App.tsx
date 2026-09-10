@@ -6,6 +6,7 @@ import React, {
 
 import {
   Bot,
+  CheckCircle2,
   CircleAlert,
   Database,
 } from 'lucide-react';
@@ -30,16 +31,19 @@ import { Sidebar } from './components/layout/Sidebar';
 import { useAuth } from './context/AuthContext';
 
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminEnrollments } from './pages/admin/AdminEnrollments';
 import { InstructorCourses } from './pages/instructor/InstructorCourses';
 import { StudentCourses } from './pages/student/StudentCourses';
 import { MarketplaceView } from './pages/MarketplaceView';
 
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 
+import { academicService } from './services/academicService';
+import { getApiErrorMessage } from './services/authService';
 import {
-  INITIAL_CATEGORIES,
-  INITIAL_PLAYBOOKS,
-} from './services/mockData';
+  buildCategories,
+  toCatalogCourse,
+} from './services/courseCatalog';
 
 import {
   ActiveView,
@@ -115,7 +119,7 @@ const EMPTY_SECTIONS: Partial<
       'Consulta los estudiantes inscritos en tus cursos.',
     emptyTitle: 'No hay estudiantes disponibles',
     emptyDescription:
-      'Los estudiantes aparecerán cuando el backend habilite las inscripciones por curso.',
+      'No hay estudiantes inscritos en este momento.',
   },
 
   ENROLLMENTS: {
@@ -125,7 +129,7 @@ const EMPTY_SECTIONS: Partial<
       'Consulta y administra las matrículas de los programas.',
     emptyTitle: 'No hay inscripciones disponibles',
     emptyDescription:
-      'Las inscripciones aparecerán cuando el backend habilite su servicio de matrículas.',
+      '',
   },
 
   REPORTS: {
@@ -135,7 +139,7 @@ const EMPTY_SECTIONS: Partial<
       'Consulta información verificable sobre la actividad de la plataforma.',
     emptyTitle: 'No hay reportes disponibles',
     emptyDescription:
-      'Los reportes aparecerán cuando existan datos suficientes proporcionados por el backend.',
+      '',
   },
 };
 
@@ -266,9 +270,32 @@ const MarketplacePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [selectingId, setSelectingId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<'success' | 'error'>('success');
 
-  const handleSelect = (
+  const loadPrograms = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      const programs = await academicService.getPrograms();
+      setPlaybooks(programs.map(toCatalogCourse));
+    } catch (error) {
+      setPlaybooks([]);
+      setErrorMessage(getApiErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadPrograms();
+  }, []);
+
+  const handleSelect = async (
     playbook: Playbook,
   ) => {
     if (!user) {
@@ -280,13 +307,25 @@ const MarketplacePage: React.FC = () => {
       setMessage(
         'La inscripción solamente está disponible para ejecutivos.',
       );
+      setMessageTone('error');
 
       return;
     }
 
-    setMessage(
-      `La inscripción a “${playbook.title}” todavía no está conectada al backend.`,
-    );
+    setSelectingId(playbook.id);
+
+    try {
+      await academicService.enroll({
+        programaId: playbook.programId,
+      });
+      setMessage(`Te inscribiste correctamente en “${playbook.title}”.`);
+      setMessageTone('success');
+    } catch (error) {
+      setMessage(getApiErrorMessage(error));
+      setMessageTone('error');
+    } finally {
+      setSelectingId(null);
+    }
   };
 
   useEffect(() => {
@@ -306,14 +345,18 @@ const MarketplacePage: React.FC = () => {
   return (
     <>
       <MarketplaceView
-        playbooks={INITIAL_PLAYBOOKS}
-        categories={INITIAL_CATEGORIES}
+        playbooks={playbooks}
+        categories={buildCategories(playbooks)}
+        isLoading={isLoading}
+        errorMessage={errorMessage}
+        selectingId={selectingId}
+        onRetry={() => void loadPrograms()}
         onSelectPlaybook={handleSelect}
       />
 
       {message && (
-        <div className="fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border border-amber-500/20 bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl">
-          <CircleAlert className="h-4 w-4 shrink-0 text-amber-400" />
+        <div className={`fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl ${messageTone === 'success' ? 'border-emerald-500/30' : 'border-rose-500/30'}`}>
+          {messageTone === 'success' ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /> : <CircleAlert className="h-4 w-4 shrink-0 text-rose-400" />}
 
           <span>{message}</span>
         </div>
@@ -610,9 +653,7 @@ const App: React.FC = () => {
 
           <Route
             path="/estudiante/progreso"
-            element={
-              <EmptySectionPage view="PROGRESS" />
-            }
+            element={<StudentCourses mode="progress" />}
           />
 
           <Route
@@ -667,9 +708,7 @@ const App: React.FC = () => {
 
           <Route
             path="/profesor/contenido"
-            element={
-              <EmptySectionPage view="CONTENT" />
-            }
+            element={<InstructorCourses focusContent />}
           />
 
           <Route
@@ -725,11 +764,9 @@ const App: React.FC = () => {
           />
 
           <Route
-            path="/admin/inscripciones"
-            element={
-              <EmptySectionPage view="ENROLLMENTS" />
-            }
-          />
+  path="/admin/inscripciones"
+  element={<AdminEnrollments />}
+/>
 
           <Route
             path="/admin/reportes"

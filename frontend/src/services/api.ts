@@ -1,10 +1,4 @@
 import axios, { AxiosError } from 'axios';
-import { Category, ChatMessage, Playbook } from '../types';
-import {
-  MOCK_CATEGORIES,
-  MOCK_CHAT_MESSAGES,
-  MOCK_PLAYBOOKS,
-} from './mockData';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -25,15 +19,16 @@ export const isJwtExpired = (token: string): boolean => {
       .replace(/-/g, '+')
       .replace(/_/g, '/');
 
-    const payload = JSON.parse(atob(normalizedPayload)) as {
+    const paddedPayload = normalizedPayload.padEnd(
+      Math.ceil(normalizedPayload.length / 4) * 4,
+      '=',
+    );
+
+    const payload = JSON.parse(atob(paddedPayload)) as {
       exp?: number;
     };
 
-    if (!payload.exp) {
-      return false;
-    }
-
-    return payload.exp * 1000 <= Date.now();
+    return !payload.exp || payload.exp * 1000 <= Date.now();
   } catch {
     return true;
   }
@@ -110,70 +105,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-
-export const PlaybookService = {
-  async getAll(): Promise<Playbook[]> {
-    try {
-      const response =
-        await apiClient.get<Playbook[]>('/programas');
-
-      return response.data;
-    } catch {
-      console.info(
-        'No se pudieron cargar los programas del backend. Se usarán datos simulados.',
-      );
-
-      return MOCK_PLAYBOOKS;
-    }
-  },
-
-  async getCategories(): Promise<Category[]> {
-    return MOCK_CATEGORIES;
-  },
-};
-
-export const ChatService = {
-  async getMessages(
-    sessionId: string,
-  ): Promise<ChatMessage[]> {
-    try {
-      const response = await apiClient.get<ChatMessage[]>(
-        `/chat/sessions/${sessionId}/messages`,
-      );
-
-      return response.data;
-    } catch {
-      return MOCK_CHAT_MESSAGES;
-    }
-  },
-
-  async sendMessage(
-    content: string,
-    sessionId = 'session-executive-01',
-  ): Promise<ChatMessage> {
-    try {
-      const response = await apiClient.post<ChatMessage>(
-        '/chat/query',
-        {
-          content,
-          sessionId,
-        },
-      );
-
-      return response.data;
-    } catch {
-      return {
-        id: `message-${Date.now()}`,
-        sessionId,
-        sender: 'ASSISTANT',
-        content:
-          'He recibido tu consulta. El servicio de inteligencia artificial no está disponible temporalmente, por lo que esta es una respuesta simulada.',
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        sources: [],
-      };
-    }
-  },
-};
