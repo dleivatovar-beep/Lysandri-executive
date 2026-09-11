@@ -47,4 +47,14 @@ public class SolicitudInformacion {
 
     @Column(name = "notas_admin", columnDefinition = "TEXT")
     private String notasAdmin;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.fechaCreacion == null) {
+            this.fechaCreacion = OffsetDateTime.now();
+        }
+        if (this.estado == null || this.estado.isBlank()) {
+            this.estado = "PENDIENTE";
+        }
+    }
 }

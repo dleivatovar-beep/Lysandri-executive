@@ -23,6 +23,8 @@ public class SolicitudInformacionServiceImpl implements SolicitudInformacionServ
     private final SolicitudInformacionRepository solicitudRepository;
     private final ProgramaRepository programaRepository;
 
+    private static final List<String> ESTADOS_PERMITIDOS = List.of("PENDIENTE", "CONTACTADA", "CERRADA");
+
     @Override
     @Transactional
     public SolicitudInformacionResponse registrarSolicitud(SolicitudInformacionRequest request) {
@@ -32,13 +34,22 @@ public class SolicitudInformacionServiceImpl implements SolicitudInformacionServ
                     .orElseThrow(() -> new ResourceNotFoundException("Programa no encontrado con ID: " + request.getProgramaId()));
         }
 
+        String telefonoLimpio = (request.getTelefono() != null && !request.getTelefono().isBlank())
+                ? request.getTelefono().trim()
+                : null;
+
+        String mensajeLimpio = (request.getMensaje() != null && !request.getMensaje().isBlank())
+                ? request.getMensaje().trim()
+                : null;
+
         SolicitudInformacion solicitud = SolicitudInformacion.builder()
                 .nombreCompleto(request.getNombreCompleto().trim())
                 .email(request.getEmail().trim().toLowerCase())
-                .telefono(request.getTelefono() != null ? request.getTelefono().trim() : null)
+                .telefono(telefonoLimpio)
                 .programa(programa)
-                .mensaje(request.getMensaje() != null ? request.getMensaje().trim() : null)
+                .mensaje(mensajeLimpio)
                 .estado("PENDIENTE")
+                .fechaCreacion(OffsetDateTime.now())
                 .build();
 
         SolicitudInformacion guardada = solicitudRepository.save(solicitud);
@@ -81,10 +92,15 @@ public class SolicitudInformacionServiceImpl implements SolicitudInformacionServ
             throw new BadRequestException("El nuevo estado es obligatorio");
         }
 
+        String estadoNormalizado = nuevoEstado.trim().toUpperCase();
+        if (!ESTADOS_PERMITIDOS.contains(estadoNormalizado)) {
+            throw new BadRequestException("Estado no válido: " + nuevoEstado + ". Los estados permitidos son: " + String.join(", ", ESTADOS_PERMITIDOS));
+        }
+
         SolicitudInformacion solicitud = solicitudRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud de información no encontrada con ID: " + id));
 
-        solicitud.setEstado(nuevoEstado.trim().toUpperCase());
+        solicitud.setEstado(estadoNormalizado);
         solicitud.setFechaAtencion(OffsetDateTime.now());
         if (notasAdmin != null) {
             solicitud.setNotasAdmin(notasAdmin.trim());
@@ -103,6 +119,9 @@ public class SolicitudInformacionServiceImpl implements SolicitudInformacionServ
     }
 
     private SolicitudInformacionResponse mapToResponse(SolicitudInformacion entity) {
+        OffsetDateTime fechaCreacion = entity.getFechaCreacion() != null ? entity.getFechaCreacion() : OffsetDateTime.now();
+        OffsetDateTime fechaActualizacion = entity.getFechaAtencion() != null ? entity.getFechaAtencion() : fechaCreacion;
+
         return SolicitudInformacionResponse.builder()
                 .idSolicitud(entity.getIdSolicitud())
                 .nombreCompleto(entity.getNombreCompleto())
@@ -112,9 +131,9 @@ public class SolicitudInformacionServiceImpl implements SolicitudInformacionServ
                 .tituloPrograma(entity.getPrograma() != null ? entity.getPrograma().getTituloPrograma() : null)
                 .mensaje(entity.getMensaje())
                 .estado(entity.getEstado())
-                .fechaSolicitud(entity.getFechaCreacion())
-                .fechaActualizacion(entity.getFechaAtencion() != null ? entity.getFechaAtencion() : entity.getFechaCreacion())
-                .fechaCreacion(entity.getFechaCreacion())
+                .fechaSolicitud(fechaCreacion)
+                .fechaActualizacion(fechaActualizacion)
+                .fechaCreacion(fechaCreacion)
                 .fechaAtencion(entity.getFechaAtencion())
                 .notasAdmin(entity.getNotasAdmin())
                 .build();

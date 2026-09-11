@@ -573,16 +573,20 @@ export const AdminInformationRequests:
                       </span>
                     </a>
 
-                    <a
-                      href={`tel:${request.telefono}`}
-                      className="flex items-center gap-3 transition-colors hover:text-cyan-500"
-                    >
-                      <Phone className="h-4 w-4 shrink-0 text-indigo-500" />
-
-                      <span>
-                        {request.telefono}
+                    {request.telefono ? (
+                      <a
+                        href={`tel:${request.telefono}`}
+                        className="flex items-center gap-3 transition-colors hover:text-cyan-500"
+                      >
+                        <Phone className="h-4 w-4 shrink-0 text-indigo-500" />
+                        <span>{request.telefono}</span>
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-3 text-slate-400">
+                        <Phone className="h-4 w-4 shrink-0 text-slate-400" />
+                        <span>Sin teléfono registrado</span>
                       </span>
-                    </a>
+                    )}
 
                     <p className="flex items-center gap-3">
                       <Clock3 className="h-4 w-4 shrink-0 text-amber-500" />
