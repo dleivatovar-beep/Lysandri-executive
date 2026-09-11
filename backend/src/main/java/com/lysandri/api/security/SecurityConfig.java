@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/programas/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes-informacion").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")
                         .requestMatchers("/api/v1/profesor/**").hasAnyRole("INSTRUCTOR", "PROFESOR", "ADMIN", "ADMINISTRADOR")
                         .requestMatchers("/api/v1/estudiante/**").hasRole("ESTUDIANTE")
