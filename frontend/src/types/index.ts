@@ -15,6 +15,7 @@ export type ActiveView =
   | 'ADMIN_DASHBOARD'
   | 'USERS'
   | 'ENROLLMENTS'
+  | 'INFORMATION_REQUESTS'
   | 'REPORTS'
   | 'LOGIN';
 
@@ -182,4 +183,26 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   sources?: string[];
+}
+
+
+export type SolicitudInformacionEstado =
+  | 'PENDIENTE'
+  | 'CONTACTADA'
+  | 'CERRADA';
+
+export interface SolicitudInformacionRequest {
+  nombreCompleto: string;
+  email: string;
+  telefono: string;
+}
+
+export interface SolicitudInformacionResponse {
+  idSolicitud: number;
+  nombreCompleto: string;
+  email: string;
+  telefono: string;
+  estado: SolicitudInformacionEstado;
+  fechaSolicitud: string;
+  fechaActualizacion: string;
 }

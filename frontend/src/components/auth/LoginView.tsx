@@ -5,6 +5,7 @@ import React, {
 
 import {
   ArrowLeft,
+  CheckCircle2,
   LoaderCircle,
   ShieldAlert,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ import animatedLogo from '../../assets/logo-animado.gif';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
 import { getApiErrorMessage } from '../../services/authService';
+import { informationRequestService } from '../../services/informationRequestService';
 
 interface LoginViewProps {
   onBack: () => void;
@@ -30,15 +32,19 @@ export const LoginView:
     const [
       activeTab,
       setActiveTab,
-    ] = useState<'login' | 'request'>(
-      'login',
-    );
+    ] = useState<
+      'login' | 'request'
+    >('login');
 
-    const [typedText, setTypedText] =
-      useState('');
+    const [
+      typedText,
+      setTypedText,
+    ] = useState('');
 
-    const [isTyping, setIsTyping] =
-      useState(true);
+    const [
+      isTyping,
+      setIsTyping,
+    ] = useState(true);
 
     const [
       isSubmitting,
@@ -50,115 +56,142 @@ export const LoginView:
       setErrorMessage,
     ] = useState('');
 
-    // Inicio de sesión
-    const [email, setEmail] =
-      useState('');
+    const [
+      successMessage,
+      setSuccessMessage,
+    ] = useState('');
 
-    const [password, setPassword] =
-      useState('');
+    // Inicio de sesión
+    const [
+      email,
+      setEmail,
+    ] = useState('');
+
+    const [
+      password,
+      setPassword,
+    ] = useState('');
 
     // Solicitud de información
-    const [fullName, setFullName] =
-      useState('');
+    const [
+      fullName,
+      setFullName,
+    ] = useState('');
 
     const [
       requestEmail,
       setRequestEmail,
     ] = useState('');
 
-    const [phone, setPhone] =
-      useState('');
+    const [
+      phone,
+      setPhone,
+    ] = useState('');
 
     const fullText =
       'Eleva tu flujo de trabajo';
 
     useEffect(() => {
       let intervalId:
-        | ReturnType<
-            typeof setInterval
-          >
+        | number
         | undefined;
 
       const startDelay =
-        setTimeout(() => {
+        window.setTimeout(() => {
           let currentIndex = 0;
 
-          intervalId = setInterval(
-            () => {
-              setTypedText(
-                fullText.slice(
-                  0,
-                  currentIndex + 1,
-                ),
-              );
-
-              currentIndex += 1;
-
-              if (
-                currentIndex >=
-                  fullText.length &&
-                intervalId
-              ) {
-                clearInterval(
-                  intervalId,
+          intervalId =
+            window.setInterval(
+              () => {
+                setTypedText(
+                  fullText.slice(
+                    0,
+                    currentIndex + 1,
+                  ),
                 );
 
-                setTimeout(() => {
-                  setIsTyping(false);
-                }, 800);
-              }
-            },
-            70,
-          );
+                currentIndex += 1;
+
+                if (
+                  currentIndex >=
+                    fullText.length &&
+                  intervalId
+                ) {
+                  window.clearInterval(
+                    intervalId,
+                  );
+
+                  window.setTimeout(
+                    () => {
+                      setIsTyping(
+                        false,
+                      );
+                    },
+                    800,
+                  );
+                }
+              },
+              70,
+            );
         }, 400);
 
       return () => {
-        clearTimeout(startDelay);
+        window.clearTimeout(
+          startDelay,
+        );
 
         if (intervalId) {
-          clearInterval(intervalId);
+          window.clearInterval(
+            intervalId,
+          );
         }
       };
     }, []);
 
     const changeTab = (
-      tab: 'login' | 'request',
+      tab:
+        | 'login'
+        | 'request',
     ) => {
       setActiveTab(tab);
       setErrorMessage('');
+      setSuccessMessage('');
     };
 
-    const handleSubmit = async (
-      event:
-        React.FormEvent<HTMLFormElement>,
-    ) => {
-      event.preventDefault();
+    const submitInformationRequest =
+      async () => {
+        await informationRequestService
+          .create({
+            nombreCompleto:
+              fullName.trim(),
 
-      setErrorMessage('');
+            email:
+              requestEmail
+                .trim()
+                .toLowerCase(),
 
-      /*
-       * El backend todavía no dispone
-       * de un endpoint para solicitudes
-       * de información.
-       *
-       * Por eso no se simula un envío
-       * exitoso ni se eliminan los datos
-       * introducidos por el usuario.
-       */
-      if (activeTab === 'request') {
-        setErrorMessage(
-          'El formulario todavía no puede enviarse porque el backend no cuenta con un endpoint para solicitudes de información.',
+            telefono:
+              phone.trim(),
+          });
+
+        setFullName('');
+        setRequestEmail('');
+        setPhone('');
+
+        setSuccessMessage(
+          'Tu solicitud fue enviada correctamente. Un asesor se comunicará contigo.',
         );
+      };
 
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
+    const submitLogin =
+      async () => {
         const authenticatedUser =
           await login({
-            email: email.trim(),
+            email:
+              email
+                .trim()
+                .toLowerCase(),
+
             password,
           });
 
@@ -170,14 +203,42 @@ export const LoginView:
             replace: true,
           },
         );
-      } catch (error) {
-        setErrorMessage(
-          getApiErrorMessage(error),
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
+      };
+
+    const handleSubmit =
+      async (
+        event:
+          React.FormEvent<HTMLFormElement>,
+      ) => {
+        event.preventDefault();
+
+        if (isSubmitting) {
+          return;
+        }
+
+        setErrorMessage('');
+        setSuccessMessage('');
+        setIsSubmitting(true);
+
+        try {
+          if (
+            activeTab ===
+            'request'
+          ) {
+            await submitInformationRequest();
+          } else {
+            await submitLogin();
+          }
+        } catch (error) {
+          setErrorMessage(
+            getApiErrorMessage(
+              error,
+            ),
+          );
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
 
     return (
       <div className="relative flex min-h-screen w-full bg-white dark:bg-[#0a0d14]">
@@ -218,8 +279,7 @@ export const LoginView:
           </div>
 
           <div className="absolute bottom-8 left-12 z-10 font-mono text-[10px] uppercase tracking-widest text-slate-500">
-            © 2026 Lysandri Global
-            Tech
+            © 2026 Lysandri Global Tech
           </div>
         </div>
 
@@ -228,19 +288,22 @@ export const LoginView:
           <div className="w-full max-w-md">
             <div className="mb-7">
               <span className="mb-3 inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-                {activeTab === 'login'
+                {activeTab ===
+                'login'
                   ? 'Acceso corporativo'
                   : 'Nuevos estudiantes'}
               </span>
 
               <h2 className="mb-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {activeTab === 'login'
+                {activeTab ===
+                'login'
                   ? 'Bienvenido de nuevo'
                   : 'Solicitar información'}
               </h2>
 
               <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                {activeTab === 'login'
+                {activeTab ===
+                'login'
                   ? 'Ingresa tus credenciales corporativas para continuar.'
                   : 'Déjanos tus datos y un asesor se comunicará contigo para brindarte información.'}
               </p>
@@ -251,10 +314,13 @@ export const LoginView:
               <button
                 type="button"
                 onClick={() =>
-                  changeTab('login')
+                  changeTab(
+                    'login',
+                  )
                 }
                 className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
-                  activeTab === 'login'
+                  activeTab ===
+                  'login'
                     ? 'text-cyan-600 dark:text-cyan-400'
                     : 'text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
                 }`}
@@ -270,7 +336,9 @@ export const LoginView:
               <button
                 type="button"
                 onClick={() =>
-                  changeTab('request')
+                  changeTab(
+                    'request',
+                  )
                 }
                 className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
                   activeTab ===
@@ -298,11 +366,24 @@ export const LoginView:
               </div>
             )}
 
+            {successMessage && (
+              <div className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-300">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+
+                <span>
+                  {successMessage}
+                </span>
+              </div>
+            )}
+
             <form
-              onSubmit={handleSubmit}
+              onSubmit={
+                handleSubmit
+              }
               className="space-y-4"
             >
-              {activeTab === 'login' ? (
+              {activeTab ===
+              'login' ? (
                 <>
                   <InputField
                     id="email"
@@ -311,17 +392,23 @@ export const LoginView:
                     value={email}
                     placeholder="ejemplo@empresa.com"
                     autoComplete="email"
-                    onChange={setEmail}
+                    onChange={
+                      setEmail
+                    }
                   />
 
                   <InputField
                     id="password"
                     label="Contraseña"
                     type="password"
-                    value={password}
+                    value={
+                      password
+                    }
                     placeholder="••••••••"
                     autoComplete="current-password"
-                    onChange={setPassword}
+                    onChange={
+                      setPassword
+                    }
                   />
 
                   <div className="flex items-center justify-between pt-1">
@@ -336,8 +423,7 @@ export const LoginView:
                         htmlFor="remember"
                         className="ml-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400"
                       >
-                        Mantener sesión
-                        iniciada
+                        Mantener sesión iniciada
                       </label>
                     </div>
 
@@ -345,8 +431,7 @@ export const LoginView:
                       type="button"
                       className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-500 hover:underline dark:text-cyan-400"
                     >
-                      ¿Olvidaste tu
-                      contraseña?
+                      ¿Olvidaste tu contraseña?
                     </button>
                   </div>
                 </>
@@ -356,7 +441,9 @@ export const LoginView:
                     id="fullName"
                     label="Nombre completo"
                     type="text"
-                    value={fullName}
+                    value={
+                      fullName
+                    }
                     placeholder="Ej. Juan Pérez"
                     autoComplete="name"
                     onChange={
@@ -368,7 +455,9 @@ export const LoginView:
                     id="requestEmail"
                     label="Correo electrónico"
                     type="email"
-                    value={requestEmail}
+                    value={
+                      requestEmail
+                    }
                     placeholder="correo@empresa.com"
                     autoComplete="email"
                     onChange={
@@ -383,17 +472,17 @@ export const LoginView:
                     value={phone}
                     placeholder="+51 999 999 999"
                     autoComplete="tel"
-                    onChange={setPhone}
+                    onChange={
+                      setPhone
+                    }
                   />
 
                   <p className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-500">
-                    Al enviar este
-                    formulario autorizas a
-                    Lysandri a comunicarse
-                    contigo para
-                    proporcionarte
-                    información sobre sus
-                    programas de
+                    Al enviar este formulario
+                    autorizas a Lysandri a
+                    comunicarse contigo para
+                    proporcionarte información
+                    sobre sus programas de
                     capacitación.
                   </p>
                 </>
@@ -401,7 +490,9 @@ export const LoginView:
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting
+                }
                 className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-sm font-bold text-white shadow-[0_8px_28px_rgba(6,182,212,0.20)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_36px_rgba(79,70,229,0.28)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
               >
                 {isSubmitting && (
@@ -409,7 +500,10 @@ export const LoginView:
                 )}
 
                 {isSubmitting
-                  ? 'Procesando...'
+                  ? activeTab ===
+                    'login'
+                    ? 'Iniciando sesión...'
+                    : 'Enviando solicitud...'
                   : activeTab ===
                       'login'
                     ? 'Ingresar a la plataforma'
@@ -429,7 +523,9 @@ interface InputFieldProps {
   value: string;
   placeholder: string;
   autoComplete: string;
-  onChange: (value: string) => void;
+  onChange: (
+    value: string,
+  ) => void;
 }
 
 const InputField:
@@ -455,8 +551,12 @@ const InputField:
           id={id}
           type={type}
           value={value}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
+          placeholder={
+            placeholder
+          }
+          autoComplete={
+            autoComplete
+          }
           required
           onChange={(event) =>
             onChange(
