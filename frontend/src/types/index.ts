@@ -15,6 +15,7 @@ export type ActiveView =
   | 'ADMIN_DASHBOARD'
   | 'USERS'
   | 'ENROLLMENTS'
+  | 'INFORMATION_REQUESTS'
   | 'REPORTS'
   | 'LOGIN';
 
@@ -119,6 +120,20 @@ export interface InscripcionResponse {
   estado: string;
 }
 
+export interface EstudianteInscritoResponse {
+  idInscripcion: number;
+  usuarioId: number;
+  nombres: string;
+  apellidos: string;
+  email: string;
+  telefono?: string;
+  programaId: number;
+  tituloPrograma: string;
+  fechaInscripcion: string;
+  estado: string;
+  porcentajeProgreso: number;
+}
+
 export interface UsuarioRequest {
   nombres: string;
   apellidos: string;
@@ -168,4 +183,26 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   sources?: string[];
+}
+
+
+export type SolicitudInformacionEstado =
+  | 'PENDIENTE'
+  | 'CONTACTADA'
+  | 'CERRADA';
+
+export interface SolicitudInformacionRequest {
+  nombreCompleto: string;
+  email: string;
+  telefono: string;
+}
+
+export interface SolicitudInformacionResponse {
+  idSolicitud: number;
+  nombreCompleto: string;
+  email: string;
+  telefono: string;
+  estado: SolicitudInformacionEstado;
+  fechaSolicitud: string;
+  fechaActualizacion: string;
 }
