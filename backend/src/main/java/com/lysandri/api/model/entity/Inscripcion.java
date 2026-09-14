@@ -8,7 +8,12 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "INSCRIPCIONES")
+@Table(
+    name = "INSCRIPCIONES",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_inscripcion_usuario_programa", columnNames = {"id_user", "id_programa"})
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

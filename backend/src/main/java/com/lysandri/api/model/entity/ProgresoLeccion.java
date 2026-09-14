@@ -6,7 +6,12 @@ import lombok.*;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "PROGRESO_LECCION")
+@Table(
+    name = "PROGRESO_LECCION",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_progreso_usuario_leccion", columnNames = {"id_user", "id_leccion"})
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

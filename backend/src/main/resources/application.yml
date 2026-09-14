@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/lysandri_db
-    username: lysandri_admin
-    password: lysandri_secret_2026
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:lysandri_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:lysandri_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:lysandri_app_secret_2026}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -21,6 +21,5 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A
-  expiration: 86400000 # 24 horas (en ms)
-
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A}
+  expiration: ${JWT_EXPIRATION_MS:86400000}

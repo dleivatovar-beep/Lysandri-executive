@@ -4,14 +4,29 @@ services:
     container_name: lysandri-postgres
     restart: always
     environment:
-      POSTGRES_DB: lysandri_db
-      POSTGRES_USER: lysandri_admin
-      POSTGRES_PASSWORD: lysandri_secret_2026
+      POSTGRES_DB: ${DB_NAME:-lysandri_db}
+      POSTGRES_USER: ${DB_ADMIN_USER:-lysandri_admin}
+      POSTGRES_PASSWORD: ${DB_ADMIN_PASSWORD:-lysandri_admin_secret_2026}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    command: >
+      postgres
+      -c log_connections=on
+      -c log_disconnections=on
+      -c log_statement=ddl
+      -c log_min_duration_statement=1000
+      -c log_line_prefix='%m [%p] %q%u@%d '
+      -c password_encryption=scram-sha-256
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - lysandri-net
 
@@ -20,7 +35,7 @@ services:
     container_name: lysandri-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     networks:
@@ -35,12 +50,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/lysandri_db
-      SPRING_DATASOURCE_USERNAME: lysandri_admin
-      SPRING_DATASOURCE_PASSWORD: lysandri_secret_2026
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-lysandri_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_APP_USER:-lysandri_app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_APP_PASSWORD:-lysandri_app_secret_2026}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - lysandri-net
 
@@ -51,4 +69,3 @@ networks:
 volumes:
   pgdata:
   redisdata:
-
