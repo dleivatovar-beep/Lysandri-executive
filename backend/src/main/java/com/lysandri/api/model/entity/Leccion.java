@@ -1,5 +1,6 @@
 package com.lysandri.api.model.entity;
 
+import com.lysandri.api.model.enums.TipoContenido;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,9 +18,21 @@ public class Leccion {
     @Column(name = "id_leccion")
     private Integer idLeccion;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    /*
+     * Se conserva la relación con Programa porque la columna
+     * id_programa ya existe y actualmente es obligatoria.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_programa", nullable = false)
     private Programa programa;
+
+    /*
+     * Es nullable para mantener compatibilidad con las
+     * lecciones antiguas que todavía no tienen módulo.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_modulo")
+    private Modulo modulo;
 
     @Column(name = "titulo_leccion", nullable = false, length = 200)
     private String tituloLeccion;
@@ -27,8 +40,9 @@ public class Leccion {
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tipo_contenido", length = 50)
-    private String tipoContenido;
+    private TipoContenido tipoContenido;
 
     @Column(name = "media_url", length = 255)
     private String mediaUrl;
