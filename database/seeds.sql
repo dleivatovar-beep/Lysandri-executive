@@ -1,7 +1,15 @@
--- Datos iniciales para pruebas locales
--- admin@lysandri.com / admin123
--- instructor@lysandri.com / instructor123
--- estudiante@lysandri.com / student123
+-- ============================================================================
+-- AVISO DE CIBERSEGURIDAD Y PROTECCIÓN DE DATOS (MOCK DATA / SYNTHETIC SEEDS)
+-- ============================================================================
+-- 1. Los registros contenidos en este archivo son 100% SINTÉTICOS / FICTICIOS.
+-- 2. Creados únicamente para pruebas funcionales y desarrollo en entorno local.
+-- 3. NO contienen Información Personal Identificable (PII) real de usuarios, clientes ni personal.
+-- 4. Las credenciales de prueba mostradas a continuación aplican únicamente a este dataset local
+--    y están ESTRICTAMENTE PROHIBIDAS en entornos de staging o producción:
+--    - admin@lysandri.com      / admin123      (Rol ADMIN)
+--    - instructor@lysandri.com / instructor123 (Rol INSTRUCTOR)
+--    - estudiante@lysandri.com / student123    (Rol ESTUDIANTE)
+-- ============================================================================
 
 INSERT INTO USUARIOS (nombres, apellidos, email, passw, telefono, rol) VALUES
 ('Admin', 'Lysandri', 'admin@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '999888777', 'ADMIN'),

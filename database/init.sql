@@ -1,13 +1,22 @@
 CREATE EXTENSION IF NOT EXISTS "vector";
 
--- Rol de aplicacion con permisos minimos
+-- ============================================================================
+-- CONTROL DE SEGURIDAD Y ACCESO DE BASE DE DATOS (RBAC - MENOR PRIVILEGIO)
+-- ============================================================================
+-- NOTA PARA AUDITORÍA / CIBERSEGURIDAD:
+-- 1. La credencial por defecto definida abajo aplica EXCLUSIVAMENTE para inicialización
+--    del contenedor local de desarrollo (Docker Compose).
+-- 2. En entornos de Staging/Producción, este usuario y su contraseña se aprovisionan
+--    dinámicamente mediante variables de entorno y Secret Manager (Vault/AWS Secrets).
+-- ============================================================================
 DO $$
+DECLARE
+    app_pwd text := coalesce(nullif(current_setting('lysandri.app_password', true), ''), 'lysandri_app_secret_2026');
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'lysandri_app') THEN
-        CREATE ROLE lysandri_app WITH LOGIN PASSWORD 'lysandri_app_secret_2026'
-            NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+        EXECUTE format('CREATE ROLE lysandri_app WITH LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', app_pwd);
     ELSE
-        ALTER ROLE lysandri_app WITH NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+        EXECUTE format('ALTER ROLE lysandri_app WITH PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', app_pwd);
     END IF;
 END
 $$;
@@ -30,7 +39,8 @@ CREATE TABLE IF NOT EXISTS INSTRUCTOR (
     id_instructor_dni VARCHAR(20) PRIMARY KEY,
     id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
     especialidad VARCHAR(150),
-    direccion_instructor VARCHAR(200)
+    direccion_instructor VARCHAR(200),
+    CONSTRAINT uq_instructor_id_user UNIQUE (id_user)
 );
 
 CREATE INDEX IF NOT EXISTS idx_instructor_id_user ON INSTRUCTOR(id_user);

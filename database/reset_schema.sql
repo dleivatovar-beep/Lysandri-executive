@@ -1,4 +1,10 @@
--- Reset de tablas en desarrollo local
+-- ============================================================================
+-- ADVERTENCIA DE SEGURIDAD: SCRIPT DESTRUCTIVO EXCLUSIVO PARA DESARROLLO LOCAL
+-- ============================================================================
+-- Este script ejecuta sentencias DROP TABLE ... CASCADE para resetear el esquema
+-- en entornos locales de prueba. 
+-- ESTÁ ESTRICTAMENTE PROHIBIDO su uso en entornos de Staging, QA o Producción.
+-- ============================================================================
 DROP TABLE IF EXISTS SOLICITUD_INFORMACION CASCADE;
 DROP TABLE IF EXISTS CHAT_MENSAJES CASCADE;
 DROP TABLE IF EXISTS PROGRESO_LECCION CASCADE;
