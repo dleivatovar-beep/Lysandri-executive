@@ -49,7 +49,26 @@ public class Programa {
     @Column(name = "metodologia", columnDefinition = "TEXT")
     private String metodologia;
 
-    @OneToMany(mappedBy = "programa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(
+            mappedBy = "programa",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("orden ASC")
+    @Builder.Default
+    private List<Bloque> bloques = new ArrayList<>();
+
+    /*
+     * Se conserva temporalmente para mantener compatibilidad
+     * con las lecciones que todavía pertenecen directamente
+     * al programa.
+     */
+    @OneToMany(
+            mappedBy = "programa",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("orden ASC")
     @Builder.Default
     private List<Leccion> lecciones = new ArrayList<>();
 }

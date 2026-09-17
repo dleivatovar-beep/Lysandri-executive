@@ -7,11 +7,36 @@ import java.util.List;
 
 public interface LeccionService {
 
-    LeccionResponse crearLeccion(Long programaId, LeccionRequest request);
+    /*
+     * Funciones antiguas por programa.
+     */
+    LeccionResponse crearLeccion(
+            Long programaId,
+            LeccionRequest request
+    );
 
-    List<LeccionResponse> listarPorPrograma(Long programaId);
+    List<LeccionResponse> listarPorPrograma(
+            Long programaId
+    );
 
-    LeccionResponse actualizarLeccion(Long leccionId, LeccionRequest request);
+    /*
+     * Nuevas funciones por módulo.
+     */
+    LeccionResponse crearLeccionEnModulo(
+            Integer moduloId,
+            LeccionRequest request
+    );
 
-    void eliminarLeccion(Long leccionId);
+    List<LeccionResponse> listarPorModulo(
+            Integer moduloId
+    );
+
+    LeccionResponse actualizarLeccion(
+            Long leccionId,
+            LeccionRequest request
+    );
+
+    void eliminarLeccion(
+            Long leccionId
+    );
 }

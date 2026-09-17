@@ -1,3 +1,4 @@
+
 package com.lysandri.api.security;
 
 import lombok.RequiredArgsConstructor;
@@ -28,30 +29,72 @@ public class SecurityConfig {
     private final AuthenticationProvider authenticationProvider;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
+
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors ->
+                        cors.configurationSource(corsConfigurationSource())
+                )
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir todas las peticiones preflight (OPTIONS)
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        )
+                        .permitAll()
+
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/error"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/programas/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes-informacion").permitAll()
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")
-                        .requestMatchers("/api/v1/profesor/**").hasAnyRole("INSTRUCTOR", "PROFESOR", "ADMIN", "ADMINISTRADOR")
-                        .requestMatchers("/api/v1/estudiante/**").hasRole("ESTUDIANTE")
-                        .anyRequest().authenticated()
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/programas/**"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/solicitudes-informacion"
+                        )
+                        .permitAll()
+
+                        .requestMatchers("/api/v1/admin/**")
+                        .hasAnyRole(
+                                "ADMIN",
+                                "ADMINISTRADOR"
+                        )
+
+                        .requestMatchers("/api/v1/profesor/**")
+                        .hasAnyRole(
+                                "INSTRUCTOR",
+                                "PROFESOR",
+                                "ADMIN",
+                                "ADMINISTRADOR"
+                        )
+
+                        .requestMatchers("/api/v1/estudiante/**")
+                        .hasRole("ESTUDIANTE")
+
+                        .anyRequest()
+                        .authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
@@ -59,12 +102,24 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+
         configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
                 "http://localhost:4173"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        configuration.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
+        ));
+
         configuration.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
@@ -72,12 +127,22 @@ public class SecurityConfig {
                 "X-Requested-With",
                 "Origin"
         ));
-        configuration.setExposedHeaders(List.of("Authorization"));
+
+        configuration.setExposedHeaders(
+                List.of("Authorization")
+        );
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
         return source;
     }
 }
