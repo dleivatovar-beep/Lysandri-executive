@@ -41,6 +41,7 @@ import { StudentCourses } from './pages/student/StudentCourses';
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 
 import { academicService } from './services/academicService';
+import { enviarMensajeChat } from './services/api';
 import { getApiErrorMessage } from './services/authService';
 
 import {
@@ -520,124 +521,122 @@ const MarketplacePage:
     );
   };
 
-const ChatPage:
-  React.FC = () => {
-    const [
-      messages,
-      setMessages,
-    ] = useState<
-      ChatMessage[]
-    >([]);
+const ChatPage: React.FC = () => {
+  const { user, token } = useAuth();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const [
-      isLoading,
-      setIsLoading,
-    ] = useState(false);
+  const handleSendMessage = async (content: string) => {
+    const normalizedContent = content.trim();
 
-    const handleSendMessage = (
-      content: string,
-    ) => {
-      const normalizedContent =
-        content.trim();
+    if (!normalizedContent || isLoading) {
+      return;
+    }
 
-      if (
-        !normalizedContent ||
-        isLoading
-      ) {
-        return;
-      }
+    const sessionId = 'session-chat';
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
-      const sessionId =
-        'local-session';
-
-      setMessages(
-        (
-          currentMessages,
-        ) => [
-          ...currentMessages,
-          {
-            id: `user-${Date.now()}`,
-            sessionId,
-            sender: 'USER',
-            content:
-              normalizedContent,
-
-            timestamp:
-              new Date()
-                .toLocaleTimeString(
-                  [],
-                  {
-                    hour:
-                      '2-digit',
-
-                    minute:
-                      '2-digit',
-                  },
-                ),
-          },
-        ],
-      );
-
-      setIsLoading(true);
-
-      window.setTimeout(() => {
-        setMessages(
-          (
-            currentMessages,
-          ) => [
-            ...currentMessages,
-            {
-              id: `assistant-${Date.now()}`,
-
-              sessionId,
-
-              sender:
-                'ASSISTANT',
-
-              content:
-                'El asistente de inteligencia artificial todavía no está conectado al backend.',
-
-              timestamp:
-                new Date()
-                  .toLocaleTimeString(
-                    [],
-                    {
-                      hour:
-                        '2-digit',
-
-                      minute:
-                        '2-digit',
-                    },
-                  ),
-
-              sources: [],
-            },
-          ],
-        );
-
-        setIsLoading(false);
-      }, 500);
+    // 1. Añadir el mensaje del usuario inmediatamente al estado local
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sessionId,
+      sender: 'USER',
+      content: normalizedContent,
+      timestamp,
     };
 
-    const handleClearHistory =
-      () => {
-        setMessages([]);
-        setIsLoading(false);
+    setMessages((currentMessages) => [...currentMessages, userMsg]);
+    setIsLoading(true);
+
+    if (!token) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          id: `assistant-${Date.now()}`,
+          sessionId,
+          sender: 'ASSISTANT',
+          content:
+            'No se detectó una sesión activa. Por favor, inicia sesión para interactuar con el asistente.',
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          isError: true,
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // 2. Petición HTTP POST a ${API_BASE_URL}/api/chat
+      const response = await enviarMensajeChat(normalizedContent, token);
+
+      const botReply =
+        response.respuesta ||
+        response.mensaje ||
+        response.response ||
+        response.content ||
+        'Consulta procesada exitosamente.';
+
+      const fuentes = response.fuentes || response.sources || [];
+
+      const assistantMsg: ChatMessage = {
+        id: `assistant-${Date.now()}`,
+        sessionId,
+        sender: 'ASSISTANT',
+        content: botReply,
+        fuentes,
+        sources: fuentes,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
       };
 
-    return (
-      <ChatContainer
-        messages={messages}
-        onSendMessage={
-          handleSendMessage
-        }
-        isLoading={isLoading}
-        onClearHistory={
-          handleClearHistory
-        }
-      />
-    );
+      setMessages((currentMessages) => [...currentMessages, assistantMsg]);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Ocurrió un error inesperado al procesar tu consulta con el asistente.';
+
+      const errorMsg: ChatMessage = {
+        id: `assistant-error-${Date.now()}`,
+        sessionId,
+        sender: 'ASSISTANT',
+        content: errorMessage,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isError: true,
+      };
+
+      setMessages((currentMessages) => [...currentMessages, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleClearHistory = () => {
+    setMessages([]);
+    setIsLoading(false);
+  };
+
+  return (
+    <ChatContainer
+      messages={messages}
+      onSendMessage={handleSendMessage}
+      isLoading={isLoading}
+      onClearHistory={handleClearHistory}
+      userName={user ? user.nombre : undefined}
+    />
+  );
+};
 
 const ProtectedLayout:
   React.FC<AppLayoutProps> = ({

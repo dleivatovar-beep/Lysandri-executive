@@ -8,6 +8,7 @@ interface ChatViewProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   onClearHistory: () => void;
+  userName?: string;
 }
 
 export const ChatView: React.FC<ChatViewProps> = ({
@@ -15,6 +16,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   onSendMessage,
   isLoading,
   onClearHistory,
+  userName,
 }) => {
   return (
     <div className="w-full flex flex-col justify-center">
@@ -23,6 +25,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         onSendMessage={onSendMessage}
         isLoading={isLoading}
         onClearHistory={onClearHistory}
+        userName={userName}
       />
     </div>
   );

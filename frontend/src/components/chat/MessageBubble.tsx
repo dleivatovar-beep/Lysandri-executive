@@ -4,26 +4,25 @@ import {
   Bot, 
   User, 
   FileText, 
-  ChevronDown, 
-  ChevronUp, 
   Copy, 
-  Check,
-  ShieldCheck,
-  ExternalLink,
-  Sparkles
+  Check, 
+  ShieldCheck 
 } from 'lucide-react';
 import { ChatMessage } from '../../types';
 import { FormattedText } from './FormattedText';
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  userName?: string;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const [sourcesOpen, setSourcesOpen] = useState<boolean>(true);
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName }) => {
   const [copied, setCopied] = useState<boolean>(false);
 
   const isUser = message.sender === 'USER';
+  const fuentesList = message.fuentes && message.fuentes.length > 0 
+    ? message.fuentes 
+    : message.sources || [];
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -35,7 +34,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     <div className={`flex w-full space-x-3.5 md:space-x-4 py-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {/* Assistant Avatar */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-900 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shadow-glow-cyan mt-1">
+        <div className={`flex-shrink-0 w-8 h-8 rounded-lg bg-slate-900 border ${
+          message.isError ? 'border-rose-500/40 text-rose-400' : 'border-cyan-500/30 text-cyan-400'
+        } flex items-center justify-center shadow-glow-cyan mt-1`}>
           <Bot className="w-4 h-4" />
         </div>
       )}
@@ -45,7 +46,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         {/* Header Metadata */}
         <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-mono px-1">
           <span className="font-semibold text-slate-300">
-            {isUser ? 'Alexander Vance (CTO)' : 'Lysandri RAG Assistant'}
+            {isUser ? (userName || 'Tú (Ejecutivo)') : 'Lysandri Executive'}
           </span>
           <span>•</span>
           <span>{message.timestamp}</span>
@@ -56,7 +57,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           className={`p-4 rounded-xl text-xs md:text-sm leading-relaxed ${
             isUser
               ? 'bg-gradient-to-r from-cyan-600/20 via-indigo-600/20 to-slate-900 text-slate-100 border border-cyan-500/30 shadow-md rounded-tr-none'
-              : 'bg-slate-900/90 text-slate-200 border border-slate-800/90 shadow-executive rounded-tl-none'
+              : message.isError
+                ? 'bg-rose-950/20 text-rose-200 border border-rose-500/40 shadow-executive rounded-tl-none'
+                : 'bg-slate-900/90 text-slate-200 border border-slate-800/90 shadow-executive rounded-tl-none'
           }`}
         >
           {isUser ? (
@@ -67,12 +70,33 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             <FormattedText content={message.content} />
           )}
 
+          {/* Badges de Fuentes y Referencias Técnicas al pie de la burbuja */}
+          {!isUser && fuentesList.length > 0 && (
+            <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-col space-y-1.5">
+              <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1.5">
+                <FileText className="w-3 h-3 text-cyan-400" />
+                <span>Fuentes y referencias técnicas:</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {fuentesList.map((fuente, idx) => (
+                  <span
+                    key={idx}
+                    className="text-xs bg-slate-800 text-slate-300 rounded px-2 py-0.5 border border-slate-700/60 inline-flex items-center gap-1.5 shadow-sm hover:border-cyan-500/40 transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    {fuente}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Footer Status & Copy Bar for Assistant */}
           {!isUser && (
             <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 font-mono">
               <span className="flex items-center space-x-1.5 text-emerald-400/90">
                 <ShieldCheck className="w-3 h-3" />
-                <span>RAG Verified Grounding</span>
+                <span>Respuesta Verificada</span>
               </span>
 
               <button
@@ -86,44 +110,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             </div>
           )}
         </div>
-
-        {/* RAG Sources Section */}
-        {!isUser && message.sources && message.sources.length > 0 && (
-          <div className="w-full mt-1 bg-slate-900/95 border border-slate-800 rounded-xl overflow-hidden text-xs shadow-sm">
-            <button
-              onClick={() => setSourcesOpen(!sourcesOpen)}
-              className="w-full px-3 py-2 bg-slate-950/80 flex items-center justify-between text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors"
-            >
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="font-semibold">{message.sources.length} Fuentes RAG Indexadas</span>
-              </div>
-              {sourcesOpen ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-            </button>
-
-            {sourcesOpen && (
-              <div className="p-2 space-y-1 bg-slate-950/40 border-t border-slate-800/80">
-                {message.sources.map((src, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800/70 text-slate-300 text-[11px] font-mono hover:border-cyan-500/40 transition-colors group"
-                  >
-                    <div className="flex items-center space-x-2 truncate">
-                      <FileText className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                      <span className="truncate group-hover:text-cyan-200">{src}</span>
-                    </div>
-                    <div className="flex items-center space-x-1.5 flex-shrink-0 ml-2">
-                      <span className="text-[9px] text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700/50">
-                        Document
-                      </span>
-                      <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-cyan-400" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* User Avatar */}

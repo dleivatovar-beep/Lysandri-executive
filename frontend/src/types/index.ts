@@ -183,6 +183,21 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   sources?: string[];
+  fuentes?: string[];
+  isError?: boolean;
+}
+
+export interface ChatRequest {
+  mensaje: string;
+}
+
+export interface ChatResponse {
+  respuesta?: string;
+  mensaje?: string;
+  response?: string;
+  content?: string;
+  fuentes?: string[];
+  sources?: string[];
 }
 
 

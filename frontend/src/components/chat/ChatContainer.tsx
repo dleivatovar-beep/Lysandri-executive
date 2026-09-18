@@ -1,6 +1,5 @@
-// src/components/chat/ChatContainer.tsx
 import React, { useEffect, useRef } from 'react';
-import { RefreshCw, Sparkles, Database, Trash2, Cpu } from 'lucide-react';
+import { Sparkles, Database, Trash2, Cpu, Bot } from 'lucide-react';
 import { ChatMessage } from '../../types';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
@@ -10,6 +9,7 @@ interface ChatContainerProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
   onClearHistory: () => void;
+  userName?: string;
 }
 
 export const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -17,6 +17,7 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
   onSendMessage,
   isLoading,
   onClearHistory,
+  userName,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -78,15 +79,26 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
           </div>
         ) : (
           messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
+            <MessageBubble key={msg.id} message={msg} userName={userName} />
           ))
         )}
 
-        {/* Loading Indicator */}
+        {/* Loading Indicator interactivo con animación de redacción */}
         {isLoading && (
-          <div className="flex items-center space-x-3 p-3.5 glass-panel rounded-xl w-fit border border-cyan-500/30 text-cyan-300 text-xs font-mono">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-            <span>Sintetizando respuesta RAG con contexto documental...</span>
+          <div className="flex items-center space-x-3.5 py-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-900 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shadow-glow-cyan animate-pulse">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div className="flex items-center space-x-3 px-4 py-3 bg-slate-900/90 rounded-xl rounded-tl-none border border-cyan-500/30 text-slate-300 text-xs shadow-executive">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce"></span>
+              </div>
+              <span className="font-mono text-cyan-300 font-medium">
+                Lysandri Executive está redactando...
+              </span>
+            </div>
           </div>
         )}
 

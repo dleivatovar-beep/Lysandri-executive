@@ -1,6 +1,5 @@
-// src/components/chat/ChatInput.tsx
 import React, { useState, useRef, KeyboardEvent } from 'react';
-import { Send, Sparkles, CornerDownLeft, Paperclip } from 'lucide-react';
+import { Send, Sparkles, CornerDownLeft, Paperclip, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -52,11 +51,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         {PROMPT_SUGGESTIONS.map((prompt, idx) => (
           <button
             key={idx}
+            disabled={isLoading}
             onClick={() => {
+              if (isLoading) return;
               setText(prompt);
               if (textareaRef.current) textareaRef.current.focus();
             }}
-            className="text-[10px] font-medium px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 whitespace-nowrap transition-all"
+            className={`text-[10px] font-medium px-2.5 py-1 rounded-lg border whitespace-nowrap transition-all ${
+              isLoading
+                ? 'bg-slate-900/50 border-slate-800/50 text-slate-600 cursor-not-allowed'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30'
+            }`}
           >
             {prompt}
           </button>
@@ -64,10 +69,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
       </div>
 
       {/* Input Box */}
-      <div className="relative flex items-end w-full p-2 rounded-xl bg-slate-900 border border-slate-800 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/20 transition-all">
+      <div className={`relative flex items-end w-full p-2 rounded-xl bg-slate-900 border transition-all ${
+        isLoading 
+          ? 'border-slate-800/60 opacity-80' 
+          : 'border-slate-800 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/20'
+      }`}>
         {/* Attachment icon */}
         <button 
-          className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+          disabled={isLoading}
+          className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           title="Adjuntar documento o arquitectura (.pdf, .json, .tf)"
         >
           <Paperclip className="w-4 h-4" />
@@ -79,10 +89,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           value={text}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Consulte al Asistente IA RAG sobre arquitectura, costos FinOps o activos tecnológicos..."
+          placeholder={
+            isLoading
+              ? "Lysandri Executive está redactando una respuesta..."
+              : "Consulte al Asistente IA RAG sobre arquitectura, costos FinOps o activos tecnológicos..."
+          }
           rows={1}
           disabled={isLoading}
-          className="w-full mx-2 py-2 bg-transparent text-slate-100 placeholder-slate-500 text-xs md:text-sm focus:outline-none resize-none max-h-36 font-sans leading-relaxed"
+          className="w-full mx-2 py-2 bg-transparent text-slate-100 placeholder-slate-500 text-xs md:text-sm focus:outline-none resize-none max-h-36 font-sans leading-relaxed disabled:cursor-not-allowed disabled:placeholder-slate-600"
         />
 
         {/* Send Button & Keyboard Hint */}
@@ -97,12 +111,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
             disabled={!text.trim() || isLoading}
             className={`p-2.5 rounded-lg transition-all duration-200 flex items-center justify-center ${
               text.trim() && !isLoading
-                ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 shadow-glow-cyan font-bold active:scale-95'
+                ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-slate-950 shadow-glow-cyan font-bold active:scale-95 cursor-pointer'
                 : 'bg-slate-800 text-slate-600 cursor-not-allowed'
             }`}
-            title="Enviar mensaje"
+            title={isLoading ? 'Procesando respuesta...' : 'Enviar mensaje'}
+            aria-label="Enviar mensaje"
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </button>
         </div>
       </div>

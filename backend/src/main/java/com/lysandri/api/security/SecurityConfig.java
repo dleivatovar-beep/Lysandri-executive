@@ -87,6 +87,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/estudiante/**")
                         .hasRole("ESTUDIANTE")
 
+                        .requestMatchers("/api/chat/**")
+                        .authenticated()
+
                         .anyRequest()
                         .authenticated()
                 )

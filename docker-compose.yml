@@ -64,6 +64,31 @@ services:
     networks:
       - lysandri-net
 
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: lysandri-ai-service
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-lysandri_db}
+      DB_USER: ${DB_ADMIN_USER:-lysandri_admin}
+      DB_PASSWORD: ${DB_ADMIN_PASSWORD:-lysandri_admin_secret_2026}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+    volumes:
+      - ./ai-service/data/docs:/app/data/docs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lysandri-net
+
 networks:
   lysandri-net:
     driver: bridge

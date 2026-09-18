@@ -31,6 +31,9 @@ class LeccionServiceTest {
     @Mock
     private ProgramaRepository programaRepository;
 
+    @Mock
+    private AccesoAcademicoService accesoAcademicoService;
+
     @InjectMocks
     private LeccionServiceImpl leccionService;
 
@@ -66,6 +69,7 @@ class LeccionServiceTest {
                 .build();
 
         when(programaRepository.findById(1)).thenReturn(Optional.of(programa));
+        doNothing().when(accesoAcademicoService).validarGestionPrograma(1);
         when(leccionRepository.save(any(Leccion.class))).thenReturn(leccion);
 
         LeccionResponse response = leccionService.crearLeccion(1L, request);
@@ -75,6 +79,7 @@ class LeccionServiceTest {
         assertEquals("Introducción", response.getTitulo());
         assertEquals(30, response.getDuracionMinutos());
         verify(programaRepository).findById(1);
+        verify(accesoAcademicoService).validarGestionPrograma(1);
         verify(leccionRepository).save(any(Leccion.class));
     }
 
@@ -88,7 +93,7 @@ class LeccionServiceTest {
 
     @Test
     void listarPorPrograma_Exito() {
-        when(programaRepository.existsById(1)).thenReturn(true);
+        when(programaRepository.findById(1)).thenReturn(Optional.of(programa));
         when(leccionRepository.findByProgramaIdOrderByOrdenAsc(1)).thenReturn(List.of(leccion));
 
         List<LeccionResponse> lista = leccionService.listarPorPrograma(1L);
@@ -99,10 +104,12 @@ class LeccionServiceTest {
 
     @Test
     void eliminarLeccion_Exito() {
-        when(leccionRepository.existsById(10)).thenReturn(true);
-        doNothing().when(leccionRepository).deleteById(10);
+        when(leccionRepository.findById(10)).thenReturn(Optional.of(leccion));
+        doNothing().when(accesoAcademicoService).validarGestionPrograma(1);
+        doNothing().when(leccionRepository).delete(leccion);
 
         assertDoesNotThrow(() -> leccionService.eliminarLeccion(10L));
-        verify(leccionRepository).deleteById(10);
+        verify(leccionRepository).findById(10);
+        verify(leccionRepository).delete(leccion);
     }
 }
