@@ -1,13 +1,8 @@
 CREATE EXTENSION IF NOT EXISTS "vector";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================================
 -- CONTROL DE SEGURIDAD Y ACCESO DE BASE DE DATOS (RBAC - MENOR PRIVILEGIO)
--- ============================================================================
--- NOTA PARA AUDITORÍA / CIBERSEGURIDAD:
--- 1. La credencial por defecto definida abajo aplica EXCLUSIVAMENTE para inicialización
---    del contenedor local de desarrollo (Docker Compose).
--- 2. En entornos de Staging/Producción, este usuario y su contraseña se aprovisionan
---    dinámicamente mediante variables de entorno y Secret Manager (Vault/AWS Secrets).
 -- ============================================================================
 DO $$
 DECLARE
@@ -24,140 +19,160 @@ $$;
 GRANT CONNECT ON DATABASE lysandri_db TO lysandri_app;
 GRANT USAGE ON SCHEMA public TO lysandri_app;
 
--- Tablas
-CREATE TABLE IF NOT EXISTS USUARIOS (
-    id_user SERIAL PRIMARY KEY,
+-- ============================================================================
+-- ESQUEMA TRANSACCIONAL: TIENDA DE CONOCIMIENTO EJECUTIVO
+-- ============================================================================
+
+-- Tabla de Usuarios
+CREATE TABLE IF NOT EXISTS USUARIO (
+    id_user BIGSERIAL PRIMARY KEY,
+    moodle_user_id BIGINT UNIQUE,
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     passw VARCHAR(255) NOT NULL,
-    telefono VARCHAR(20),
-    rol VARCHAR(20) NOT NULL CHECK (rol IN ('ESTUDIANTE', 'INSTRUCTOR', 'ADMIN'))
+    telefono VARCHAR(25),
+    rol VARCHAR(20) NOT NULL DEFAULT 'CLIENTE' CHECK (rol IN ('CLIENTE', 'ADMIN')),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS INSTRUCTOR (
-    id_instructor_dni VARCHAR(20) PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    especialidad VARCHAR(150),
-    direccion_instructor VARCHAR(200),
-    CONSTRAINT uq_instructor_id_user UNIQUE (id_user)
-);
+CREATE INDEX IF NOT EXISTS idx_usuario_email ON USUARIO(email);
+CREATE INDEX IF NOT EXISTS idx_usuario_moodle_id ON USUARIO(moodle_user_id);
 
-CREATE INDEX IF NOT EXISTS idx_instructor_id_user ON INSTRUCTOR(id_user);
-
+-- Tabla de Programas Ejecutivos (Cursos sincronizados con Moodle)
 CREATE TABLE IF NOT EXISTS PROGRAMA (
-    id_programa SERIAL PRIMARY KEY,
-    id_instructor_dni VARCHAR(20) NOT NULL REFERENCES INSTRUCTOR(id_instructor_dni) ON DELETE CASCADE,
-    titulo_programa VARCHAR(200) NOT NULL,
-    duracion_programa VARCHAR(50),
-    tipo_programa VARCHAR(50),
-    level VARCHAR(20),
-    fecha_inicio_global DATE,
-    fecha_final_global DATE,
-    requisitos TEXT,
-    metodologia TEXT
+    id_programa BIGSERIAL PRIMARY KEY,
+    moodle_course_id BIGINT NOT NULL UNIQUE,
+    titulo VARCHAR(200) NOT NULL,
+    slug VARCHAR(220) NOT NULL UNIQUE,
+    subtitulo VARCHAR(300),
+    descripcion_corta TEXT,
+    descripcion_detallada TEXT,
+    precio DECIMAL(10, 2) NOT NULL CHECK (precio >= 0),
+    moneda VARCHAR(3) NOT NULL DEFAULT 'USD',
+    imagen_portada_url VARCHAR(500),
+    syllabus_url VARCHAR(500),
+    instructor_nombre VARCHAR(150),
+    instructor_bio TEXT,
+    nivel VARCHAR(50) DEFAULT 'EJECUTIVO',
+    duracion_horas INT DEFAULT 0,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_programa_id_instructor_dni ON PROGRAMA(id_instructor_dni);
+CREATE INDEX IF NOT EXISTS idx_programa_moodle_course ON PROGRAMA(moodle_course_id);
+CREATE INDEX IF NOT EXISTS idx_programa_slug ON PROGRAMA(slug);
 
-CREATE TABLE IF NOT EXISTS LECCION (
-    id_leccion SERIAL PRIMARY KEY,
-    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
-    titulo_leccion VARCHAR(200) NOT NULL,
-    descripcion TEXT,
-    tipo_contenido VARCHAR(50),
-    media_url VARCHAR(255),
-    duracion_leccion VARCHAR(20),
-    orden INT DEFAULT 1
-);
-
-CREATE INDEX IF NOT EXISTS idx_leccion_orden ON LECCION(id_programa, orden);
-
+-- Tabla de Órdenes de Compra
 CREATE TABLE IF NOT EXISTS ORDENES (
-    id_ordenes SERIAL PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    fecha_orden TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    estado_order VARCHAR(30),
-    total DECIMAL(10, 2) NOT NULL,
-    metodo_pago VARCHAR(50),
-    direccion_envio VARCHAR(255)
+    id_orden BIGSERIAL PRIMARY KEY,
+    id_user BIGINT NOT NULL REFERENCES USUARIO(id_user) ON DELETE RESTRICT,
+    codigo_orden VARCHAR(36) NOT NULL UNIQUE,
+    fecha_orden TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado_orden VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado_orden IN ('PENDIENTE', 'PAGADO', 'FALLIDO', 'REEMBOLSADO')),
+    total DECIMAL(10, 2) NOT NULL CHECK (total >= 0),
+    moneda VARCHAR(3) NOT NULL DEFAULT 'USD',
+    metodo_pago VARCHAR(50) NOT NULL DEFAULT 'STRIPE',
+    stripe_session_id VARCHAR(255) UNIQUE,
+    stripe_payment_intent_id VARCHAR(255) UNIQUE,
+    moodle_matricula_sincronizada BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_pago TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_ordenes_id_user ON ORDENES(id_user);
+CREATE INDEX IF NOT EXISTS idx_ordenes_user ON ORDENES(id_user);
+CREATE INDEX IF NOT EXISTS idx_ordenes_stripe_session ON ORDENES(stripe_session_id);
 
+-- Detalle de Órdenes
 CREATE TABLE IF NOT EXISTS DETALLE_ORDENES (
-    id_detalle_ordenes SERIAL PRIMARY KEY,
-    id_ordenes INT NOT NULL REFERENCES ORDENES(id_ordenes) ON DELETE CASCADE,
-    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE RESTRICT,
-    precio_unitario DECIMAL(10, 2) NOT NULL,
-    cantidad INT NOT NULL,
-    subtotal DECIMAL(10, 2) NOT NULL
+    id_detalle BIGSERIAL PRIMARY KEY,
+    id_orden BIGINT NOT NULL REFERENCES ORDENES(id_orden) ON DELETE CASCADE,
+    id_programa BIGINT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE RESTRICT,
+    precio_unitario DECIMAL(10, 2) NOT NULL CHECK (precio_unitario >= 0),
+    cantidad INT NOT NULL DEFAULT 1 CHECK (cantidad > 0),
+    subtotal DECIMAL(10, 2) NOT NULL CHECK (subtotal >= 0),
+    moodle_matriculado BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT uq_orden_programa UNIQUE (id_orden, id_programa)
 );
 
-CREATE INDEX IF NOT EXISTS idx_detalle_ordenes_id_ordenes ON DETALLE_ORDENES(id_ordenes);
-CREATE INDEX IF NOT EXISTS idx_detalle_ordenes_id_programa ON DETALLE_ORDENES(id_programa);
+CREATE INDEX IF NOT EXISTS idx_detalle_orden ON DETALLE_ORDENES(id_orden);
 
-CREATE TABLE IF NOT EXISTS SUSCRIPCIONES (
-    id_suscripcion SERIAL PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    tipo_plan VARCHAR(50),
-    fecha_inicio DATE NOT NULL,
-    fecha_finalizacion DATE,
-    estado VARCHAR(30)
-);
-
-CREATE INDEX IF NOT EXISTS idx_suscripciones_id_user ON SUSCRIPCIONES(id_user);
-
-CREATE TABLE IF NOT EXISTS INSCRIPCIONES (
-    id_inscripcion SERIAL PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    id_programa INT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
-    fecha_inscripcion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    fecha_limite_acceso DATE,
-    estatus VARCHAR(30),
-    porcentaje_progreso DECIMAL(5, 2) DEFAULT 0.00,
-    CONSTRAINT uq_inscripcion_usuario_programa UNIQUE (id_user, id_programa)
-);
-
-CREATE INDEX IF NOT EXISTS idx_inscripciones_id_programa ON INSCRIPCIONES(id_programa);
-
-CREATE TABLE IF NOT EXISTS PROGRESO_LECCION (
-    id_progreso SERIAL PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    id_leccion INT NOT NULL REFERENCES LECCION(id_leccion) ON DELETE CASCADE,
-    completado BOOLEAN DEFAULT FALSE,
-    fecha_completado TIMESTAMPTZ,
-    CONSTRAINT uq_progreso_usuario_leccion UNIQUE (id_user, id_leccion)
-);
-
-CREATE INDEX IF NOT EXISTS idx_progreso_leccion_id_leccion ON PROGRESO_LECCION(id_leccion);
-
-CREATE TABLE IF NOT EXISTS CHAT_MENSAJES (
-    id_mensaje SERIAL PRIMARY KEY,
-    id_user INT NOT NULL REFERENCES USUARIOS(id_user) ON DELETE CASCADE,
-    pregunta TEXT NOT NULL,
-    respuesta_ia TEXT NOT NULL,
-    fecha TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_chat_mensajes_id_user ON CHAT_MENSAJES(id_user);
-
+-- Solicitudes de Información B2B / Corporativo
 CREATE TABLE IF NOT EXISTS SOLICITUD_INFORMACION (
-    id_solicitud SERIAL PRIMARY KEY,
+    id_solicitud BIGSERIAL PRIMARY KEY,
+    id_programa BIGINT REFERENCES PROGRAMA(id_programa) ON DELETE SET NULL,
     nombre_completo VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL,
-    telefono VARCHAR(20),
-    id_programa INT REFERENCES PROGRAMA(id_programa) ON DELETE SET NULL,
+    telefono VARCHAR(25),
+    empresa VARCHAR(150),
+    cargo VARCHAR(100),
     mensaje TEXT,
-    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE',
-    fecha_creacion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    fecha_atencion TIMESTAMPTZ,
-    notas_admin TEXT
+    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'CONTACTADO', 'DESCARTADO')),
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_solicitud_email ON SOLICITUD_INFORMACION(email);
 CREATE INDEX IF NOT EXISTS idx_solicitud_estado ON SOLICITUD_INFORMACION(estado);
-CREATE INDEX IF NOT EXISTS idx_solicitud_id_programa ON SOLICITUD_INFORMACION(id_programa);
+
+-- ============================================================================
+-- ESQUEMA DE ASISTENCIA VIRTUAL E INTELIGENCIA RAG (pgvector)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS DOCUMENTO (
+    id_documento BIGSERIAL PRIMARY KEY,
+    id_programa BIGINT REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
+    titulo VARCHAR(250) NOT NULL,
+    tipo_documento VARCHAR(50) NOT NULL CHECK (tipo_documento IN ('SYLLABUS', 'BROCHURE', 'POLITICA_ACADEMICA', 'GUIA')),
+    url_archivo VARCHAR(500),
+    checksum_sha256 VARCHAR(64),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_subida TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS DOCUMENTO_CHUNK (
+    id_chunk BIGSERIAL PRIMARY KEY,
+    id_documento BIGINT NOT NULL REFERENCES DOCUMENTO(id_documento) ON DELETE CASCADE,
+    id_programa BIGINT REFERENCES PROGRAMA(id_programa) ON DELETE CASCADE,
+    numero_pagina INT,
+    contenido TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    embedding vector(1536) NOT NULL,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_documento_chunk_hnsw_cosine 
+ON DOCUMENTO_CHUNK USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+
+CREATE INDEX IF NOT EXISTS idx_chunk_programa ON DOCUMENTO_CHUNK(id_programa);
+
+CREATE TABLE IF NOT EXISTS HISTORIAL_CONSULTA (
+    id_historial BIGSERIAL PRIMARY KEY,
+    id_user BIGINT REFERENCES USUARIO(id_user) ON DELETE SET NULL,
+    id_programa BIGINT REFERENCES PROGRAMA(id_programa) ON DELETE SET NULL,
+    sesion_id VARCHAR(64) NOT NULL,
+    pregunta TEXT NOT NULL,
+    respuesta_ia TEXT NOT NULL,
+    chunks_referenciados JSONB,
+    tokens_prompt INT DEFAULT 0,
+    tokens_completion INT DEFAULT 0,
+    tiempo_respuesta_ms INT DEFAULT 0,
+    calificacion_usuario SMALLINT CHECK (calificacion_usuario BETWEEN 1 AND 5),
+    fecha_consulta TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_historial_sesion ON HISTORIAL_CONSULTA(sesion_id);
+
+-- Vista de compatibilidad para consultas directas del Chatbot
+CREATE OR REPLACE VIEW CHAT_MENSAJES AS
+SELECT 
+    id_historial AS id_mensaje,
+    id_user,
+    pregunta,
+    respuesta_ia,
+    fecha_consulta AS fecha
+FROM HISTORIAL_CONSULTA;
 
 -- Permisos
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO lysandri_app;

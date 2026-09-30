@@ -209,7 +209,11 @@ export type SolicitudInformacionEstado =
 export interface SolicitudInformacionRequest {
   nombreCompleto: string;
   email: string;
-  telefono: string;
+  telefono?: string;
+  empresa?: string;
+  cargo?: string;
+  mensaje?: string;
+  idPrograma?: number;
 }
 
 export interface SolicitudInformacionResponse {

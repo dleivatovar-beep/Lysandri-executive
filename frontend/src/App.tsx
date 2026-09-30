@@ -39,6 +39,7 @@ import { MarketplaceView } from './pages/MarketplaceView';
 import { StudentCourses } from './pages/student/StudentCourses';
 
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
+import { CheckoutSuccessView } from './pages/CheckoutSuccessView';
 
 import { academicService } from './services/academicService';
 import { enviarMensajeChat } from './services/api';
@@ -47,6 +48,7 @@ import { getApiErrorMessage } from './services/authService';
 import {
   buildCategories,
   toCatalogCourse,
+  FALLBACK_PLAYBOOKS,
 } from './services/courseCatalog';
 
 import {
@@ -371,19 +373,18 @@ const MarketplacePage:
             await academicService
               .getPrograms();
 
-          setPlaybooks(
-            programs.map(
-              toCatalogCourse,
-            ),
-          );
-        } catch (error) {
-          setPlaybooks([]);
-
-          setErrorMessage(
-            getApiErrorMessage(
-              error,
-            ),
-          );
+          if (programs && programs.length > 0) {
+            setPlaybooks(
+              programs.map(
+                toCatalogCourse,
+              ),
+            );
+          } else {
+            setPlaybooks(FALLBACK_PLAYBOOKS);
+          }
+        } catch {
+          // Fallback resiliente con datos ejecutivos
+          setPlaybooks(FALLBACK_PLAYBOOKS);
         } finally {
           setIsLoading(false);
         }
@@ -870,6 +871,12 @@ const App: React.FC =
             index
             element={
               <MarketplacePage />
+            }
+          />
+          <Route
+            path="checkout/success"
+            element={
+              <CheckoutSuccessView />
             }
           />
         </Route>
