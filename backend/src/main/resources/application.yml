@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/lysandri_db
-    username: lysandri_admin
-    password: lysandri_secret_2026
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:lysandri_db}}
+    username: ${SPRING_DATASOURCE_USERNAME:lysandri_app}
+    password: ${SPRING_DATASOURCE_PASSWORD:lysandri_app_secret_2026}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -17,4 +17,28 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 0
+    out-of-order: true
+    validate-on-migrate: false
     locations: classpath:db/migration
+    user: ${SPRING_FLYWAY_USER:lysandri_admin}
+    password: ${SPRING_FLYWAY_PASSWORD:lysandri_admin_secret_2026}
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A}
+  expiration: ${JWT_EXPIRATION_MS:86400000}
+
+moodle:
+  url: ${MOODLE_URL:http://localhost:8080}
+  token: ${MOODLE_TOKEN:dev_moodle_wstoken_lysandri}
+
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_mock_lysandri_key}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_mock_lysandri_secret}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/checkout/cancel}
+
+llm:
+  provider: ${LLM_PROVIDER:openai}
+  api-key: ${OPENAI_API_KEY:mock-key}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
