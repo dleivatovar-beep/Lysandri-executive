@@ -1,26 +1,17 @@
 package com.lysandri.application.service;
 
-import com.lysandri.domain.model.DetalleOrden;
-import com.lysandri.domain.model.EstadoOrden;
-import com.lysandri.domain.model.Orden;
-import com.lysandri.domain.model.Programa;
-import com.lysandri.domain.model.Usuario;
+import com.lysandri.domain.model.*;
 import com.lysandri.domain.ports.in.BuyCourseUseCase;
-import com.lysandri.domain.ports.out.LmsClientPort;
-import com.lysandri.domain.ports.out.OrderRepositoryPort;
-import com.lysandri.domain.ports.out.PaymentPort;
-import com.lysandri.domain.ports.out.ProgramRepositoryPort;
-import com.lysandri.domain.ports.out.UserRepositoryPort;
+import com.lysandri.domain.ports.out.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -32,17 +23,47 @@ public class BuyCourseService implements BuyCourseUseCase {
     private final ProgramRepositoryPort programRepository;
     private final PaymentPort paymentPort;
     private final LmsClientPort lmsClientPort;
+    private final BillingPort billingPort;
+    private final NotificationPort notificationPort;
 
     @Override
     @Transactional
     public CheckoutSessionResponse iniciarCompra(CreateOrderCommand command) {
-        log.info("Iniciando compra para usuario ID: {} con programas: {}", command.idUsuario(), command.programaIds());
-
-        Usuario usuario = userRepository.buscarPorId(command.idUsuario())
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + command.idUsuario()));
+        log.info("Iniciando checkout con programas: {}", command.programaIds());
 
         if (command.programaIds() == null || command.programaIds().isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un programa para comprar");
+        }
+
+        Usuario usuario;
+        if (command.idUsuario() != null) {
+            usuario = userRepository.buscarPorId(command.idUsuario())
+                    .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + command.idUsuario()));
+        } else if (command.guestEmail() != null && !command.guestEmail().isBlank()) {
+            // Flujo de compra como invitado (Guest checkout)
+            String email = command.guestEmail().trim().toLowerCase();
+            usuario = userRepository.buscarPorEmail(email).orElseGet(() -> {
+                String fullName = command.guestNombre() != null && !command.guestNombre().isBlank()
+                        ? command.guestNombre().trim()
+                        : "Cliente Invitado";
+                String[] parts = fullName.split(" ", 2);
+                String nombres = parts[0];
+                String apellidos = parts.length > 1 ? parts[1] : "Executive";
+
+                Usuario nuevo = Usuario.builder()
+                        .nombres(nombres)
+                        .apellidos(apellidos)
+                        .email(email)
+                        .passw("$2a$10$7EqJtq98hPqEX7fNZaFWoO.83.R3yR/Xh7b.d8Zt.m6qDk6H/H9G6") // Password temporal cifrada
+                        .rol(RolUsuario.CLIENTE)
+                        .activo(true)
+                        .fechaCreacion(OffsetDateTime.now())
+                        .fechaActualizacion(OffsetDateTime.now())
+                        .build();
+                return userRepository.guardar(nuevo);
+            });
+        } else {
+            throw new IllegalArgumentException("Debe proporcionar un ID de usuario o un correo electrónico para invitado");
         }
 
         List<Programa> programas = programRepository.buscarPorIds(command.programaIds());
@@ -68,6 +89,14 @@ public class BuyCourseService implements BuyCourseUseCase {
         }
 
         String codigoOrden = UUID.randomUUID().toString();
+        String tipoComp = (command.tipoComprobante() != null && !command.tipoComprobante().isBlank())
+                ? command.tipoComprobante().toUpperCase()
+                : "BOLETA";
+        String docCliente = command.numeroDocumento() != null ? command.numeroDocumento().trim() : null;
+        String razonSocial = (command.nombreFacturacion() != null && !command.nombreFacturacion().isBlank())
+                ? command.nombreFacturacion().trim()
+                : usuario.getNombreCompleto();
+
         Orden orden = Orden.builder()
                 .idUser(usuario.getIdUser())
                 .usuario(usuario)
@@ -75,8 +104,11 @@ public class BuyCourseService implements BuyCourseUseCase {
                 .fechaOrden(OffsetDateTime.now())
                 .estadoOrden(EstadoOrden.PENDIENTE)
                 .total(total)
-                .moneda("USD")
+                .moneda("PEN")
                 .metodoPago("STRIPE")
+                .tipoComprobanteSolicitado(tipoComp)
+                .numeroDocumentoCliente(docCliente)
+                .nombreFacturacion(razonSocial)
                 .moodleMatriculaSincronizada(false)
                 .items(items)
                 .build();
@@ -87,7 +119,7 @@ public class BuyCourseService implements BuyCourseUseCase {
         PaymentPort.PaymentSessionResult sessionResult = paymentPort.crearSesionPago(
                 orden,
                 usuario.getEmail(),
-                usuario.getNombreCompleto()
+                razonSocial
         );
 
         orden.setStripeSessionId(sessionResult.sessionId());
@@ -105,62 +137,98 @@ public class BuyCourseService implements BuyCourseUseCase {
 
     @Override
     @Transactional
-    public Orden confirmarPagoYMatricular(String stripeSessionId) {
-        log.info("Confirmando pago y procesando matrículas para sesión Stripe: {}", stripeSessionId);
+    public Orden procesarPagoExitoso(String stripeSessionId) {
+        log.info("Procesando pago exitoso y aprovisionamiento para sesión Stripe: {}", stripeSessionId);
 
         Orden orden = orderRepository.buscarPorStripeSessionId(stripeSessionId)
                 .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada para la sesión de pago: " + stripeSessionId));
 
         if (orden.getEstadoOrden() == EstadoOrden.PAGADO && orden.isMoodleMatriculaSincronizada()) {
-            log.info("La orden {} ya fue procesada y matriculada previamente.", orden.getCodigoOrden());
+            log.info("La orden {} ya fue procesada y matriculada previamente. Idempotencia garantizada.", orden.getCodigoOrden());
             return orden;
         }
 
         Usuario usuario = userRepository.buscarPorId(orden.getIdUser())
                 .orElseThrow(() -> new IllegalStateException("Usuario asociado a la orden no existe"));
 
-        // 1. Asegurar usuario en Moodle LMS
+        String email = usuario.getEmail();
+        String nombre = (orden.getNombreFacturacion() != null && !orden.getNombreFacturacion().isBlank())
+                ? orden.getNombreFacturacion()
+                : usuario.getNombreCompleto();
+        String docCliente = orden.getNumeroDocumentoCliente();
+
+        log.info("Datos comprador para emisión y accesos - Nombre: {}, Email: {}, Documento: {}", nombre, email, docCliente);
+
+        // Generar clave temporal para el aula virtual
+        String moodlePassword = generarPasswordSegura10Chars();
+
+        // Crear o asociar usuario en Moodle
         Long moodleUserId = usuario.getMoodleUserId();
         if (moodleUserId == null) {
-            moodleUserId = lmsClientPort.buscarUsuarioPorEmail(usuario.getEmail())
-                    .orElseGet(() -> {
-                        String defaultPassword = "Lysandri#" + UUID.randomUUID().toString().substring(0, 8);
-                        String username = usuario.getEmail().toLowerCase().replaceAll("[^a-z0-9._-]", "");
-                        return lmsClientPort.crearUsuario(
-                                username,
-                                defaultPassword,
-                                usuario.getNombres(),
-                                usuario.getApellidos(),
-                                usuario.getEmail()
-                        );
-                    });
-
-            usuario.setMoodleUserId(moodleUserId);
-            userRepository.guardar(usuario);
-            log.info("ID de Moodle {} sincronizado para usuario {}", moodleUserId, usuario.getEmail());
+            moodleUserId = lmsClientPort.buscarUsuarioPorEmail(email).orElse(null);
         }
 
-        // 2. Matricular en cada curso de Moodle correspondiente
+        if (moodleUserId == null) {
+            String username = email.toLowerCase().replaceAll("[^a-z0-9._-]", "");
+            moodleUserId = lmsClientPort.crearUsuario(
+                    username,
+                    moodlePassword,
+                    usuario.getNombres(),
+                    usuario.getApellidos(),
+                    email
+            );
+            usuario.setMoodleUserId(moodleUserId);
+            userRepository.guardar(usuario);
+            log.info("Usuario creado en Moodle con ID: {}", moodleUserId);
+        } else {
+            log.info("Usuario ya existente en Moodle con ID: {}", moodleUserId);
+        }
+
+        // Matricular al estudiante en los cursos adquiridos
+        StringBuilder cursoTitulos = new StringBuilder();
         for (DetalleOrden detalle : orden.getItems()) {
             Programa programa = detalle.getPrograma() != null ? detalle.getPrograma() :
                     programRepository.buscarPorId(detalle.getIdPrograma()).orElse(null);
 
-            if (programa != null && programa.getMoodleCourseId() != null) {
-                try {
-                    lmsClientPort.matricularUsuarioEnCurso(moodleUserId, programa.getMoodleCourseId(), 5); // Rol 5 = Student
-                    detalle.setMoodleMatriculado(true);
-                    log.info("Usuario {} matriculado exitosamente en curso Moodle {}", moodleUserId, programa.getMoodleCourseId());
-                } catch (Exception e) {
-                    log.error("Fallo al matricular en curso Moodle {}: {}", programa.getMoodleCourseId(), e.getMessage());
+            if (programa != null) {
+                if (cursoTitulos.length() > 0) cursoTitulos.append(", ");
+                cursoTitulos.append(programa.getTitulo());
+
+                if (programa.getMoodleCourseId() != null) {
+                    try {
+                        lmsClientPort.matricularUsuarioEnCurso(moodleUserId, programa.getMoodleCourseId(), 5);
+                        detalle.setMoodleMatriculado(true);
+                        log.info("Usuario {} matriculado en curso Moodle {}", moodleUserId, programa.getMoodleCourseId());
+                    } catch (Exception e) {
+                        log.error("Fallo al matricular en curso Moodle {}: {}", programa.getMoodleCourseId(), e.getMessage());
+                    }
                 }
             }
         }
 
+        // Emisión de comprobante de pago SUNAT
+        ComprobantePago comprobante = billingPort.emitirComprobante(orden);
+
+        // Actualizar estado de orden
         orden.setEstadoOrden(EstadoOrden.PAGADO);
         orden.setMoodleMatriculaSincronizada(true);
         orden.setFechaPago(OffsetDateTime.now());
+        Orden ordenGuardada = orderRepository.guardar(orden);
 
-        return orderRepository.guardar(orden);
+        // Enviar accesos y factura por correo
+        String cursoTitulo = cursoTitulos.length() > 0 ? cursoTitulos.toString() : "Programa Ejecutivo";
+        notificationPort.enviarAccesosYFactura(email, nombre, cursoTitulo, moodlePassword, comprobante);
+
+        log.info("Orden {} procesada con éxito. Comprobante {}-{} emitido y accesos enviados por email.",
+                orden.getCodigoOrden(), comprobante.getSerie(), comprobante.getCorrelativo());
+
+        return ordenGuardada;
+    }
+
+    @Override
+    @Transactional
+    public Orden confirmarPagoYMatricular(String stripeSessionId) {
+        return procesarPagoExitoso(stripeSessionId);
     }
 
     @Override
@@ -168,5 +236,39 @@ public class BuyCourseService implements BuyCourseUseCase {
     public Orden obtenerOrdenPorCodigo(String codigoOrden) {
         return orderRepository.buscarPorCodigo(codigoOrden)
                 .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + codigoOrden));
+    }
+
+    /**
+     * Genera una contraseña segura aleatoria de exactamente 10 caracteres,
+     * cumpliendo la política de contraseñas de Moodle (mayúsculas, minúsculas, números y caracteres especiales).
+     */
+    private String generarPasswordSegura10Chars() {
+        final String UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        final String LOWER = "abcdefghijkmnpqrstuvwxyz";
+        final String DIGITS = "23456789";
+        final String SYMBOLS = "!@#$*";
+        final String ALL = UPPER + LOWER + DIGITS + SYMBOLS;
+
+        SecureRandom random = new SecureRandom();
+        List<Character> chars = new ArrayList<>();
+        // Garantizar al menos un carácter de cada grupo obligatorio
+        chars.add(UPPER.charAt(random.nextInt(UPPER.length())));
+        chars.add(UPPER.charAt(random.nextInt(UPPER.length())));
+        chars.add(LOWER.charAt(random.nextInt(LOWER.length())));
+        chars.add(LOWER.charAt(random.nextInt(LOWER.length())));
+        chars.add(DIGITS.charAt(random.nextInt(DIGITS.length())));
+        chars.add(DIGITS.charAt(random.nextInt(DIGITS.length())));
+        chars.add(SYMBOLS.charAt(random.nextInt(SYMBOLS.length())));
+
+        while (chars.size() < 10) {
+            chars.add(ALL.charAt(random.nextInt(ALL.length())));
+        }
+
+        Collections.shuffle(chars, random);
+        StringBuilder sb = new StringBuilder();
+        for (char c : chars) {
+            sb.append(c);
+        }
+        return sb.toString();
     }
 }

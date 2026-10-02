@@ -13,16 +13,7 @@ import {
 import companyLogo from '../../assets/mi-logo.png';
 import { useCart } from '../../context/CartContext';
 
-export interface NavbarProps {
-  user?: any;
-  theme: 'light' | 'dark';
-  onThemeToggle: () => void;
-  onLoginClick?: () => void;
-  onLogoutClick?: () => void;
-  onOpenAiChat?: () => void;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({
+export const Navbar = ({
   theme,
   onThemeToggle,
   onOpenAiChat,
@@ -39,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     // fallback
   }
 
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -209,3 +200,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </>
   );
 };
+
+export default Navbar;

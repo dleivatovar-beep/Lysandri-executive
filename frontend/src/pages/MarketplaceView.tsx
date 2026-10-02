@@ -24,6 +24,7 @@ import { CartDrawer } from '../components/marketplace/CartDrawer';
 import { SyllabusModal } from '../components/marketplace/SyllabusModal';
 import { ExecutiveChatDrawer } from '../components/chat/ExecutiveChatDrawer';
 import { CorporateInCompanyModal } from '../components/marketplace/CorporateInCompanyModal';
+import { CheckoutModal } from '../components/marketplace/CheckoutModal';
 import { Category, Playbook } from '../types';
 import { useCart } from '../context/CartContext';
 
@@ -54,6 +55,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [isCorporateOpen, setIsCorporateOpen] = useState(false);
   const [selectedForSyllabus, setSelectedForSyllabus] = useState<Playbook | null>(null);
   const [selectedForAi, setSelectedForAi] = useState<Playbook | null>(null);
+  const [selectedForCheckout, setSelectedForCheckout] = useState<Playbook | null>(null);
+
+  // Escuchar evento de apertura de Chatbot RAG desde la Navbar pública
+  React.useEffect(() => {
+    const handleChatEvent = () => setIsAiOpen(true);
+    window.addEventListener('open-executive-ai-chat', handleChatEvent);
+    return () => window.removeEventListener('open-executive-ai-chat', handleChatEvent);
+  }, []);
 
   // Spotlight Playbook (first ENTERPRISE playbook or first available)
   const spotlightPlaybook = useMemo(() => {
@@ -95,35 +104,29 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
   return (
     <div className="space-y-16 pb-28 relative">
-      {/* ========================================================================= */}
-      {/* 1. HERO SECTION EJECUTIVO DE ALTO IMPACTO (2 COLUMNAS)                    */}
-      {/* ========================================================================= */}
+      {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-b from-slate-900 via-[#0a1122] to-[#060810] p-6 text-white shadow-2xl md:p-12">
-        {/* Glow ambient background elements */}
         <div className="pointer-events-none absolute -right-24 -top-24 h-[500px] w-[500px] rounded-full bg-cyan-500/15 blur-[120px]" />
         <div className="pointer-events-none absolute -left-24 -bottom-24 h-[500px] w-[500px] rounded-full bg-indigo-500/15 blur-[120px]" />
         <div className="pointer-events-none absolute inset-0 lysandri-login-grid opacity-25" />
 
         <div className="relative z-10 grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
-          {/* Columna Izquierda: Mensaje Directivo & Propuesta de Valor (7 columnas) */}
           <div className="space-y-7 lg:col-span-7">
-            {/* Badges de Autoridad */}
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-3.5 py-1.5 font-mono text-[10px] font-bold tracking-wider text-cyan-300 backdrop-blur-md shadow-md">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                YUNIX INGENIEROS E.I.R.L. • CORPORATE TECH ACADEMY
+                Yunix Ingenieros • Formación Ejecutiva
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-950/60 px-3 py-1 font-mono text-[10px] font-medium text-indigo-300 backdrop-blur-md">
                 <GraduationCap className="h-3.5 w-3.5 text-indigo-400" />
-                CAMPUS MOODLE 4.x OFICIAL + STREAMING BUNNY.NET
+                Campus Virtual Moodle 4.x
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] font-medium text-emerald-300 backdrop-blur-md">
                 <Cpu className="h-3.5 w-3.5 text-emerald-400" />
-                IA RAG PGVECTOR 1536-D
+                Tutoría con IA
               </span>
             </div>
 
-            {/* Headline */}
             <div className="space-y-4">
               <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.15]">
                 Academia de Alta Dirección{' '}
@@ -132,9 +135,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 </span>
               </h1>
               <p className="text-sm leading-relaxed text-slate-300 md:text-base md:leading-relaxed">
-                Formación estratégica para CTOs, Principal Engineers, CISOs y Líderes de Arquitectura. 
-                Gobernanza FinOps multi-cloud, ciberseguridad Zero-Trust e IA generativa en producción con 
-                matrícula instantánea vía Stripe, seguimiento curricular en Moodle 4.x y tutoría RAG 24/7.
+                Programas especializados para CTOs, ingenieros principales y líderes de tecnología.
+                Gobernanza FinOps, ciberseguridad e inteligencia artificial con acceso inmediato a cursos en Moodle y seguimiento personalizado.
               </p>
             </div>
 
@@ -270,7 +272,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => addToCart(spotlightPlaybook)}
+                      onClick={() => setSelectedForCheckout(spotlightPlaybook)}
                       className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-md shadow-cyan-500/20 hover:opacity-95 transition-opacity"
                     >
                       <span>Inscribirme vía Stripe</span>
@@ -284,9 +286,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 2. BARRA DE SECTORES & CONFIANZA CORPORATIVA                               */}
-      {/* ========================================================================= */}
+      {/* Sectores y especialidades */}
       <section className="space-y-4">
         <p className="text-center font-mono text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 font-bold">
           LÍDERES DE LAS PRINCIPALES ORGANIZACIONES CONFÍAN EN NUESTRA FORMACIÓN EJECUTIVA
@@ -324,9 +324,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 3. PILARES ESTRATÉGICOS & METODOLOGÍA EJECUTIVA                           */}
-      {/* ========================================================================= */}
+      {/* Metodología */}
       <section id="metodologia-section" className="space-y-6 scroll-mt-20">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 font-mono text-[10px] font-bold text-cyan-400">
@@ -395,9 +393,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 4. FILTROS, BÚSQUEDA Y MALLA CURRICULAR                                   */}
-      {/* ========================================================================= */}
+      {/* Catálogo y filtros */}
       <section id="catalogo-section" className="space-y-6 scroll-mt-20">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
           <div>
@@ -512,6 +508,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             <PlaybookCard
               key={playbook.id}
               playbook={playbook}
+              onSelect={(pb) => setSelectedForCheckout(pb)}
               onPreviewSyllabus={(pb) => setSelectedForSyllabus(pb)}
               onAddToCart={(pb) => addToCart(pb)}
               onAskAi={handleAskAi}
@@ -520,9 +517,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 6. BANNER B2B / IN-COMPANY (YUNIX INGENIEROS E.I.R.L.)                     */}
-      {/* ========================================================================= */}
+      {/* Capacitación In-Company */}
       <section id="in-company-section" className="relative overflow-hidden rounded-3xl border border-indigo-500/25 bg-gradient-to-r from-indigo-950/70 via-slate-900 to-cyan-950/70 p-8 md:p-12 shadow-2xl scroll-mt-20">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
           <div className="max-w-2xl space-y-4">
@@ -574,30 +569,14 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 7. ASISTENTE IA FLOTANTE (ELEGANTE, SIN OBSTRUIR TARJETAS)                 */}
-      {/* ========================================================================= */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          type="button"
-          onClick={() => setIsAiOpen(true)}
-          className="group flex items-center gap-3 rounded-full border border-cyan-500/40 bg-slate-950/90 px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-md hover:border-cyan-400 hover:scale-105 transition-all active:scale-95"
-          title="Abrir Asistente RAG"
-        >
-          <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-md">
-            <Bot className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-          </div>
-          <div className="hidden sm:block text-left">
-            <div className="text-[11px] font-black text-cyan-300">Asistente RAG Activo</div>
-            <div className="text-[9px] font-mono text-slate-400">¿Dudas sobre un curso?</div>
-          </div>
-        </button>
-      </div>
 
-      {/* ========================================================================= */}
-      {/* 8. MODALES Y DRAWERS INTERACTIVOS                                         */}
-      {/* ========================================================================= */}
+      {/* Modales y drawers */}
+      <CheckoutModal
+        isOpen={Boolean(selectedForCheckout)}
+        onClose={() => setSelectedForCheckout(null)}
+        playbook={selectedForCheckout}
+      />
+
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

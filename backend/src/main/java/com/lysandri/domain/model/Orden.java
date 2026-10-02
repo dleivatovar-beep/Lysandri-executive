@@ -29,6 +29,10 @@ public class Orden {
     private boolean moodleMatriculaSincronizada;
     private OffsetDateTime fechaPago;
 
+    private String tipoComprobanteSolicitado;
+    private String numeroDocumentoCliente;
+    private String nombreFacturacion;
+
     @Builder.Default
     private List<DetalleOrden> items = new ArrayList<>();
 }

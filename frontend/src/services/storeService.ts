@@ -4,7 +4,17 @@ import axios from 'axios';
 export interface CheckoutResponse {
   codigoOrden: string;
   stripeCheckoutUrl: string;
+  checkoutUrl?: string;
   stripeSessionId: string;
+}
+
+export interface DirectCheckoutPayload {
+  programaIds: number[];
+  email: string;
+  nombreCompleto: string;
+  tipoComprobante: 'BOLETA' | 'FACTURA';
+  numeroDocumento: string;
+  nombreFacturacion?: string;
 }
 
 export interface RagCitation {
@@ -29,49 +39,54 @@ export interface OrderConfirmation {
   moneda: string;
   moodleMatriculaSincronizada: boolean;
   fechaPago?: string;
+  usuario?: {
+    email?: string;
+    nombres?: string;
+    apellidos?: string;
+    nombreCompleto?: string;
+  };
+  numeroDocumentoCliente?: string;
+  nombreFacturacion?: string;
+  tipoComprobanteSolicitado?: string;
 }
 
 export const storeService = {
-  /**
-   * Inicia el proceso de checkout con Stripe para los cursos seleccionados
-   */
-  async checkout(programaIds: number[]): Promise<CheckoutResponse> {
-    const response = await apiClient.post<CheckoutResponse>('/orders/checkout', {
-      programaIds,
-    });
-    return response.data;
+  createCheckoutSession(payload: DirectCheckoutPayload): Promise<CheckoutResponse> {
+    return axios
+      .post<CheckoutResponse>(`${API_BASE_URL}/api/v1/orders/create-checkout-session`, payload)
+      .then((res) => res.data);
   },
 
-  /**
-   * Confirma la orden luego de la redirección exitosa de Stripe
-   */
-  async confirmarPago(sessionId: string): Promise<OrderConfirmation> {
-    const response = await apiClient.post<OrderConfirmation>(`/orders/confirm/${sessionId}`);
-    return response.data;
+  checkout(programaIds: number[]): Promise<CheckoutResponse> {
+    return apiClient
+      .post<CheckoutResponse>('/orders/checkout', { programaIds })
+      .then((res) => res.data);
   },
 
-  /**
-   * Consulta semántica al Asistente Ejecutivo RAG (pgvector)
-   */
-  async consultarAsistenteRag(
+  confirmarPago(sessionId: string): Promise<OrderConfirmation> {
+    return apiClient
+      .post<OrderConfirmation>(`/orders/confirm/${sessionId}`)
+      .then((res) => res.data);
+  },
+
+  consultarAsistenteRag(
     pregunta: string,
     idPrograma?: number,
     sesionId?: string
   ): Promise<RagResponse> {
-    const response = await axios.post<RagResponse>(
-      `${API_BASE_URL}/api/v1/chat/rag`,
-      {
-        pregunta,
-        idPrograma: idPrograma || null,
-        sesionId: sesionId || null,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
+    return axios
+      .post<RagResponse>(
+        `${API_BASE_URL}/api/v1/chat/rag`,
+        {
+          pregunta,
+          idPrograma: idPrograma || null,
+          sesionId: sesionId || null,
         },
-        timeout: 35000,
-      }
-    );
-    return response.data;
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 35000,
+        }
+      )
+      .then((res) => res.data);
   },
 };

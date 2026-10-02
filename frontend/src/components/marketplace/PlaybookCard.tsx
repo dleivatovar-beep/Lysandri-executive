@@ -54,6 +54,7 @@ const TIER_CONFIG: Record<
 
 export const PlaybookCard: React.FC<PlaybookCardProps> = ({
   playbook,
+  onSelect,
   onPreviewSyllabus,
   onAddToCart,
   onAskAi,
@@ -200,27 +201,33 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onAddToCart?.(playbook)}
-              className={`flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-300 active:scale-95 shadow-md ${
-                isInCart
-                  ? 'border border-emerald-500/40 bg-emerald-950/60 text-emerald-300 shadow-emerald-950/30'
-                  : 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-cyan-500/20 hover:opacity-95'
-              }`}
-            >
-              {isInCart ? (
-                <>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onSelect?.(playbook)}
+                className="flex-1 flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-4 text-xs font-bold text-white shadow-md shadow-cyan-500/20 hover:opacity-95 transition-all duration-300 active:scale-95"
+              >
+                <span>Inscribirme / Comprar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onAddToCart?.(playbook)}
+                title={isInCart ? 'En el carrito' : 'Añadir al carrito'}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 ${
+                  isInCart
+                    ? 'border-emerald-500/40 bg-emerald-950/60 text-emerald-300 shadow-sm shadow-emerald-950/30'
+                    : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-300'
+                }`}
+              >
+                {isInCart ? (
                   <Check className="h-4 w-4 text-emerald-400" />
-                  <span>En el Carrito (Ver Orden)</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-3.5 w-3.5" />
-                  <span>Añadir al Carrito</span>
-                </>
-              )}
-            </button>
+                ) : (
+                  <ShoppingCart className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

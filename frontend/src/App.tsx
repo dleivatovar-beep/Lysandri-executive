@@ -39,7 +39,8 @@ import { MarketplaceView } from './pages/MarketplaceView';
 import { StudentCourses } from './pages/student/StudentCourses';
 
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
-import { CheckoutSuccessView } from './pages/CheckoutSuccessView';
+import { PaymentSuccessView } from './pages/PaymentSuccessView';
+import { AccountingView } from './pages/AccountingView';
 
 import { academicService } from './services/academicService';
 import { enviarMensajeChat } from './services/api';
@@ -874,12 +875,24 @@ const App: React.FC =
             }
           />
           <Route
+            path="pago-exitoso"
+            element={
+              <PaymentSuccessView />
+            }
+          />
+          <Route
             path="checkout/success"
             element={
-              <CheckoutSuccessView />
+              <PaymentSuccessView />
             }
           />
         </Route>
+        
+        {/* Ruta Privada y Oculta de Contabilidad y Auditoría Tributaria */}
+        <Route
+          path="/gestion-contable"
+          element={<AccountingView />}
+        />
 
         {/* Rutas del estudiante */}
         <Route

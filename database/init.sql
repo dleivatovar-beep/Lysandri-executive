@@ -78,11 +78,48 @@ CREATE TABLE IF NOT EXISTS ORDENES (
     stripe_session_id VARCHAR(255) UNIQUE,
     stripe_payment_intent_id VARCHAR(255) UNIQUE,
     moodle_matricula_sincronizada BOOLEAN NOT NULL DEFAULT FALSE,
-    fecha_pago TIMESTAMPTZ
+    fecha_pago TIMESTAMPTZ,
+    tipo_comprobante_solicitado VARCHAR(10),
+    numero_documento_cliente VARCHAR(15),
+    nombre_facturacion VARCHAR(200)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ordenes_user ON ORDENES(id_user);
 CREATE INDEX IF NOT EXISTS idx_ordenes_stripe_session ON ORDENES(stripe_session_id);
+
+-- Tipos ENUM para Facturación Electrónica (SUNAT)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_comprobante') THEN
+        CREATE TYPE tipo_comprobante AS ENUM ('BOLETA', 'FACTURA');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_comprobante') THEN
+        CREATE TYPE estado_comprobante AS ENUM ('EMITIDO', 'ANULADO');
+    END IF;
+END $$;
+
+-- Tabla de Comprobantes de Pago
+CREATE TABLE IF NOT EXISTS comprobante_pago (
+    id_comprobante SERIAL PRIMARY KEY,
+    id_orden BIGINT NOT NULL UNIQUE REFERENCES ORDENES(id_orden) ON DELETE RESTRICT,
+    tipo tipo_comprobante NOT NULL,
+    serie VARCHAR(5) NOT NULL,
+    correlativo INT NOT NULL,
+    tipo_documento_identidad VARCHAR(10) NOT NULL CHECK (tipo_documento_identidad IN ('DNI', 'RUC')),
+    numero_documento_identidad VARCHAR(15) NOT NULL,
+    razon_social_o_nombre VARCHAR(200) NOT NULL,
+    monto_subtotal NUMERIC(10, 2) NOT NULL CHECK (monto_subtotal >= 0),
+    monto_igv NUMERIC(10, 2) NOT NULL CHECK (monto_igv >= 0),
+    monto_total NUMERIC(10, 2) NOT NULL CHECK (monto_total >= 0),
+    moneda VARCHAR(3) DEFAULT 'PEN',
+    fecha_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado estado_comprobante DEFAULT 'EMITIDO',
+    pdf_url VARCHAR(255),
+    CONSTRAINT uq_comprobante_serie_correlativo UNIQUE (serie, correlativo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_comprobante_fecha ON comprobante_pago(fecha_emision);
+CREATE INDEX IF NOT EXISTS idx_comprobante_doc_cliente ON comprobante_pago(numero_documento_identidad);
 
 -- Detalle de Órdenes
 CREATE TABLE IF NOT EXISTS DETALLE_ORDENES (

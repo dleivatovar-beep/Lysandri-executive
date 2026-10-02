@@ -66,6 +66,15 @@ public class OrdenEntity {
     @Column(name = "fecha_pago")
     private OffsetDateTime fechaPago;
 
+    @Column(name = "tipo_comprobante_solicitado", length = 10)
+    private String tipoComprobanteSolicitado;
+
+    @Column(name = "numero_documento_cliente", length = 15)
+    private String numeroDocumentoCliente;
+
+    @Column(name = "nombre_facturacion", length = 200)
+    private String nombreFacturacion;
+
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<DetalleOrdenEntity> items = new ArrayList<>();

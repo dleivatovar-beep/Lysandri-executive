@@ -47,6 +47,11 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         return repository.findByIdUserOrderByFechaOrdenDesc(idUsuario).stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public List<Orden> listarTodas() {
+        return repository.findAllByOrderByFechaOrdenDesc().stream().map(this::toDomain).toList();
+    }
+
     private OrdenEntity toEntity(Orden d) {
         OrdenEntity entity = OrdenEntity.builder()
                 .idOrden(d.getIdOrden())
@@ -61,6 +66,9 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .stripePaymentIntentId(d.getStripePaymentIntentId())
                 .moodleMatriculaSincronizada(d.isMoodleMatriculaSincronizada())
                 .fechaPago(d.getFechaPago())
+                .tipoComprobanteSolicitado(d.getTipoComprobanteSolicitado())
+                .numeroDocumentoCliente(d.getNumeroDocumentoCliente())
+                .nombreFacturacion(d.getNombreFacturacion())
                 .build();
 
         if (d.getItems() != null) {
@@ -113,6 +121,9 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .stripePaymentIntentId(e.getStripePaymentIntentId())
                 .moodleMatriculaSincronizada(e.isMoodleMatriculaSincronizada())
                 .fechaPago(e.getFechaPago())
+                .tipoComprobanteSolicitado(e.getTipoComprobanteSolicitado())
+                .numeroDocumentoCliente(e.getNumeroDocumentoCliente())
+                .nombreFacturacion(e.getNombreFacturacion())
                 .items(items)
                 .build();
     }

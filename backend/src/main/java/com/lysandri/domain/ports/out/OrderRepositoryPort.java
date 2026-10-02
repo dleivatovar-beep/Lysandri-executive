@@ -16,4 +16,6 @@ public interface OrderRepositoryPort {
     Optional<Orden> buscarPorStripeSessionId(String stripeSessionId);
 
     List<Orden> buscarPorUsuario(Long idUsuario);
+
+    List<Orden> listarTodas();
 }

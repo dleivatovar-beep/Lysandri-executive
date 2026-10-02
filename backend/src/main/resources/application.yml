@@ -23,6 +23,18 @@ spring:
     user: ${SPRING_FLYWAY_USER:lysandri_admin}
     password: ${SPRING_FLYWAY_PASSWORD:lysandri_admin_secret_2026}
 
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:no-reply@lysandri.com}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A}
   expiration: ${JWT_EXPIRATION_MS:86400000}
@@ -42,3 +54,6 @@ llm:
   api-key: ${OPENAI_API_KEY:mock-key}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+
+accounting:
+  audit-pin: ${ACCOUNTING_AUDIT_PIN:LYS-AUDIT-2026-SECURE}

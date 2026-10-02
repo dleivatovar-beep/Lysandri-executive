@@ -58,8 +58,8 @@ public class StripeWebhookController {
 
             if (sessionId != null && !sessionId.isBlank()) {
                 log.info("Procesando evento checkout.session.completed para sesión: {}", sessionId);
-                buyCourseUseCase.confirmarPagoYMatricular(sessionId);
-                return ResponseEntity.ok("Enrolamiento y pago procesados");
+                buyCourseUseCase.procesarPagoExitoso(sessionId);
+                return ResponseEntity.ok("Pago, emisión tributaria y matrícula procesados con éxito");
             }
 
             return ResponseEntity.ok("Evento recibido pero no requirió acción");

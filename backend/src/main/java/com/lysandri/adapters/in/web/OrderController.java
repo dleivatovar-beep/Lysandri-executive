@@ -22,15 +22,24 @@ public class OrderController {
 
     private final BuyCourseUseCase buyCourseUseCase;
 
-    @PostMapping("/checkout")
+    @PostMapping({"/checkout", "/create-checkout-session"})
     @Operation(summary = "Inicia el proceso de checkout y retorna URL de Stripe Checkout")
     public ResponseEntity<BuyCourseUseCase.CheckoutSessionResponse> iniciarCompra(
             @AuthenticationPrincipal UsuarioEntity usuario,
             @Valid @RequestBody CreateOrderRequest request) {
 
+        Long idUser = usuario != null ? usuario.getIdUser() : null;
+        String email = usuario != null ? usuario.getEmail() : request.getEmail();
+        String nombre = usuario != null ? usuario.getNombres() + " " + usuario.getApellidos() : request.getNombreCompleto();
+
         BuyCourseUseCase.CreateOrderCommand command = new BuyCourseUseCase.CreateOrderCommand(
-                usuario.getIdUser(),
-                request.getProgramaIds()
+                idUser,
+                request.getProgramaIds(),
+                email,
+                nombre,
+                request.getTipoComprobante(),
+                request.getNumeroDocumento(),
+                request.getNombreFacturacion()
         );
 
         BuyCourseUseCase.CheckoutSessionResponse response = buyCourseUseCase.iniciarCompra(command);

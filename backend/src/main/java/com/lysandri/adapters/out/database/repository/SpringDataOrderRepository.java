@@ -12,4 +12,5 @@ public interface SpringDataOrderRepository extends JpaRepository<OrdenEntity, Lo
     Optional<OrdenEntity> findByCodigoOrden(String codigoOrden);
     Optional<OrdenEntity> findByStripeSessionId(String stripeSessionId);
     List<OrdenEntity> findByIdUserOrderByFechaOrdenDesc(Long idUser);
+    List<OrdenEntity> findAllByOrderByFechaOrdenDesc();
 }
