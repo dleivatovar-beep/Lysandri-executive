@@ -1,7 +1,6 @@
 import React from 'react';
 
 import {
-  BarChart3,
   BookOpen,
   Bot,
   ChartNoAxesColumnIncreasing,
@@ -13,6 +12,8 @@ import {
   MessageSquareText,
   Store,
   Users,
+  LogOut,
+  Calculator,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ interface SidebarProps {
   onViewChange: (
     view: ActiveView,
   ) => void;
+  onLogout?: () => void;
 }
 
 interface NavigationItem {
@@ -101,19 +103,14 @@ const ROLE_NAVIGATION: Record<
 
   ADMIN: [
     {
-      label: 'Panel general',
-      view: 'ADMIN_DASHBOARD',
-      icon: LayoutDashboard,
+      label: 'Cursos',
+      view: 'MANAGE_COURSES',
+      icon: GraduationCap,
     },
     {
       label: 'Usuarios',
       view: 'USERS',
       icon: Users,
-    },
-    {
-      label: 'Cursos',
-      view: 'MANAGE_COURSES',
-      icon: GraduationCap,
     },
     {
       label: 'Inscripciones',
@@ -126,9 +123,9 @@ const ROLE_NAVIGATION: Record<
       icon: MessageSquareText,
     },
     {
-      label: 'Reportes',
-      view: 'REPORTS',
-      icon: BarChart3,
+      label: 'Área Contable',
+      view: 'ACCOUNTING',
+      icon: Calculator,
     },
   ],
 };
@@ -138,70 +135,88 @@ export const Sidebar:
     activeView,
     role,
     onViewChange,
+    onLogout,
   }) => {
     const navigationItems =
       ROLE_NAVIGATION[role];
 
     return (
       <aside className="fixed bottom-0 left-0 top-16 z-30 hidden w-64 border-r border-cyan-500/10 bg-white/95 px-4 py-6 backdrop-blur-xl dark:border-slate-800 dark:bg-[#080b12]/95 lg:block">
-        <div className="h-full">
-          <div className="mb-6 px-3">
-            <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-slate-400 dark:text-slate-600">
-              Navegación
-            </p>
+        <div className="flex h-full flex-col justify-between">
+          <div>
+            <div className="mb-6 px-3">
+              <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-slate-400 dark:text-slate-600">
+                Navegación
+              </p>
 
-            <h2 className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
-              {ROLE_LABELS[role]}
-            </h2>
-          </div>
+              <h2 className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
+                {ROLE_LABELS[role]}
+              </h2>
+            </div>
 
-          <nav className="space-y-1.5">
-            {navigationItems.map(
-              (item) => {
-                const Icon =
-                  item.icon;
+            <nav className="space-y-1.5">
+              {navigationItems.map(
+                (item) => {
+                  const Icon =
+                    item.icon;
 
-                const isActive =
-                  activeView ===
-                  item.view;
+                  const isActive =
+                    activeView ===
+                    item.view;
 
-                return (
-                  <button
-                    key={item.view}
-                    type="button"
-                    onClick={() =>
-                      onViewChange(
-                        item.view,
-                      )
-                    }
-                    className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-3 text-left text-sm font-semibold transition-all duration-300 ${
-                      isActive
-                        ? 'border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-cyan-700 shadow-[0_8px_24px_rgba(6,182,212,0.08)] dark:text-cyan-300'
-                        : 'border border-transparent text-slate-500 hover:border-cyan-500/10 hover:bg-cyan-500/5 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    {isActive && (
-                      <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full bg-gradient-to-b from-cyan-400 to-indigo-500" />
-                    )}
-
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300 ${
+                  return (
+                    <button
+                      key={item.view}
+                      type="button"
+                      onClick={() =>
+                        onViewChange(
+                          item.view,
+                        )
+                      }
+                      className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-3 text-left text-sm font-semibold transition-all duration-300 ${
                         isActive
-                          ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                          : 'bg-slate-100 text-slate-400 group-hover:text-cyan-600 dark:bg-slate-900 dark:text-slate-500 dark:group-hover:text-cyan-400'
+                          ? 'border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-cyan-700 shadow-[0_8px_24px_rgba(6,182,212,0.08)] dark:text-cyan-300'
+                          : 'border border-transparent text-slate-500 hover:border-cyan-500/10 hover:bg-cyan-500/5 hover:text-slate-900 dark:text-slate-500 dark:hover:text-slate-200'
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
-                    </span>
+                      {isActive && (
+                        <span className="absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full bg-gradient-to-b from-cyan-400 to-indigo-500" />
+                      )}
 
-                    <span>
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              },
-            )}
-          </nav>
+                      <span
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-300 ${
+                          isActive
+                            ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                            : 'bg-slate-100 text-slate-400 group-hover:text-cyan-600 dark:bg-slate-900 dark:text-slate-500 dark:group-hover:text-cyan-400'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+
+                      <span>
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                },
+              )}
+            </nav>
+          </div>
+
+          {onLogout && (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80">
+              <button
+                type="button"
+                onClick={onLogout}
+                className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-rose-500 hover:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/15 transition-all"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500 dark:bg-rose-500/20 group-hover:scale-105 transition-transform">
+                  <LogOut className="h-4 w-4" />
+                </span>
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
     );

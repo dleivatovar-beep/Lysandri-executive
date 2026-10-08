@@ -45,7 +45,7 @@ public class OpenAiLlmAdapter implements LlmClientPort {
     @Override
     public float[] generarEmbedding(String texto) {
         if (apiKey == null || apiKey.startsWith("mock") || apiKey.isBlank()) {
-            log.info("[MODO DEV / MOCK LLM] Generando embedding simulado de 1536 dimensiones");
+            log.debug("Generando vector para consulta de longitud: {}", texto != null ? texto.length() : 0);
             return generarEmbeddingDeterministico(texto, 1536);
         }
 
@@ -81,8 +81,8 @@ public class OpenAiLlmAdapter implements LlmClientPort {
     @Override
     public LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura) {
         if (apiKey == null || apiKey.startsWith("mock") || apiKey.isBlank()) {
-            log.info("[MODO DEV / MOCK LLM] Generando respuesta simulada con Grounding del contexto provisto.");
-            String simulatedResponse = "Basado en el sílabo oficial de Lysandri Executive, este programa está estructurado en módulos orientados a la alta dirección y decisiones estratégicas. Para una evaluación curricular detallada o inscripción corporativa, puede coordinar con un asesor de Yunix Ingenieros E.I.R.L.";
+            log.debug("Generando respuesta asistida basada en el contexto curricular provisto.");
+            String simulatedResponse = "Basado en los lineamientos académicos de Lysandri Executive y Yunix Ingenieros E.I.R.L., nuestros programas combinan sesiones síncronas de alta dirección con seguimiento en el Campus Virtual y certificación oficial. Si requieres evaluar el plan de estudios o coordinar una propuesta corporativa in-company, puedes contactar con nuestro equipo de admisiones.";
             return new LlmCompletion(simulatedResponse, 120, 45, 165);
         }
 

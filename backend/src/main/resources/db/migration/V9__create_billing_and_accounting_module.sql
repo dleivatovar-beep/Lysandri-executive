@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS comprobante_pago (
     fecha_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado estado_comprobante DEFAULT 'EMITIDO',
     pdf_url VARCHAR(255),
+    codigo_hash VARCHAR(64),
+    monto_detraccion NUMERIC(10, 2) DEFAULT 0.00,
+    porcentaje_detraccion NUMERIC(5, 2) DEFAULT 0.00,
+    medio_pago VARCHAR(50) DEFAULT 'STRIPE_CHECKOUT',
+    motivo_anulacion VARCHAR(255),
+    fecha_anulacion TIMESTAMP,
     CONSTRAINT uq_comprobante_pago_id_orden UNIQUE (id_orden),
     CONSTRAINT chk_tipo_documento_identidad CHECK (tipo_documento_identidad IN ('DNI', 'RUC')),
     CONSTRAINT chk_correlativo_positivo CHECK (correlativo > 0),
@@ -36,6 +42,13 @@ CREATE TABLE IF NOT EXISTS comprobante_pago (
     CONSTRAINT chk_monto_igv_positivo CHECK (monto_igv >= 0),
     CONSTRAINT chk_monto_total_positivo CHECK (monto_total >= 0)
 );
+
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS codigo_hash VARCHAR(64);
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS monto_detraccion NUMERIC(10, 2) DEFAULT 0.00;
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS porcentaje_detraccion NUMERIC(5, 2) DEFAULT 0.00;
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS medio_pago VARCHAR(50) DEFAULT 'STRIPE_CHECKOUT';
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS motivo_anulacion VARCHAR(255);
+ALTER TABLE comprobante_pago ADD COLUMN IF NOT EXISTS fecha_anulacion TIMESTAMP;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_comprobante_serie_correlativo 
     ON comprobante_pago (serie, correlativo);

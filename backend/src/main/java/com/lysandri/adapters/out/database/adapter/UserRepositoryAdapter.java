@@ -2,11 +2,13 @@ package com.lysandri.adapters.out.database.adapter;
 
 import com.lysandri.adapters.out.database.entity.UsuarioEntity;
 import com.lysandri.adapters.out.database.repository.SpringDataUserRepository;
+import com.lysandri.domain.model.RolUsuario;
 import com.lysandri.domain.model.Usuario;
 import com.lysandri.domain.ports.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -37,6 +39,32 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
         return repository.existsByEmail(email);
     }
 
+    @Override
+    public List<Usuario> listarTodos() {
+        return repository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Usuario> listarPorRol(RolUsuario rol) {
+        return repository.findByRol(rol).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Usuario> buscarPorTexto(String query) {
+        return repository.buscarPorTexto(query).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void eliminar(Long idUser) {
+        repository.deleteById(idUser);
+    }
+
     private UsuarioEntity toEntity(Usuario d) {
         return UsuarioEntity.builder()
                 .idUser(d.getIdUser())
@@ -46,7 +74,7 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
                 .email(d.getEmail())
                 .passw(d.getPassw())
                 .telefono(d.getTelefono())
-                .rol(d.getRol())
+                .rol(d.getRol() != null ? d.getRol() : RolUsuario.CLIENTE)
                 .activo(d.isActivo())
                 .fechaCreacion(d.getFechaCreacion())
                 .fechaActualizacion(d.getFechaActualizacion())

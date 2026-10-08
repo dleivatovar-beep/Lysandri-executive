@@ -68,4 +68,25 @@ public class ComprobantePagoEntity {
 
     @Column(name = "pdf_url", length = 255)
     private String pdfUrl;
+
+    @Column(name = "codigo_hash", length = 64)
+    private String codigoHash;
+
+    @Column(name = "monto_detraccion", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal montoDetraccion = BigDecimal.ZERO;
+
+    @Column(name = "porcentaje_detraccion", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal porcentajeDetraccion = BigDecimal.ZERO;
+
+    @Column(name = "medio_pago", length = 50)
+    @Builder.Default
+    private String medioPago = "STRIPE_CHECKOUT";
+
+    @Column(name = "motivo_anulacion", length = 255)
+    private String motivoAnulacion;
+
+    @Column(name = "fecha_anulacion")
+    private LocalDateTime fechaAnulacion;
 }

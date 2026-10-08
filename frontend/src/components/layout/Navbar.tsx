@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Moon,
   Sun,
@@ -9,8 +10,9 @@ import {
   MessageCircle,
   Bot,
   GraduationCap,
+  Calculator,
 } from 'lucide-react';
-import companyLogo from '../../assets/mi-logo.png';
+import companyLogo from '../../assets/lysandri-logo.png';
 import { useCart } from '../../context/CartContext';
 
 export interface NavbarProps {
@@ -27,6 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onThemeToggle,
   onOpenAiChat,
 }) => {
+  const location = useLocation();
+  const isInsideAdminDashboard = location.pathname.startsWith('/admin');
+
   const [isContactPopoverOpen, setIsContactPopoverOpen] = useState(false);
 
   let cartCount = 0;
@@ -87,94 +92,126 @@ export const Navbar: React.FC<NavbarProps> = ({
             </a>
           </div>
 
-          <nav className="flex items-center gap-2 sm:gap-4">
-            <button
-              type="button"
-              onClick={() => scrollToSection('catalogo-section')}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-cyan-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-cyan-400 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <GraduationCap className="h-4 w-4 text-cyan-500" />
-              <span>Programas</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenChat}
-              className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 hover:bg-cyan-500/20 dark:text-cyan-300 dark:hover:bg-cyan-950/60 transition-colors"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-              <span className="hidden sm:inline">Asistente IA</span>
-              <span className="sm:hidden">IA</span>
-            </button>
-
-            <div className="relative">
+          {!isInsideAdminDashboard ? (
+            <nav className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                onClick={() => setIsContactPopoverOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:bg-slate-800/50 transition-colors"
+                onClick={() => scrollToSection('catalogo-section')}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-100/70 px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-cyan-400 hover:text-cyan-600 hover:bg-white dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-cyan-500/40 dark:hover:text-cyan-400 transition-all shadow-sm"
               >
-                <Phone className="h-3.5 w-3.5 text-indigo-400" />
-                <span>Contacto</span>
+                <GraduationCap className="h-4 w-4 text-cyan-500" />
+                <span>Programas</span>
               </button>
 
-              {isContactPopoverOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsContactPopoverOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
-                    <p className="text-xs font-bold text-white mb-2">
-                      Atención y admisiones
-                    </p>
-                    <div className="space-y-2 text-xs">
-                      <a
-                        href="https://wa.me/51999888777?text=Hola,%20solicito%20información%20sobre%20los%20programas%20de%20Lysandri%20Executive"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 p-2 text-emerald-300 hover:bg-emerald-900/60 transition-colors"
-                      >
-                        <MessageCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold">WhatsApp</div>
-                          <div className="text-[10px] text-emerald-400/80">+51 999 888 777</div>
-                        </div>
-                      </a>
+              <button
+                type="button"
+                onClick={handleOpenChat}
+                className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 hover:border-cyan-400 hover:bg-cyan-500/20 dark:text-cyan-300 dark:hover:bg-cyan-950/60 transition-all shadow-sm"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+                <span className="hidden sm:inline">Asistente IA</span>
+                <span className="sm:hidden">IA</span>
+              </button>
 
-                      <a
-                        href="mailto:contacto@yunixingenieros.com"
-                        className="flex items-center gap-2.5 rounded-xl bg-slate-800/80 border border-slate-700 p-2 text-slate-300 hover:bg-slate-800 transition-colors"
-                      >
-                        <Mail className="h-4 w-4 text-cyan-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold">Correo</div>
-                          <div className="text-[10px] text-slate-400">contacto@yunixingenieros.com</div>
-                        </div>
-                      </a>
+              <a
+                href="/contabilidad"
+                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 hover:border-amber-400 hover:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-950/60 transition-all shadow-sm"
+                title="Portal de Contabilidad y Facturación SUNAT"
+              >
+                <Calculator className="h-3.5 w-3.5 text-amber-500" />
+                <span>Área Contable</span>
+              </a>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsContactPopoverOpen((prev) => !prev)}
+                  className="flex items-center gap-1.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-white dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-indigo-500/40 dark:hover:text-indigo-300 transition-all shadow-sm"
+                >
+                  <Phone className="h-3.5 w-3.5 text-indigo-400" />
+                  <span>Contacto</span>
+                </button>
+
+                {isContactPopoverOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsContactPopoverOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
+                      <p className="text-xs font-bold text-white mb-2">
+                        Atención y admisiones
+                      </p>
+                      <div className="space-y-2 text-xs">
+                        <a
+                          href="https://wa.me/51941238905?text=Hola,%20solicito%20asesor%C3%ADa%20acad%C3%A9mica%20sobre%20los%20programas%20de%20Lysandri%20Executive"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 p-2.5 text-emerald-300 hover:bg-emerald-900/60 transition-colors"
+                        >
+                          <MessageCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <div>
+                            <div className="font-semibold text-white">WhatsApp Admisiones</div>
+                            <div className="text-[10px] text-emerald-400/90 font-mono">+51 941 238 905</div>
+                          </div>
+                        </a>
+
+                        <a
+                          href="mailto:admisiones@lysandri.com"
+                          className="flex items-center gap-2.5 rounded-xl bg-slate-800/80 border border-slate-700 p-2.5 text-slate-300 hover:bg-slate-800 transition-colors"
+                        >
+                          <Mail className="h-4 w-4 text-cyan-400 shrink-0" />
+                          <div>
+                            <div className="font-semibold text-white">Correo Institucional</div>
+                            <div className="text-[10px] text-slate-400 font-mono">admisiones@lysandri.com</div>
+                          </div>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </nav>
+                  </>
+                )}
+              </div>
+
+            </nav>
+          ) : (
+            <nav className="flex items-center gap-2">
+              <a
+                href="/admin/contabilidad"
+                className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/20 transition-all shadow-sm"
+              >
+                <Calculator className="h-4 w-4 text-amber-500" />
+                <span>Área Contable</span>
+              </a>
+
+              <a
+                href="/"
+                className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-cyan-400 hover:border-cyan-500/30 transition-all"
+              >
+                <GraduationCap className="h-4 w-4 text-cyan-400" />
+                <span>Ver Catálogo Web</span>
+              </a>
+            </nav>
+          )}
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={openCartFn}
-              aria-label="Carrito de compras"
-              className="relative flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-slate-100/80 px-3 py-2 text-xs font-semibold text-slate-700 transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/10 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-cyan-500/40"
-            >
-              <ShoppingCart className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              <span className="hidden font-mono text-[11px] font-bold sm:inline">
-                Carrito
-              </span>
-              {cartCount > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-indigo-600 px-1 text-[10px] font-black text-white shadow-md shadow-cyan-500/30">
-                  {cartCount}
+            {!isInsideAdminDashboard && (
+              <button
+                type="button"
+                onClick={openCartFn}
+                aria-label="Carrito de compras"
+                className="relative flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-slate-100/80 px-3 py-2 text-xs font-semibold text-slate-700 transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/10 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-cyan-500/40"
+              >
+                <ShoppingCart className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                <span className="hidden font-mono text-[11px] font-bold sm:inline">
+                  Carrito
                 </span>
-              )}
-            </button>
+                {cartCount > 0 && (
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-indigo-600 px-1 text-[10px] font-black text-white shadow-md shadow-cyan-500/30">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             <button
               type="button"
@@ -194,18 +231,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </header>
 
-      <button
-        type="button"
-        onClick={handleOpenChat}
-        aria-label="Asistente"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-[0_10px_30px_rgba(6,182,212,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 group"
-      >
-        <Bot className="h-7 w-7 transition-transform group-hover:scale-110" />
-        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500" />
-        </span>
-      </button>
+      {!isInsideAdminDashboard && (
+        <button
+          type="button"
+          onClick={handleOpenChat}
+          aria-label="Asistente"
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-[0_10px_30px_rgba(6,182,212,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 group"
+        >
+          <Bot className="h-7 w-7 transition-transform group-hover:scale-110" />
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500" />
+          </span>
+        </button>
+      )}
     </>
   );
 };

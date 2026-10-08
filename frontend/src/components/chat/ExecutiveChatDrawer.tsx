@@ -30,7 +30,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'ia',
-      text: 'Estimado ejecutivo, soy el Asistente Inteligente de Lysandri Executive. ¿En qué puedo orientarle hoy sobre nuestras mallas curriculares, requisitos directivos o acreditación en Moodle LMS?',
+      text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Yunix Ingenieros E.I.R.L. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -46,7 +46,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
         {
           id: `context-${Date.now()}`,
           sender: 'ia',
-          text: `He fijado el contexto en el programa ejecutivo: "${activePlaybook.title}". ¿Tiene alguna duda específica sobre el contenido de su sílabo o perfil de egreso?`,
+          text: `Has seleccionado el programa: "${activePlaybook.title}". ¿Tienes alguna consulta específica sobre sus módulos, perfil de egreso o metodología?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -95,7 +95,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'ia',
-        text: 'Lo sentimos, el motor RAG está procesando alta demanda en este momento. Por favor, reintente en unos segundos.',
+        text: 'En este momento no pudimos procesar tu consulta académica. Por favor intenta nuevamente o ponte en contacto con nuestro equipo de admisiones.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -112,9 +112,9 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   };
 
   const samplePrompts = [
-    '¿Cuál es la duración y carga horaria semanal?',
-    '¿Qué prerrequisitos técnicos se solicitan?',
-    '¿Cómo se evalúa y qué certificación otorga?',
+    '¿Necesito saber programar para llevar los cursos?',
+    '¿Cuál es la duración y modalidad de estudio?',
+    '¿Qué certificación oficial obtendré y cómo se verifica?',
   ];
 
   return (
@@ -135,13 +135,13 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-white">Asistente Ejecutivo RAG</h2>
+                  <h2 className="text-base font-bold text-white">Asesor Académico Lysandri</h2>
                   <span className="flex h-2 w-2 relative">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">pgvector + Embeddings 1536d</p>
+                <p className="text-[11px] text-cyan-400 font-medium">Orientación Curricular y Admisiones</p>
               </div>
             </div>
 
@@ -199,7 +199,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                       >
                         <FileText className="h-3 w-3" />
                         <span>
-                          {msg.fuentes.length} fragmento{msg.fuentes.length !== 1 ? 's' : ''} citado{msg.fuentes.length !== 1 ? 's' : ''} del Sílabo
+                          {msg.fuentes.length} fragmento{msg.fuentes.length !== 1 ? 's' : ''} citado{msg.fuentes.length !== 1 ? 's' : ''} de la Malla Curricular
                         </span>
                         {expandedSources[msg.id] ? (
                           <ChevronUp className="h-3 w-3" />
@@ -227,7 +227,9 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                   )}
 
                   <div className="mt-1 flex items-center justify-end gap-2 text-[9px] text-slate-500">
-                    {msg.latenciaMs && <span>{msg.latenciaMs}ms</span>}
+                    {msg.fuentes && msg.fuentes.length > 0 && (
+                      <span className="text-cyan-400 font-medium">Contenido oficial verificado</span>
+                    )}
                     <span>{msg.timestamp}</span>
                   </div>
                 </div>
@@ -237,7 +239,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
             {isLoading && (
               <div className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-xs text-cyan-400 w-fit">
                 <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                <span>Analizando sílabos con pgvector...</span>
+                <span>Consultando información del programa académico...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -272,7 +274,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                 type="text"
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
-                placeholder="Escribe tu consulta sobre los programas o sílabos..."
+                placeholder="Escribe tu consulta sobre los programas o malla curricular..."
                 className="flex-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
               />
               <button

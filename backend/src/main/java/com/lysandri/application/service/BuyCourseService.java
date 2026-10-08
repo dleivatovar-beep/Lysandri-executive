@@ -2,6 +2,7 @@ package com.lysandri.application.service;
 
 import com.lysandri.domain.model.*;
 import com.lysandri.domain.ports.in.BuyCourseUseCase;
+import com.lysandri.domain.ports.in.MatriculaUseCase;
 import com.lysandri.domain.ports.out.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import java.util.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class BuyCourseService implements BuyCourseUseCase {
+public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
 
     private final OrderRepositoryPort orderRepository;
     private final UserRepositoryPort userRepository;

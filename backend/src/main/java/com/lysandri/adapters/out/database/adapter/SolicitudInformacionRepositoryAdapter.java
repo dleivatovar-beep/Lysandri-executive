@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -37,6 +38,16 @@ public class SolicitudInformacionRepositoryAdapter implements SolicitudInformaci
     @Override
     public List<SolicitudInformacion> listarTodas() {
         return repository.findAllByOrderByFechaCreacionDesc().stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public Optional<SolicitudInformacion> buscarPorId(Long id) {
+        return repository.findById(id).map(this::toDomain);
+    }
+
+    @Override
+    public void eliminar(Long id) {
+        repository.deleteById(id);
     }
 
     private SolicitudInformacion toDomain(SolicitudInformacionEntity e) {

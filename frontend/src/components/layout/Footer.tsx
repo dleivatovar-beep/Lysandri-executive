@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Globe2,
 } from 'lucide-react';
-import companyLogo from '../../assets/mi-logo.png';
+import companyLogo from '../../assets/lysandri-logo.png';
 
 export const Footer: React.FC = () => {
   return (
@@ -21,7 +21,7 @@ export const Footer: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-mono text-[11px] font-semibold text-slate-300">
-              ESTADO DEL SISTEMA: CAMPUS MOODLE & MOTOR RAG PGVECTOR 100% OPERATIVOS
+              CAMPUS VIRTUAL ACTIVO • MATRÍCULAS ABIERTAS PARA CONVOCATORIA 2026-II
             </span>
           </div>
 
@@ -61,7 +61,7 @@ export const Footer: React.FC = () => {
             </div>
 
             <p className="text-xs leading-relaxed text-slate-400">
-              División de Educación Ejecutiva de <strong className="text-slate-200">Yunix Ingenieros E.I.R.L.</strong> Formación de élite en Arquitectura de Software, Cloud FinOps, Ciberseguridad e Inteligencia Artificial para líderes tecnológicos.
+              División de Educación Ejecutiva de <strong className="text-slate-200">Yunix Ingenieros E.I.R.L.</strong> Formación de alto impacto en Inteligencia Artificial, Ciberseguridad Práctica, Optimización de Costos y Liderazgo para directores, gerentes y dueños de negocios.
             </p>
 
             <div className="space-y-1.5 pt-1 text-[11px] text-slate-400">
@@ -88,62 +88,68 @@ export const Footer: React.FC = () => {
               <li>
                 <a href="#catalogo-section" className="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                   <ChevronRight className="h-3 w-3 text-cyan-600" />
-                  <span>FinOps & Gobernanza Multi-Cloud</span>
+                  <span>IA para Directivos & C-Suite</span>
                 </a>
               </li>
               <li>
                 <a href="#catalogo-section" className="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                   <ChevronRight className="h-3 w-3 text-cyan-600" />
-                  <span>Ciberseguridad Zero-Trust & NIS2</span>
+                  <span>Ciberseguridad & Protección Antifraude</span>
                 </a>
               </li>
               <li>
                 <a href="#catalogo-section" className="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                   <ChevronRight className="h-3 w-3 text-cyan-600" />
-                  <span>IA Generativa para C-Suite & CTOs</span>
+                  <span>Gestión Financiera & Reducción de Costos</span>
                 </a>
               </li>
               <li>
                 <a href="#catalogo-section" className="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                   <ChevronRight className="h-3 w-3 text-cyan-600" />
-                  <span>Arquitectura de Eventos & Kafka</span>
+                  <span>Automatización de Procesos No-Code</span>
                 </a>
               </li>
               <li>
                 <a href="#catalogo-section" className="hover:text-cyan-400 transition-colors flex items-center gap-1.5">
                   <ChevronRight className="h-3 w-3 text-cyan-600" />
-                  <span>Liderazgo de Ingeniería & SRE Scale</span>
+                  <span>Transformación Digital & Liderazgo</span>
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Columna 3: Arquitectura y Tecnología */}
+          {/* Columna 3: Metodología y Acreditación */}
           <div className="space-y-3">
             <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
               <Cpu className="h-4 w-4 text-indigo-400" />
-              <span>Ecosistema Tecnológico</span>
+              <span>Garantía & Metodología</span>
             </h4>
             <ul className="space-y-2 text-xs">
               <li className="flex items-center justify-between text-slate-400">
-                <span>Campus LMS</span>
-                <span className="font-mono text-[10px] text-indigo-400 font-semibold">Moodle 4.x REST API</span>
+                <span>Campus Virtual 24/7</span>
+                <span className="font-mono text-[10px] text-indigo-400 font-semibold">Acceso Multidispositivo</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
-                <span>Motor RAG</span>
-                <span className="font-mono text-[10px] text-cyan-400 font-semibold">PostgreSQL pgvector</span>
+                <span>Docentes C-Level</span>
+                <span className="font-mono text-[10px] text-cyan-400 font-semibold">Mentoría Directa</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
-                <span>Arquitectura Backend</span>
-                <span className="font-mono text-[10px] text-emerald-400 font-semibold">Spring Boot 3 Hexagonal</span>
+                <span>Casos Prácticos</span>
+                <span className="font-mono text-[10px] text-emerald-400 font-semibold">Escenarios Reales</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
-                <span>Pasarela de Pago</span>
-                <span className="font-mono text-[10px] text-amber-400 font-semibold">Stripe Checkout</span>
+                <a
+                  href="/contabilidad"
+                  className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
+                  title="Acceso al Portal Contable y Facturación SUNAT"
+                >
+                  <span className="underline underline-offset-2 decoration-amber-500/50">Facturación SUNAT (Área Contable)</span>
+                </a>
+                <span className="font-mono text-[10px] text-amber-400 font-semibold">Emisión Inmediata</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
-                <span>Streaming & Video</span>
-                <span className="font-mono text-[10px] text-violet-400 font-semibold">Bunny.net CDN</span>
+                <span>Certificación Oficial</span>
+                <span className="font-mono text-[10px] text-violet-400 font-semibold">Validación Digital</span>
               </li>
             </ul>
           </div>
@@ -155,7 +161,7 @@ export const Footer: React.FC = () => {
               <span>Capacitación Corporativa</span>
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Diseñamos programas in-company adaptados a la infraestructura técnica y estándares de gobernanza de su empresa.
+              Diseñamos programas in-company adaptados a las necesidades estratégicas, procesos y metas de su empresa.
             </p>
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 space-y-2">
               <div className="flex items-center gap-2 text-xs text-cyan-300 font-medium">
@@ -183,6 +189,8 @@ export const Footer: React.FC = () => {
             <a href="#catalogo-section" className="hover:text-slate-300 transition-colors">Política de Privacidad</a>
             <span>•</span>
             <a href="#catalogo-section" className="hover:text-slate-300 transition-colors">Garantía Académica</a>
+            <span>•</span>
+            <a href="/contabilidad" className="hover:text-amber-400 text-amber-500/90 font-semibold transition-colors">Portal Contable & SUNAT</a>
           </div>
         </div>
       </div>

@@ -8,7 +8,6 @@ import {
   Building2,
   ArrowRight,
   GraduationCap,
-  Cpu,
   Sparkles,
   ShieldCheck,
   CheckCircle2,
@@ -16,6 +15,9 @@ import {
   Award,
   BookOpen,
   Filter,
+  Crown,
+  Zap,
+  Calculator,
 } from 'lucide-react';
 import { CategoryFilter } from '../components/marketplace/CategoryFilter';
 import { PlaybookCard } from '../components/marketplace/PlaybookCard';
@@ -115,49 +117,58 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-3.5 py-1.5 font-mono text-[10px] font-bold tracking-wider text-cyan-300 backdrop-blur-md shadow-md">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                Yunix Ingenieros • Formación Ejecutiva
+                Yunix Ingenieros • Formación Ejecutiva Empresarial
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-950/60 px-3 py-1 font-mono text-[10px] font-medium text-indigo-300 backdrop-blur-md">
                 <GraduationCap className="h-3.5 w-3.5 text-indigo-400" />
-                Campus Virtual Moodle 4.x
+                100% Práctico • Sin Código
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] font-medium text-emerald-300 backdrop-blur-md">
-                <Cpu className="h-3.5 w-3.5 text-emerald-400" />
-                Tutoría con IA
+                <Bot className="h-3.5 w-3.5 text-emerald-400" />
+                Tutoría con IA 24/7
               </span>
             </div>
 
             <div className="space-y-4">
               <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl md:text-5xl lg:leading-[1.15]">
-                Academia de Alta Dirección{' '}
+                Educación Ejecutiva en IA & Estrategia{' '}
                 <span className="text-gradient-cyan">
-                  Tecnológica & Arquitectura
+                  para Líderes que Deciden
                 </span>
               </h1>
               <p className="text-sm leading-relaxed text-slate-300 md:text-base md:leading-relaxed">
-                Programas especializados para CTOs, ingenieros principales y líderes de tecnología.
-                Gobernanza FinOps, ciberseguridad e inteligencia artificial con acceso inmediato a cursos en Moodle y seguimiento personalizado.
+                Programas de alto impacto diseñados para directores, gerentes, dueños de empresas y profesionales que buscan multiplicar sus resultados, automatizar procesos y blindar su negocio sin necesidad de saber programar.
               </p>
             </div>
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 backdrop-blur-md">
-                <div className="text-2xl font-black text-cyan-400">11+</div>
-                <div className="text-[11px] text-slate-400 font-medium">Programas C-Suite</div>
+                <div className="text-2xl font-black text-cyan-400">100%</div>
+                <div className="text-[11px] text-slate-400 font-medium">Práctico y Sin Código</div>
               </div>
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 backdrop-blur-md">
-                <div className="text-2xl font-black text-indigo-400">98.6%</div>
-                <div className="text-[11px] text-slate-400 font-medium">Satisfacción Directiva</div>
+                <div className="text-2xl font-black text-indigo-400">+40%</div>
+                <div className="text-[11px] text-slate-400 font-medium">Ahorro en Costos</div>
               </div>
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 backdrop-blur-md">
-                <div className="text-2xl font-black text-emerald-400">1536d</div>
-                <div className="text-[11px] text-slate-400 font-medium">RAG pgvector Activo</div>
+                <div className="text-2xl font-black text-emerald-400">1,250+</div>
+                <div className="text-[11px] text-slate-400 font-medium">Líderes Formados</div>
               </div>
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 backdrop-blur-md">
-                <div className="text-2xl font-black text-amber-400">Stripe</div>
-                <div className="text-[11px] text-slate-400 font-medium">Garantía SSL Segura</div>
-              </div>
+              <a
+                href="/contabilidad"
+                className="group rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3.5 backdrop-blur-md hover:border-amber-400 hover:bg-amber-900/30 transition-all block cursor-pointer"
+                title="Ir al Portal del Área Contable y Facturación SUNAT"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl font-black text-amber-400">SUNAT</div>
+                  <Calculator className="h-4 w-4 text-amber-400/80 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="text-[11px] text-amber-300 font-medium flex items-center gap-1 mt-0.5">
+                  <span>Área Contable</span>
+                  <ArrowRight className="h-3 w-3 inline text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </a>
             </div>
 
             {/* Action CTAs */}
@@ -167,7 +178,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 onClick={() => scrollToSection('catalogo-section')}
                 className="flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 bg-size-200 px-6 py-3.5 text-xs font-bold text-white shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:opacity-95 active:scale-95 transition-all"
               >
-                <span>Explorar Catálogo Curricular</span>
+                <span>Explorar Programas Directivos</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
 
@@ -177,7 +188,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 className="flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/60 px-5 py-3.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 hover:border-cyan-400/60 active:scale-95 transition-all shadow-md"
               >
                 <Bot className="h-4 w-4 text-cyan-400" />
-                <span>Consultar Asistente RAG</span>
+                <span>Consultar Asesor con IA</span>
               </button>
 
               <button
@@ -186,7 +197,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 className="flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/80 px-5 py-3.5 text-xs font-semibold text-slate-300 hover:text-white hover:border-slate-500 active:scale-95 transition-all"
               >
                 <Building2 className="h-4 w-4 text-indigo-400" />
-                <span>Capacitación In-Company</span>
+                <span>Capacitación para tu Empresa</span>
               </button>
             </div>
           </div>
@@ -196,13 +207,13 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             {/* Floating Top Pill */}
             <div className="absolute -top-4 -right-2 z-20 hidden sm:flex items-center gap-2 rounded-full border border-cyan-400/40 bg-slate-950/90 px-3.5 py-1.5 text-[10px] font-mono font-bold text-cyan-300 shadow-xl backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>⚡ Moodle Sync &lt; 3 Segundos</span>
+              <span>⚡ Acceso Inmediato al Campus Virtual</span>
             </div>
 
             {/* Floating Bottom Pill */}
             <div className="absolute -bottom-4 -left-2 z-20 hidden sm:flex items-center gap-2 rounded-full border border-emerald-400/40 bg-slate-950/90 px-3.5 py-1.5 text-[10px] font-mono font-bold text-emerald-300 shadow-xl backdrop-blur-md">
               <Award className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Certificación Yunix con Hash Único</span>
+              <span>Certificación Directiva Oficial Yunix</span>
             </div>
 
             {/* Spotlight Container Card */}
@@ -212,7 +223,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                   <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold text-amber-300 bg-amber-950/60 border border-amber-500/40 rounded-md px-2.5 py-1">
                     <Sparkles className="h-3 w-3 text-amber-400" />
-                    CERTIFICACIÓN DESTACADA C-SUITE
+                    CERTIFICACIÓN DIRECTIVA DESTACADA
                   </span>
 
                   <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
@@ -224,7 +235,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 {/* Cover Image Preview */}
                 <div className="relative my-4 aspect-video w-full overflow-hidden rounded-2xl border border-slate-800">
                   <img
-                    src={spotlightPlaybook.coverUrl || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80'}
+                    src={spotlightPlaybook.coverUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'}
                     alt={spotlightPlaybook.title}
                     className="h-full w-full object-cover"
                   />
@@ -251,11 +262,11 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-3">
                     <span className="flex items-center gap-1.5">
                       <Clock3 className="h-3.5 w-3.5 text-cyan-400" />
-                      {spotlightPlaybook.duration || '8 Semanas'}
+                      {spotlightPlaybook.duration || '6 Semanas'}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <GraduationCap className="h-3.5 w-3.5 text-indigo-400" />
-                      Moodle 4.x + Bunny.net
+                      Modalidad Online Ejecutiva
                     </span>
                   </div>
 
@@ -264,19 +275,21 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedForSyllabus(spotlightPlaybook)}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 py-2.5 text-xs font-semibold text-slate-200 hover:border-cyan-400 transition-colors"
+                      className="group/spotMalla relative overflow-hidden flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 py-2.5 text-xs font-semibold text-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400 hover:text-cyan-300 hover:shadow-md hover:shadow-cyan-500/15 active:scale-95"
                     >
-                      <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-                      <span>Ver Sílabo</span>
+                      <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-cyan-400/10 to-transparent transition-transform duration-700 ease-out group-hover/spotMalla:translate-x-full" />
+                      <BookOpen className="h-3.5 w-3.5 text-cyan-400 transition-transform duration-300 group-hover/spotMalla:scale-110 group-hover/spotMalla:-rotate-6" />
+                      <span className="relative z-10">Malla Curricular</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setSelectedForCheckout(spotlightPlaybook)}
-                      className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 py-2.5 text-xs font-bold text-white shadow-md shadow-cyan-500/20 hover:opacity-95 transition-opacity"
+                      className="group/spotIns relative overflow-hidden flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 bg-[length:200%_auto] py-2.5 text-xs font-bold text-white shadow-md shadow-cyan-500/20 transition-all duration-500 hover:bg-right hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-500/35 active:scale-95"
                     >
-                      <span>Inscribirme vía Stripe</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                      <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-in-out group-hover/spotIns:translate-x-full" />
+                      <span className="relative z-10">Inscribirme Ahora</span>
+                      <ArrowRight className="relative z-10 h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover/spotIns:translate-x-1" />
                     </button>
                   </div>
                 </div>
@@ -294,32 +307,32 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-slate-800 dark:bg-[#0c111a] shadow-sm">
             <span className="text-base mb-1">🏦</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Banca & Fintech</span>
-            <span className="text-[10px] text-slate-500">Arquitecturas PCI-DSS</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Banca & Finanzas</span>
+            <span className="text-[10px] text-slate-500">Prevención de fraude & control</span>
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-slate-800 dark:bg-[#0c111a] shadow-sm">
-            <span className="text-base mb-1">☁️</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Cloud & FinOps</span>
-            <span className="text-[10px] text-slate-500">AWS / Azure / Kubernetes</span>
+            <span className="text-base mb-1">🛍️</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Comercio & Retail</span>
+            <span className="text-[10px] text-slate-500">Ventas & fidelización con IA</span>
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-slate-800 dark:bg-[#0c111a] shadow-sm">
-            <span className="text-base mb-1">🛡️</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Ciberseguridad</span>
-            <span className="text-[10px] text-slate-500">Zero-Trust & Mitre ATT&CK</span>
+            <span className="text-base mb-1">💼</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Servicios Profesionales</span>
+            <span className="text-[10px] text-slate-500">Ahorro de horas operativas</span>
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-slate-800 dark:bg-[#0c111a] shadow-sm">
-            <span className="text-base mb-1">🤖</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Modelos de IA</span>
-            <span className="text-[10px] text-slate-500">RAG & pgvector Enterprise</span>
+            <span className="text-base mb-1">🏢</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Dirección & C-Suite</span>
+            <span className="text-[10px] text-slate-500">Decisiones estratégicas con datos</span>
           </div>
 
           <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-4 text-center dark:border-slate-800 dark:bg-[#0c111a] shadow-sm">
-            <span className="text-base mb-1">⚡</span>
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Event-Driven</span>
-            <span className="text-[10px] text-slate-500">Apache Kafka & Streaming</span>
+            <span className="text-base mb-1">🏭</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">PYMES & Empresas</span>
+            <span className="text-[10px] text-slate-500">Automatización sin programar</span>
           </div>
         </div>
       </section>
@@ -329,48 +342,48 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 font-mono text-[10px] font-bold text-cyan-400">
             <Sparkles className="h-3 w-3" />
-            METODOLOGÍA DE YUNIX INGENIEROS E.I.R.L.
+            METODOLOGÍA DISEÑADA PARA DIRECTIVOS
           </span>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white md:text-3xl">
-            La Nueva Era de la Formación Tecnológica
+            Aprende a tu Ritmo, con Enfoque 100% en Resultados de Negocio
           </h2>
           <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-            Diseñada para resolver los problemas reales de escala, gobernanza y rentabilidad que enfrentan las empresas de hoy.
+            Diseñada para directores y gerentes que necesitan soluciones reales: casos prácticos empresariales, retorno de inversión y herramientas listas para aplicar.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Pilar 1: Campus Moodle */}
+          {/* Pilar 1: Campus Virtual */}
           <div className="rounded-3xl border border-slate-200/90 bg-white p-7 transition-all duration-300 hover:border-indigo-400/50 hover:shadow-xl dark:border-slate-800 dark:bg-[#0d121c] dark:hover:border-indigo-500/40">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 mb-5">
               <GraduationCap className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-              Campus Moodle 4.x + Bunny.net
+              Campus Virtual Flexible 24/7
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Aulas virtuales sincronizadas al instante mediante WebServices REST. Reproducción de video de ultra baja latencia sin publicidad externa, con foros de debate y entrega de proyectos.
+              Acceso inmediato a clases en video de alta calidad, material ejecutivo y foros de debate. Estudia a tu propio ritmo, desde cualquier dispositivo y sin horarios rígidos.
             </p>
             <div className="flex items-center gap-2 font-mono text-[10px] text-indigo-500 font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Aprovisionamiento automático tras el pago</span>
+              <span>Acceso 24/7 sin límite de horarios</span>
             </div>
           </div>
 
-          {/* Pilar 2: Asistente RAG pgvector */}
+          {/* Pilar 2: Asistente Inteligente */}
           <div className="rounded-3xl border border-slate-200/90 bg-white p-7 transition-all duration-300 hover:border-cyan-400/50 hover:shadow-xl dark:border-slate-800 dark:bg-[#0d121c] dark:hover:border-cyan-500/40">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-500 mb-5">
               <Bot className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-              Tutor RAG Semántico 1536-D
+              Asesor Inteligente con IA para Negocios
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Recuperación semántica basada en embeddings sobre los manuales, sílabos y libros de la plataforma. Resuelve dudas arquitectónicas en segundos con citas verificables de la fuente.
+              Un tutor virtual inteligente entrenado con los materiales y mejores prácticas de gestión para resolver dudas de tu empresa en segundos, orientarte y guiar tu aprendizaje.
             </p>
             <div className="flex items-center gap-2 font-mono text-[10px] text-cyan-500 font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Búsqueda vectorial con distancia coseno HNSW</span>
+              <span>Orientación personalizada inmediata</span>
             </div>
           </div>
 
@@ -380,80 +393,143 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
               <ShieldCheck className="h-6 w-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-              Certificación con Hash Criptográfico
+              Certificación Oficial para tu Perfil Directivo
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Diploma ejecutivo emitido bajo la personería de Yunix Ingenieros E.I.R.L. Verificación pública mediante código QR y hash de integridad para validar competencias ante comités directivos.
+              Diploma ejecutivo respaldado por Yunix Ingenieros E.I.R.L. con código de verificación QR oficial para respaldar tu currículum, perfil de LinkedIn y comités directivos.
             </p>
             <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-500 font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Reconocimiento profesional auditable</span>
+              <span>Reconocimiento profesional verificable</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Catálogo y filtros */}
-      <section id="catalogo-section" className="space-y-6 scroll-mt-20">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-              <Layers className="h-5 w-5 text-cyan-500" />
-              <span>Malla Curricular & Certificaciones Disponibles</span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Seleccione una especialización directiva y matricúlese con acceso inmediato a Moodle.
-            </p>
+      {/* Catálogo y filtros - Academic EdTech Showcase */}
+      <section id="catalogo-section" className="space-y-5 scroll-mt-20">
+        <div className="edtech-catalog-panel relative overflow-hidden rounded-3xl p-6 md:p-8">
+          {/* Ambient decorative glow */}
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-[90px]" />
+          <div className="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-indigo-500/15 blur-[90px]" />
+          <div className="pointer-events-none absolute inset-0 lysandri-login-grid opacity-10" />
+
+          {/* Academic Top Status Badges */}
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-800/80">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-950/70 px-3.5 py-1 font-mono text-[10px] font-bold text-cyan-300 shadow-sm backdrop-blur-md">
+                <GraduationCap className="h-3.5 w-3.5 text-cyan-400" />
+                Portal Académico 2026-II
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-400/30 bg-indigo-950/60 px-3 py-1 font-mono text-[10px] font-medium text-indigo-300 backdrop-blur-md">
+                <BookOpen className="h-3.5 w-3.5 text-indigo-400" />
+                Campus Virtual Activo 24/7
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] font-medium text-emerald-300 backdrop-blur-md">
+                <Award className="h-3.5 w-3.5 text-emerald-400" />
+                Certificación Oficial Yunix
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1 font-mono text-[10px] text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-semibold">Convocatoria con Matrícula Abierta</span>
+            </div>
           </div>
 
-          <div className="w-full md:max-w-md">
-            <SearchBar
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              resultsCount={filteredPlaybooks.length}
-            />
+          {/* Catalog Title + SearchBar */}
+          <div className="relative z-10 pt-6 pb-6 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-7 space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-glow-cyan-sm shrink-0">
+                  <GraduationCap className="h-5 w-5" />
+                </span>
+                <span>Catálogo de Especialización Directiva</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
+                Programas académicos estructurados con metodología 100% práctica, casos reales de empresa y acompañamiento continuo de asesores con Inteligencia Artificial.
+              </p>
+            </div>
+
+            <div className="lg:col-span-5">
+              <SearchBar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                resultsCount={filteredPlaybooks.length}
+              />
+            </div>
+          </div>
+
+          {/* Categories & Academic Level Selector */}
+          <div className="relative z-10 pt-5 border-t border-slate-800/80 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="overflow-hidden">
+              <CategoryFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            </div>
+
+            {/* Academic Level Selector */}
+            <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto pb-1">
+              <span className="text-[11px] font-mono text-slate-400 mr-1 flex items-center gap-1">
+                <Filter className="h-3 w-3 text-cyan-400" /> Nivel Académico:
+              </span>
+              {[
+                { id: 'ALL', label: 'Todos los Niveles', icon: Layers },
+                { id: 'ENTERPRISE', label: 'C-Suite / Directivo', icon: Crown },
+                { id: 'ADVANCED', label: 'Avanzado', icon: ShieldCheck },
+                { id: 'ESSENTIAL', label: 'Esencial', icon: Zap },
+              ].map((tier) => {
+                const IconComp = tier.icon;
+                const isSelected = selectedTier === tier.id;
+                return (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    onClick={() => setSelectedTier(tier.id)}
+                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-mono text-[10px] font-semibold transition-all duration-200 active:scale-95 ${
+                      isSelected
+                        ? 'border border-cyan-400 bg-gradient-to-r from-cyan-950/90 to-indigo-950/90 text-cyan-300 shadow-md shadow-cyan-500/20'
+                        : 'border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <IconComp className={`h-3 w-3 ${isSelected ? 'text-cyan-400' : 'text-slate-500'}`} />
+                    <span>{tier.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* Categorías & Filtro por Nivel */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <CategoryFilter
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-
-          {/* Tier Level Filter Pills */}
-          <div className="flex items-center gap-1.5 self-start lg:self-auto overflow-x-auto pb-1">
-            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mr-1 flex items-center gap-1">
-              <Filter className="h-3 w-3" /> Nivel:
+        {/* Student Value Quick Summary Strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-2 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="text-slate-300 font-medium">
+              Mostrando <strong className="text-cyan-400 font-bold">{filteredPlaybooks.length}</strong> {filteredPlaybooks.length === 1 ? 'programa disponible' : 'programas disponibles'}
             </span>
-            {[
-              { id: 'ALL', label: 'Todos' },
-              { id: 'ENTERPRISE', label: 'Enterprise C-Suite' },
-              { id: 'ADVANCED', label: 'Advanced' },
-              { id: 'ESSENTIAL', label: 'Essential' },
-            ].map((tier) => (
-              <button
-                key={tier.id}
-                type="button"
-                onClick={() => setSelectedTier(tier.id)}
-                className={`rounded-lg px-2.5 py-1 font-mono text-[10px] font-semibold transition-all ${
-                  selectedTier === tier.id
-                    ? 'border border-cyan-500/50 bg-cyan-950/80 text-cyan-300 shadow-sm'
-                    : 'border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                {tier.label}
-              </button>
-            ))}
+          </div>
+          <div className="hidden sm:flex items-center gap-4 text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <Clock3 className="h-3.5 w-3.5 text-cyan-400" />
+              Modalidad 100% Online Asincrónica
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-indigo-400" />
+              Diploma Oficial con Código QR
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <Bot className="h-3.5 w-3.5 text-emerald-400" />
+              Tutoría Continua con IA
+            </span>
           </div>
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 5. GRILLA DE PROGRAMAS DIRECTIVOS                                         */}
-      {/* ========================================================================= */}
       {isLoading ? (
         <div className="flex min-h-[350px] flex-col items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-white p-12 text-slate-500 dark:border-slate-800 dark:bg-[#0d121a]">
           <LoaderCircle className="h-10 w-10 animate-spin text-cyan-500" />
@@ -488,7 +564,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             No se encontraron programas con los filtros seleccionados
           </p>
           <p className="text-xs text-slate-500 max-w-sm">
-            Prueba buscando por términos clave como "FinOps", "Kafka", "Ciberseguridad" o restablece los filtros.
+            Prueba buscando por términos como "Inteligencia Artificial", "Ciberseguridad", "Finanzas" o restablece los filtros.
           </p>
           <button
             type="button"
@@ -523,32 +599,31 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <div className="max-w-2xl space-y-4">
             <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-950/90 px-3.5 py-1 font-mono text-[10px] font-bold text-indigo-300">
               <Building2 className="h-3.5 w-3.5" />
-              CAPACITACIÓN CORPORATIVA PARA EQUIPOS DE TECNOLOGÍA
+              CAPACITACIÓN CORPORATIVA PARA EQUIPOS GERENCIALES
             </span>
             <h3 className="text-2xl font-black text-white sm:text-3xl leading-snug">
-              ¿Deseas capacitar a tu equipo técnico en bloque?
+              ¿Deseas capacitar al equipo de tu empresa?
             </h3>
             <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">
-              Diseñamos mallas a medida para empresas, bancos, fintechs y corporativos con cohortes cerradas en
-              Moodle LMS, seguimiento de progreso y consultoría aplicada sobre la infraestructura real de su organización.
+              Diseñamos programas a la medida de tu organización para modernizar la gestión empresarial, implementar Inteligencia Artificial en tus procesos y optimizar los costos operativos de tu empresa.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Facturación con RUC deducible para empresas</span>
+                <span>Facturación con RUC deducible para empresas (SUNAT)</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Cohortes cerradas con foros privados en Moodle</span>
+                <span>Casos de estudio enfocados en el rubro real de tu negocio</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Dashboards de rendimiento para RRHH y CTOs</span>
+                <span>Seguimiento de progreso y reportes de impacto para gerencia</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Soporte prioritario y tutoría con IA RAG</span>
+                <span>Acompañamiento personalizado y sesiones en vivo</span>
               </div>
             </div>
           </div>
@@ -560,7 +635,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
               className="flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-xs font-bold text-slate-950 shadow-xl shadow-white/10 hover:bg-slate-100 active:scale-95 transition-all"
             >
               <Building2 className="h-4 w-4 text-indigo-600" />
-              <span>Solicitar Cotización In-Company</span>
+              <span>Solicitar Cotización Empresarial</span>
             </button>
             <p className="text-center font-mono text-[10px] text-slate-400">
               Respuesta en menos de 24 horas laborables
@@ -589,6 +664,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         isOpen={Boolean(selectedForSyllabus)}
         onClose={() => setSelectedForSyllabus(null)}
         playbook={selectedForSyllabus}
+        onSelect={(pb) => setSelectedForCheckout(pb)}
         onAddToCart={(pb) => addToCart(pb)}
         onAskAi={handleAskAi}
       />

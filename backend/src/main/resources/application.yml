@@ -46,8 +46,8 @@ moodle:
 stripe:
   api-key: ${STRIPE_API_KEY:sk_test_mock_lysandri_key}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_mock_lysandri_secret}
-  success-url: ${STRIPE_SUCCESS_URL:http://localhost:5173/checkout/success?session_id={CHECKOUT_SESSION_ID}}
-  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:5173/checkout/cancel}
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}}
+  cancel-url: ${STRIPE_CANCEL_URL:http://localhost:3000/checkout/cancel}
 
 llm:
   provider: ${LLM_PROVIDER:openai}

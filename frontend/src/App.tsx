@@ -20,7 +20,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import companyLogo from './assets/mi-logo.png';
+import companyLogo from './assets/lysandri-logo.png';
 
 import { LoginView } from './components/auth/LoginView';
 import { ChatContainer } from './components/chat/ChatContainer';
@@ -172,7 +172,7 @@ const VIEW_PATHS: Record<
 
   ADMIN: {
     ADMIN_DASHBOARD:
-      '/admin/dashboard',
+      '/admin/cursos',
 
     USERS:
       '/admin/usuarios',
@@ -188,6 +188,9 @@ const VIEW_PATHS: Record<
 
     REPORTS:
       '/admin/reportes',
+
+    ACCOUNTING:
+      '/admin/contabilidad',
   },
 };
 
@@ -239,6 +242,12 @@ const PATH_VIEWS: Record<
 
   '/admin/reportes':
     'REPORTS',
+
+  '/admin/contabilidad':
+    'ACCOUNTING',
+
+  '/contabilidad':
+    'ACCOUNTING',
 };
 
 const toNavbarUser = (
@@ -400,7 +409,7 @@ const MarketplacePage:
         playbook: Playbook,
       ) => {
         if (!user) {
-          navigate('/login');
+          navigate('/intranet');
           return;
         }
 
@@ -708,7 +717,7 @@ const ProtectedLayout:
             onThemeToggle
           }
           onLoginClick={() =>
-            navigate('/login')
+            navigate('/intranet')
           }
           onLogoutClick={
             handleLogout
@@ -722,6 +731,9 @@ const ProtectedLayout:
           role={user.rol}
           onViewChange={
             handleViewChange
+          }
+          onLogout={
+            handleLogout
           }
         />
 
@@ -793,7 +805,7 @@ const PublicLayout:
             onThemeToggle
           }
           onLoginClick={() =>
-            navigate('/login')
+            navigate('/intranet')
           }
           onLogoutClick={
             handleLogout
@@ -813,9 +825,6 @@ const PublicLayout:
 
 const App: React.FC =
   () => {
-    const navigate =
-      useNavigate();
-
     const [
       theme,
       setTheme,
@@ -850,15 +859,65 @@ const App: React.FC =
 
     return (
       <Routes>
+        {/* Redirección de /login hacia el inicio para ocultar el acceso al público */}
         <Route
           path="/login"
           element={
-            <LoginView
-              onBack={() =>
-                navigate('/')
-              }
+            <Navigate
+              to="/"
+              replace
             />
           }
+        />
+
+        {/* Rutas privadas de intranet para el equipo de colaboradores */}
+        <Route
+          path="/intranet"
+          element={<LoginView />}
+        />
+        <Route
+          path="/registro"
+          element={
+            <Navigate
+              to="/intranet?modo=registro"
+              replace
+            />
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <Navigate
+              to="/intranet"
+              replace
+            />
+          }
+        />
+        <Route
+          path="/portal-interno"
+          element={
+            <Navigate
+              to="/intranet"
+              replace
+            />
+          }
+        />
+        <Route
+          path="/colaboradores"
+          element={
+            <Navigate
+              to="/intranet"
+              replace
+            />
+          }
+        />
+        <Route
+          path="/contabilidad"
+          element={<AccountingView />}
+        />
+        <Route
+          path="/gestion-contable"
+          element={<AccountingView />}
         />
 
         <Route
@@ -888,10 +947,15 @@ const App: React.FC =
           />
         </Route>
         
-        {/* Ruta Privada y Oculta de Contabilidad y Auditoría Tributaria */}
+        {/* Redirección de la antigua URL a la plataforma integrada de Contabilidad & SUNAT */}
         <Route
           path="/gestion-contable"
-          element={<AccountingView />}
+          element={
+            <Navigate
+              to="/contabilidad"
+              replace
+            />
+          }
         />
 
         {/* Rutas del estudiante */}
@@ -1040,7 +1104,7 @@ const App: React.FC =
               path="/admin"
               element={
                 <Navigate
-                  to="/admin/dashboard"
+                  to="/admin/cursos"
                   replace
                 />
               }
@@ -1049,7 +1113,10 @@ const App: React.FC =
             <Route
               path="/admin/dashboard"
               element={
-                <AdminDashboard />
+                <Navigate
+                  to="/admin/cursos"
+                  replace
+                />
               }
             />
 
@@ -1088,7 +1155,14 @@ const App: React.FC =
             <Route
               path="/admin/reportes"
               element={
-                <EmptySectionPage view="REPORTS" />
+                <AccountingView />
+              }
+            />
+
+            <Route
+              path="/admin/contabilidad"
+              element={
+                <AccountingView />
               }
             />
           </Route>

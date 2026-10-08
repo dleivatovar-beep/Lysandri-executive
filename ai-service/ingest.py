@@ -162,9 +162,7 @@ def ingest_documents(docs_dir_path: str = None):
                 total_chunks_ingestados += len(rows_to_insert)
                 logger.info(f"✓ Éxito: {len(rows_to_insert)} fragmentos indexados de '{pdf_path.name}'")
 
-        logger.info(f"============================================================")
         logger.info(f"Ingesta finalizada: Total {total_chunks_ingestados} fragmentos indexados.")
-        logger.info(f"============================================================")
     except Exception as e:
         conn.rollback()
         logger.error(f"Fallo durante la ingesta de documentos: {e}")

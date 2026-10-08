@@ -127,8 +127,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
               )}
 
               <p className="text-xs text-slate-300 leading-relaxed">
-                Diseñamos programas directivos cerrados y playbooks a medida para comités de
-                arquitectura, equipos de DevOps, FinOps y ciberseguridad.
+                Diseñamos programas ejecutivos a medida para capacitar a líderes, gerentes y equipos en Inteligencia Artificial aplicada, automatización No-Code, ciberseguridad y optimización de costos.
               </p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -139,7 +138,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     required
                     value={nombreCompleto}
                     onChange={(e) => setNombreCompleto(e.target.value)}
-                    placeholder="Ej. Ing. Carlos Mendoza"
+                    placeholder="Ej. Carlos Mendoza"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -158,7 +157,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-slate-300">Teléfono / WhatsApp</label>
+                  <label className="text-[11px] font-semibold text-slate-300">Celular / WhatsApp</label>
                   <input
                     type="tel"
                     value={telefono}

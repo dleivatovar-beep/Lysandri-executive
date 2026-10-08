@@ -28,4 +28,10 @@ public class ComprobantePago {
     private LocalDateTime fechaEmision;
     private EstadoComprobante estado;
     private String pdfUrl;
+    private String codigoHash;
+    private BigDecimal montoDetraccion;
+    private BigDecimal porcentajeDetraccion;
+    private String medioPago;
+    private String motivoAnulacion;
+    private LocalDateTime fechaAnulacion;
 }

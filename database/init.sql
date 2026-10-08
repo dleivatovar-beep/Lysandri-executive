@@ -1,9 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS "vector";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ============================================================================
--- CONTROL DE SEGURIDAD Y ACCESO DE BASE DE DATOS (RBAC - MENOR PRIVILEGIO)
--- ============================================================================
+
 DO $$
 DECLARE
     app_pwd text := coalesce(nullif(current_setting('lysandri.app_password', true), ''), 'lysandri_app_secret_2026');
@@ -19,9 +17,6 @@ $$;
 GRANT CONNECT ON DATABASE lysandri_db TO lysandri_app;
 GRANT USAGE ON SCHEMA public TO lysandri_app;
 
--- ============================================================================
--- ESQUEMA TRANSACCIONAL: TIENDA DE CONOCIMIENTO EJECUTIVO
--- ============================================================================
 
 -- Tabla de Usuarios
 CREATE TABLE IF NOT EXISTS USUARIO (
@@ -115,6 +110,12 @@ CREATE TABLE IF NOT EXISTS comprobante_pago (
     fecha_emision TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado estado_comprobante DEFAULT 'EMITIDO',
     pdf_url VARCHAR(255),
+    codigo_hash VARCHAR(64),
+    monto_detraccion NUMERIC(10, 2) DEFAULT 0.00,
+    porcentaje_detraccion NUMERIC(5, 2) DEFAULT 0.00,
+    medio_pago VARCHAR(50) DEFAULT 'STRIPE_CHECKOUT',
+    motivo_anulacion VARCHAR(255),
+    fecha_anulacion TIMESTAMP,
     CONSTRAINT uq_comprobante_serie_correlativo UNIQUE (serie, correlativo)
 );
 
@@ -152,9 +153,6 @@ CREATE TABLE IF NOT EXISTS SOLICITUD_INFORMACION (
 CREATE INDEX IF NOT EXISTS idx_solicitud_email ON SOLICITUD_INFORMACION(email);
 CREATE INDEX IF NOT EXISTS idx_solicitud_estado ON SOLICITUD_INFORMACION(estado);
 
--- ============================================================================
--- ESQUEMA DE ASISTENCIA VIRTUAL E INTELIGENCIA RAG (pgvector)
--- ============================================================================
 
 CREATE TABLE IF NOT EXISTS DOCUMENTO (
     id_documento BIGSERIAL PRIMARY KEY,
@@ -183,6 +181,19 @@ ON DOCUMENTO_CHUNK USING hnsw (embedding vector_cosine_ops)
 WITH (m = 16, ef_construction = 64);
 
 CREATE INDEX IF NOT EXISTS idx_chunk_programa ON DOCUMENTO_CHUNK(id_programa);
+
+-- Tabla para microservicio AI RAG (SentenceTransformer all-MiniLM-L6-v2 de 384 dimensiones)
+CREATE TABLE IF NOT EXISTS documento_chunks (
+    id BIGSERIAL PRIMARY KEY,
+    documento_origen VARCHAR(255) NOT NULL,
+    numero_pagina INT,
+    contenido TEXT NOT NULL,
+    embedding vector(384),
+    creado_en TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_documento_chunks_embedding 
+ON documento_chunks USING hnsw (embedding vector_cosine_ops);
 
 CREATE TABLE IF NOT EXISTS HISTORIAL_CONSULTA (
     id_historial BIGSERIAL PRIMARY KEY,
