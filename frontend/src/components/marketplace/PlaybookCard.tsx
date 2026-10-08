@@ -9,7 +9,6 @@ import {
   BookOpen,
   Bot,
   ShoppingCart,
-  Star,
   Check,
 } from 'lucide-react';
 import { Playbook, TierLevel } from '../../types';
@@ -69,12 +68,6 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
     // Graceful fallback
   }
 
-  const getPrice = (): number => {
-    if (playbook.tier === 'ENTERPRISE') return 950;
-    if (playbook.tier === 'ADVANCED') return 899;
-    return 799;
-  };
-
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-cyan-400/50 hover:shadow-xl hover:shadow-cyan-500/10 dark:border-slate-800/80 dark:bg-[#0d121a] dark:shadow-none dark:hover:border-cyan-500/50">
       {/* Media Aspect Header */}
@@ -115,8 +108,12 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
             Moodle 4.x
           </span>
 
-          <div className="rounded-lg bg-slate-950/90 backdrop-blur-md px-2.5 py-1 border border-cyan-500/40 text-xs font-black text-cyan-300 shadow-md">
-            ${getPrice()} USD
+          <div className="rounded-lg bg-slate-950/90 px-2.5 py-1 text-xs font-bold text-cyan-300">
+            {playbook.isDemo
+              ? 'Vista de ejemplo'
+              : playbook.price != null
+                ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: playbook.currency || 'PEN' }).format(playbook.price)
+                : 'Consultar precio'}
           </div>
         </div>
 
@@ -126,18 +123,6 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
       {/* Body Content */}
       <div className="flex flex-1 flex-col p-5">
         <div className="space-y-3">
-          {/* Rating and Reviews */}
-          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-1 text-amber-400 font-bold">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              <span>4.9</span>
-              <span className="text-slate-400 font-normal">/ 5.0</span>
-            </div>
-            <span className="font-mono text-[10px] text-slate-400">
-              120+ graduados
-            </span>
-          </div>
-
           <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-900 transition-colors group-hover:text-cyan-600 md:text-base dark:text-slate-100 dark:group-hover:text-cyan-300">
             {playbook.title}
           </h3>
@@ -202,6 +187,11 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
             </div>
 
             {/* Action buttons */}
+            {playbook.isDemo ? (
+              <p className="rounded-lg bg-slate-100 px-3 py-2.5 text-center text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                Programa de ejemplo · inscripción aún no disponible
+              </p>
+            ) : (
             <div className="flex gap-2">
               <button
                 type="button"
@@ -228,6 +218,7 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
                 )}
               </button>
             </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Playbook } from '../types';
+import { FALLBACK_PLAYBOOKS } from '../services/courseCatalog';
 
 interface CartContextType {
   cartItems: Playbook[];
@@ -28,7 +29,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<Playbook[]>(() => {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const items: Playbook[] = stored ? JSON.parse(stored) : [];
+      return Array.isArray(items) ? items.filter((item) =>
+        !item.isDemo &&
+        item.programId > 0 &&
+        !FALLBACK_PLAYBOOKS.some((demo) => demo.id === item.id && demo.title === item.title)
+      ) : [];
     } catch {
       return [];
     }
@@ -45,6 +51,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cartItems]);
 
   const addToCart = (playbook: Playbook) => {
+    if (playbook.isDemo || playbook.programId <= 0) return;
     setCartItems((prev) => {
       if (prev.some((item) => item.programId === playbook.programId)) {
         return prev;

@@ -1,0 +1,81 @@
+.lx-editorial-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: #f5f8fa;
+  color: #0b1d2d;
+  border-bottom: 1px solid #d9e2e8;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.dark .lx-editorial-header { background: #0a1320; color: #f2f7fa; border-color: #284054; }
+.lx-editorial-header-line { display: flex; align-items: center; gap: clamp(1rem, 3vw, 3.5rem); width: 100%; min-height: 76px; padding-inline: clamp(1.25rem, 3.2vw, 4.5rem); }
+.lx-editorial-header a, .lx-editorial-header button { -webkit-tap-highlight-color: transparent; }
+.lx-editorial-header :is(a, button):focus-visible { outline: 3px solid #009fd0; outline-offset: 3px; }
+.lx-editorial-brand { display: inline-flex; flex: none; align-items: center; gap: .65rem; min-width: 0; }
+.lx-editorial-brand img { width: 2.75rem; height: 2.75rem; object-fit: contain; }
+.lx-editorial-wordmark { display: flex; flex-direction: column; color: inherit; font-size: 1.03rem; font-weight: 850; line-height: 1.05; letter-spacing: .04em; }
+.lx-editorial-wordmark span { margin-top: .25rem; color: #39738d; font-size: .55rem; font-weight: 800; letter-spacing: .22em; }
+.dark .lx-editorial-wordmark span { color: #72cce1; }
+
+.lx-editorial-desktop-nav { display: flex; align-items: stretch; gap: clamp(1.1rem, 2.4vw, 2.7rem); align-self: stretch; margin-left: clamp(.4rem, 2vw, 2rem); }
+.lx-editorial-desktop-nav a { display: inline-flex; align-items: center; border-bottom: 2px solid transparent; color: #41556a; font-size: .82rem; font-weight: 650; transition: color 180ms ease, border-color 180ms ease; white-space: nowrap; }
+.lx-editorial-desktop-nav a:hover, .lx-editorial-desktop-nav a:focus-visible { color: #0b1d2d; border-bottom-color: #009fd0; }
+.dark .lx-editorial-desktop-nav a { color: #b1c5d2; }
+.dark .lx-editorial-desktop-nav a:hover, .dark .lx-editorial-desktop-nav a:focus-visible { color: #fff; }
+
+.lx-editorial-actions { display: flex; align-items: center; gap: .45rem; margin-left: auto; }
+.lx-editorial-icon-button { position: relative; display: grid; flex: none; place-items: center; width: 2.8rem; height: 2.8rem; border: 1px solid transparent; color: inherit; transition: border-color 180ms ease, background 180ms ease; }
+.lx-editorial-icon-button:hover { border-color: #b8c9d3; background: #eaf2f6; }
+.dark .lx-editorial-icon-button:hover { border-color: #36546a; background: #14283a; }
+.lx-editorial-icon-button svg { width: 1.15rem; height: 1.15rem; stroke-width: 1.8; }
+.lx-editorial-cart-count { position: absolute; right: .2rem; top: .1rem; display: grid; place-items: center; min-width: 1rem; height: 1rem; padding-inline: .15rem; background: #e96d24; color: #071827; font-size: .55rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lx-editorial-login, .lx-editorial-account-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 1.1rem; min-height: 2.8rem; padding: .65rem 1rem; background: #0b1d2d; color: #fff; font-size: .79rem; font-weight: 750; white-space: nowrap; transition: background 180ms ease; }
+.lx-editorial-login:hover, .lx-editorial-account-trigger:hover { background: #087ca6; }
+.dark .lx-editorial-login, .dark .lx-editorial-account-trigger { background: #45c1df; color: #071827; }
+.dark .lx-editorial-login:hover, .dark .lx-editorial-account-trigger:hover { background: #8ae4f3; }
+.lx-editorial-login svg, .lx-editorial-account-trigger svg { width: .98rem; height: .98rem; }
+.lx-editorial-account { position: relative; }
+.lx-editorial-account-trigger { max-width: 13rem; }
+.lx-editorial-account-trigger span { overflow: hidden; text-overflow: ellipsis; }
+.lx-editorial-account-menu { position: absolute; right: 0; top: calc(100% + .7rem); display: grid; gap: .6rem; width: 14rem; padding: 1rem; border: 1px solid #d9e2e8; background: #fff; box-shadow: 0 12px 30px rgba(5, 25, 40, .12); font-size: .8rem; }
+.lx-editorial-account-menu span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #536779; }
+.lx-editorial-account-menu :is(a, button) { padding: .7rem 0; border-top: 1px solid #d9e2e8; text-align: left; font-weight: 700; }
+.dark .lx-editorial-account-menu { border-color: #284054; background: #101f30; }
+.dark .lx-editorial-account-menu span { color: #a9bdcc; }
+.dark .lx-editorial-account-menu :is(a, button) { border-color: #284054; }
+.lx-editorial-menu-trigger, .lx-editorial-mobile-nav { display: none; }
+
+@media (max-width: 920px) {
+  .lx-editorial-desktop-nav { gap: 1rem; margin-left: 0; }
+  .lx-editorial-header-line { gap: 1rem; }
+  .lx-editorial-login, .lx-editorial-account-trigger { padding-inline: .7rem; }
+}
+
+@media (max-width: 760px) {
+  .lx-editorial-header-line { min-height: 64px; padding-inline: 1rem; gap: .5rem; }
+  .lx-editorial-brand img { width: 2.25rem; height: 2.25rem; }
+  .lx-editorial-wordmark { font-size: .92rem; }
+  .lx-editorial-wordmark span { font-size: .48rem; }
+  .lx-editorial-desktop-nav, .lx-editorial-login, .lx-editorial-account { display: none; }
+  .lx-editorial-actions { gap: .1rem; }
+  .lx-editorial-icon-button { width: 2.65rem; height: 2.75rem; }
+  .lx-editorial-menu-trigger { display: grid; }
+  .lx-editorial-mobile-nav.is-open { display: grid; }
+  .lx-editorial-mobile-nav { padding: .3rem 1rem 1rem; border-top: 1px solid #d9e2e8; background: #f5f8fa; }
+  .dark .lx-editorial-mobile-nav { border-color: #284054; background: #0a1320; }
+  .lx-editorial-mobile-nav a, .lx-editorial-mobile-nav button { display: flex; align-items: center; gap: 1rem; min-height: 3.5rem; border-bottom: 1px solid #d9e2e8; color: inherit; font-size: 1rem; font-weight: 700; text-align: left; }
+  .dark .lx-editorial-mobile-nav a, .dark .lx-editorial-mobile-nav button { border-color: #284054; }
+  .lx-editorial-mobile-nav a span { color: #39738d; font-family: 'Barlow Condensed', sans-serif; font-size: 1.2rem; }
+  .lx-editorial-mobile-nav a svg, .lx-editorial-mobile-nav button svg { width: 1rem; height: 1rem; margin-left: auto; }
+  .lx-editorial-mobile-nav button { color: #009fd0; }
+}
+
+@media (max-width: 350px) {
+  .lx-editorial-theme { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-editorial-header * { transition-duration: .01ms !important; }
+}

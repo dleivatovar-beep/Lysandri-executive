@@ -134,7 +134,7 @@ export const AdminDashboard: React.FC<
     (program) => {
       return (
         !normalizedSearch ||
-        program.tituloPrograma
+        (program.titulo || program.tituloPrograma || '')
           .toLowerCase()
           .includes(normalizedSearch) ||
         program.nombreInstructor

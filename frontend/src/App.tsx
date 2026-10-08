@@ -25,6 +25,7 @@ import companyLogo from './assets/mi-logo.png';
 import { LoginView } from './components/auth/LoginView';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { Footer } from './components/layout/Footer';
+import { EditorialNavbar } from './components/layout/EditorialNavbar';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 
@@ -764,6 +765,9 @@ const PublicLayout:
     const navigate =
       useNavigate();
 
+    const location =
+      useLocation();
+
     const {
       user,
       logout,
@@ -780,7 +784,7 @@ const PublicLayout:
 
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
-        <Navbar
+        <EditorialNavbar
           user={
             user
               ? toNavbarUser(
@@ -792,18 +796,19 @@ const PublicLayout:
           onThemeToggle={
             onThemeToggle
           }
-          onLoginClick={() =>
-            navigate('/login')
-          }
           onLogoutClick={
             handleLogout
           }
         />
 
         <main className="min-h-[calc(100vh-4rem)]">
-          <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
+          {location.pathname === '/' ? (
             <Outlet />
-          </div>
+          ) : (
+            <div className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8">
+              <Outlet />
+            </div>
+          )}
         </main>
 
         <Footer />

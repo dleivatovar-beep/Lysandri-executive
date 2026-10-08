@@ -4,30 +4,53 @@ import {
   AuthResponse,
   LoginRequest,
   RegisterRequest,
+  UserRole,
 } from '../types';
 import { apiClient } from './api';
+
+interface BackendAuthResponse {
+  token: string;
+  idUser: number;
+  email: string;
+  nombreCompleto: string;
+  rol: UserRole | 'CLIENTE';
+}
+
+const toAuthResponse = (response: BackendAuthResponse): AuthResponse => ({
+  token: response.token,
+  id: response.idUser,
+  nombre: response.nombreCompleto,
+  email: response.email,
+  rol: response.rol === 'CLIENTE' ? 'ESTUDIANTE' : response.rol,
+});
 
 export const authService = {
   async login(
     credentials: LoginRequest,
   ): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(
+    const response = await apiClient.post<BackendAuthResponse>(
       '/auth/login',
       credentials,
     );
 
-    return response.data;
+    return toAuthResponse(response.data);
   },
 
   async register(
     data: RegisterRequest,
   ): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(
+    const response = await apiClient.post<BackendAuthResponse>(
       '/auth/register',
-      data,
+      {
+        nombres: data.nombre,
+        apellidos: data.apellidos,
+        email: data.email,
+        password: data.password,
+        telefono: data.telefono,
+      },
     );
 
-    return response.data;
+    return toAuthResponse(response.data);
   },
 };
 

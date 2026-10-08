@@ -120,9 +120,10 @@ const resolveTier = (
 export const toCatalogCourse = (
   program: ProgramaResponse,
 ): Playbook => {
+  const title = program.titulo || program.tituloPrograma || 'Programa sin título';
   const presentation =
     PRESENTATION_BY_TITLE[
-      normalize(program.tituloPrograma)
+      normalize(title)
     ];
 
   const category =
@@ -143,12 +144,16 @@ export const toCatalogCourse = (
   return {
     id: String(program.idPrograma),
     programId: program.idPrograma,
-    title: program.tituloPrograma,
-    coverUrl: presentation?.coverUrl,
-    slug: slugify(program.tituloPrograma),
+    title,
+    price: program.precio,
+    currency: program.moneda,
+    coverUrl: program.imagenPortadaUrl || presentation?.coverUrl,
+    slug: program.slug || slugify(title),
 
     description:
       presentation?.description ||
+      program.descripcionCorta ||
+      program.descripcionDetallada ||
       program.metodologia ||
       program.requisitos ||
       'Consulta el contenido y los requisitos de este programa académico.',
@@ -157,11 +162,13 @@ export const toCatalogCourse = (
 
     tier:
       presentation?.tier ||
-      resolveTier(program.level),
+      resolveTier(program.nivel || program.level),
 
     tags,
-    duration: program.duracionPrograma,
-    instructor: program.nombreInstructor,
+    duration: program.duracionHoras
+      ? `${program.duracionHoras} horas`
+      : program.duracionPrograma,
+    instructor: program.instructorNombre || program.nombreInstructor,
   };
 };
 
@@ -203,7 +210,7 @@ export const getCourseCover = (
     normalize(title)
   ]?.coverUrl;
 
-export const FALLBACK_PLAYBOOKS: Playbook[] = [
+export const FALLBACK_PLAYBOOKS: Playbook[] = ([
   {
     id: '1',
     programId: 1,
@@ -282,4 +289,4 @@ export const FALLBACK_PLAYBOOKS: Playbook[] = [
     duration: '6 Semanas',
     instructor: 'MSc. Patricia Arana (Executive Coach)',
   }
-];
+] as Playbook[]).map((playbook) => ({ ...playbook, isDemo: true }));

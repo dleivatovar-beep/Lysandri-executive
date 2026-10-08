@@ -1,20 +1,14 @@
-import React, { useState } from 'react';
-import {
-  Moon,
-  Sun,
-  ShoppingCart,
-  Sparkles,
-  Phone,
-  Mail,
-  MessageCircle,
-  Bot,
-  GraduationCap,
-} from 'lucide-react';
+import React from 'react';
+import { ArrowUpRight, LogIn, LogOut, Moon, ShoppingBag, Sun } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+
 import companyLogo from '../../assets/mi-logo.png';
 import { useCart } from '../../context/CartContext';
+import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
+import { UserProfile } from '../../types';
 
 export interface NavbarProps {
-  user?: any;
+  user?: UserProfile | null;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
   onLoginClick?: () => void;
@@ -23,32 +17,27 @@ export interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  user,
   theme,
   onThemeToggle,
+  onLoginClick,
+  onLogoutClick,
   onOpenAiChat,
 }) => {
-  const [isContactPopoverOpen, setIsContactPopoverOpen] = useState(false);
-
-  let cartCount = 0;
-  let openCartFn = () => {};
-  try {
-    const cart = useCart();
-    cartCount = cart.itemCount;
-    openCartFn = cart.openCart;
-  } catch {
-    // fallback
-  }
+  const navigate = useNavigate();
+  const { itemCount, openCart } = useCart();
 
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      window.location.href = `/#${id}`;
+    if (window.location.pathname !== '/') {
+      navigate(`/#${id}`);
+      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return;
     }
+
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleOpenChat = () => {
+  const openAssistant = () => {
     if (onOpenAiChat) {
       onOpenAiChat();
     } else {
@@ -57,155 +46,50 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <>
-      <header className="sticky top-0 z-40 h-16 border-b border-cyan-500/10 bg-white/95 shadow-[0_1px_25px_rgba(6,182,212,0.06)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-[#070a10]/95">
-        <div className="flex h-full w-full items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <a href="/" className="group flex items-center gap-3">
-              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                <div className="absolute inset-0 rounded-xl bg-cyan-400/20 opacity-70 blur-lg group-hover:opacity-100 transition-opacity" />
-                <img
-                  src={companyLogo}
-                  alt="Logo"
-                  className="relative h-10 w-10 object-contain drop-shadow-[0_0_8px_rgba(34,211,238,0.35)]"
-                />
-              </div>
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 text-slate-900 backdrop-blur-sm dark:border-[#203047] dark:bg-[#081321]/95 dark:text-slate-100">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1920px] items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
+        <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-2 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-500 sm:gap-3" aria-label="Lysandri Executive, ir al inicio">
+          <img src={companyLogo} alt="" className="h-8 w-8 object-contain sm:h-10 sm:w-10" />
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="text-[13px] font-extrabold tracking-[0.05em] sm:text-[15px] sm:tracking-[0.08em]">LYSANDRI</span>
+            <span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:block">Executive</span>
+          </span>
+        </Link>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-base font-black tracking-wide text-slate-900 dark:text-white">
-                    LYSANDRI
-                  </span>
-                  <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-cyan-600 dark:text-cyan-400">
-                    EXECUTIVE
-                  </span>
-                </div>
-                <span className="hidden font-mono text-[9px] tracking-tight text-slate-500 dark:text-slate-400 sm:block">
-                  Yunix Ingenieros E.I.R.L.
-                </span>
-              </div>
-            </a>
-          </div>
+        <nav aria-label="Navegación principal" className="ml-auto hidden items-center gap-1 lg:flex">
+          <button type="button" onClick={() => scrollToSection('catalogo-section')} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">Programas</button>
+          <button type="button" onClick={() => scrollToSection('metodologia-section')} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">Metodología</button>
+          <button type="button" onClick={() => scrollToSection('in-company-section')} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">Para empresas</button>
+          <button type="button" onClick={openAssistant} className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">Asistente</button>
+        </nav>
 
-          <nav className="flex items-center gap-2 sm:gap-4">
-            <button
-              type="button"
-              onClick={() => scrollToSection('catalogo-section')}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-cyan-600 hover:bg-slate-100 dark:text-slate-200 dark:hover:text-cyan-400 dark:hover:bg-slate-800/50 transition-colors"
-            >
-              <GraduationCap className="h-4 w-4 text-cyan-500" />
-              <span>Programas</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenChat}
-              className="flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 hover:bg-cyan-500/20 dark:text-cyan-300 dark:hover:bg-cyan-950/60 transition-colors"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-              <span className="hidden sm:inline">Asistente IA</span>
-              <span className="sm:hidden">IA</span>
-            </button>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsContactPopoverOpen((prev) => !prev)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:bg-slate-800/50 transition-colors"
-              >
-                <Phone className="h-3.5 w-3.5 text-indigo-400" />
-                <span>Contacto</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-4">
+          <button type="button" onClick={openCart} aria-label={`Abrir carrito, ${itemCount} productos`} className="relative flex h-10 items-center gap-2 rounded-md px-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white sm:px-3">
+            <ShoppingBag className="h-[19px] w-[19px]" aria-hidden="true" />
+            <span className="hidden text-sm font-medium sm:inline">Carrito</span>
+            {itemCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-600 px-1 text-[11px] font-bold text-white">{itemCount}</span>}
+          </button>
+          <button type="button" onClick={onThemeToggle} aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">
+            {theme === 'dark' ? <Sun className="h-[19px] w-[19px]" /> : <Moon className="h-[19px] w-[19px]" />}
+          </button>
+          {user ? (
+            <>
+              <button type="button" onClick={() => navigate(getRoleHomePath(user.role))} className="lysandri-nav-primary flex h-10 items-center gap-2 rounded-md bg-[#112b45] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#174266] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:bg-cyan-400 dark:text-[#071725] dark:hover:bg-cyan-300">
+                <span className="max-w-28 truncate sm:max-w-40">{user.name}</span>
+                <ArrowUpRight className="hidden h-4 w-4 sm:block" aria-hidden="true" />
               </button>
-
-              {isContactPopoverOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsContactPopoverOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
-                    <p className="text-xs font-bold text-white mb-2">
-                      Atención y admisiones
-                    </p>
-                    <div className="space-y-2 text-xs">
-                      <a
-                        href="https://wa.me/51999888777?text=Hola,%20solicito%20información%20sobre%20los%20programas%20de%20Lysandri%20Executive"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 p-2 text-emerald-300 hover:bg-emerald-900/60 transition-colors"
-                      >
-                        <MessageCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold">WhatsApp</div>
-                          <div className="text-[10px] text-emerald-400/80">+51 999 888 777</div>
-                        </div>
-                      </a>
-
-                      <a
-                        href="mailto:contacto@yunixingenieros.com"
-                        className="flex items-center gap-2.5 rounded-xl bg-slate-800/80 border border-slate-700 p-2 text-slate-300 hover:bg-slate-800 transition-colors"
-                      >
-                        <Mail className="h-4 w-4 text-cyan-400 shrink-0" />
-                        <div>
-                          <div className="font-semibold">Correo</div>
-                          <div className="text-[10px] text-slate-400">contacto@yunixingenieros.com</div>
-                        </div>
-                      </a>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </nav>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={openCartFn}
-              aria-label="Carrito de compras"
-              className="relative flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-slate-100/80 px-3 py-2 text-xs font-semibold text-slate-700 transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/10 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-cyan-500/40"
-            >
-              <ShoppingCart className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              <span className="hidden font-mono text-[11px] font-bold sm:inline">
-                Carrito
-              </span>
-              {cartCount > 0 && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-indigo-600 px-1 text-[10px] font-black text-white shadow-md shadow-cyan-500/30">
-                  {cartCount}
-                </span>
-              )}
+              <button type="button" onClick={onLogoutClick} aria-label="Cerrar sesión" title="Cerrar sesión" className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">
+                <LogOut className="h-[19px] w-[19px]" />
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={onLoginClick} className="lysandri-nav-primary flex h-10 items-center gap-2 rounded-md bg-[#112b45] px-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#174266] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:bg-cyan-400 dark:text-[#071725] dark:hover:bg-cyan-300 sm:px-4 sm:text-sm">
+              <LogIn className="hidden h-4 w-4 sm:block" aria-hidden="true" />
+              <span>Iniciar sesión</span>
             </button>
-
-            <button
-              type="button"
-              onClick={onThemeToggle}
-              aria-label={
-                theme === 'dark' ? 'Modo claro' : 'Modo oscuro'
-              }
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/10 bg-slate-50 text-slate-500 transition-all duration-300 hover:border-cyan-500/30 hover:bg-cyan-500/5 hover:text-cyan-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:border-cyan-500/30 dark:hover:text-cyan-400"
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+          )}
         </div>
-      </header>
-
-      <button
-        type="button"
-        onClick={handleOpenChat}
-        aria-label="Asistente"
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-[0_10px_30px_rgba(6,182,212,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 group"
-      >
-        <Bot className="h-7 w-7 transition-transform group-hover:scale-110" />
-        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500" />
-        </span>
-      </button>
-    </>
+      </div>
+    </header>
   );
 };

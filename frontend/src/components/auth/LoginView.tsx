@@ -13,10 +13,12 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 import animatedLogo from '../../assets/logo-animado.gif';
+import companyLogo from '../../assets/mi-logo.png';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
 import { getApiErrorMessage } from '../../services/authService';
 import { informationRequestService } from '../../services/informationRequestService';
+import './login-editorial.css';
 
 interface LoginViewProps {
   onBack: () => void;
@@ -92,6 +94,11 @@ export const LoginView:
       'Eleva tu flujo de trabajo';
 
     useEffect(() => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setTypedText(fullText);
+        setIsTyping(false);
+        return;
+      }
       let intervalId:
         | number
         | undefined;
@@ -179,7 +186,7 @@ export const LoginView:
         setPhone('');
 
         setSuccessMessage(
-          'Tu solicitud fue enviada correctamente. Un asesor se comunicará contigo.',
+          'Recibimos tu solicitud. Nos pondremos en contacto contigo.',
         );
       };
 
@@ -241,11 +248,11 @@ export const LoginView:
       };
 
     return (
-      <div className="relative flex min-h-screen w-full bg-white dark:bg-[#0a0d14]">
+      <div className="lx-login-page relative flex min-h-screen w-full">
         <button
           type="button"
           onClick={onBack}
-          className="absolute left-6 top-6 z-50 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/50 px-4 py-2 text-sm font-medium text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-slate-900/70 active:scale-95"
+          className="lx-login-back absolute left-6 top-6 z-50 flex items-center gap-2 px-4 py-2 text-sm font-medium"
         >
           <ArrowLeft className="h-4 w-4" />
 
@@ -255,62 +262,55 @@ export const LoginView:
         </button>
 
         {/* Sección izquierda */}
-        <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden border-r border-slate-200 bg-slate-900 dark:border-slate-800 dark:bg-[#07090e] lg:flex">
-          <div className="pointer-events-none absolute left-1/4 top-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="lx-login-visual relative hidden w-1/2 flex-col items-center justify-center overflow-hidden lg:flex">
+          <div className="relative z-10 flex w-full flex-col items-center justify-center px-12">
+            <picture className="lx-login-logo-wrap">
+              <source media="(prefers-reduced-motion: reduce)" srcSet={companyLogo} />
+              <img
+                src={animatedLogo}
+                alt="Lysandri Executive"
+                className="lx-login-animated-logo mb-8 h-auto w-full max-w-[28rem] object-contain xl:max-w-[34rem]"
+              />
+            </picture>
 
-          <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-indigo-500/10 blur-3xl" />
-
-          <div className="relative z-10 flex w-full flex-col items-center justify-center px-12 transition-transform duration-700 hover:scale-105">
-            <img
-              src={animatedLogo}
-              alt="Lysandri Executive"
-              className="mb-8 h-auto w-full max-w-[28rem] object-contain drop-shadow-[0_0_35px_rgba(34,211,238,0.15)] xl:max-w-[34rem]"
-            />
-
-            <div className="flex h-12 items-center justify-center">
-              <h1 className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-center text-3xl font-bold leading-tight tracking-tight text-transparent xl:text-4xl">
+            <div className="lx-login-motto-wrap flex items-center justify-center">
+              <h1 className="lx-login-motto text-center">
                 {typedText}
               </h1>
 
               {isTyping && (
-                <span className="ml-2 inline-block h-8 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)] xl:h-10" />
+                <span className="lx-login-caret ml-2 inline-block" />
               )}
             </div>
           </div>
 
-          <div className="absolute bottom-8 left-12 z-10 font-mono text-[10px] uppercase tracking-widest text-slate-500">
-            © 2026 Lysandri Global Tech
+          <div className="lx-login-credit absolute bottom-8 left-12 z-10 text-[10px] uppercase tracking-widest">
+            Lysandri Executive · Yunix Ingenieros E.I.R.L.
           </div>
         </div>
 
         {/* Sección derecha */}
-        <div className="flex w-full items-center justify-center overflow-y-auto bg-white px-6 py-24 dark:bg-[#0a0d14] sm:px-8 md:px-14 lg:w-1/2">
-          <div className="w-full max-w-md">
-            <div className="mb-7">
-              <span className="mb-3 inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
+        <div className="lx-login-panel flex w-full items-center justify-center overflow-y-auto px-6 py-24 sm:px-8 md:px-14 lg:w-1/2">
+          <div className="lx-login-form-wrap w-full max-w-md">
+            <div className="lx-login-mobile-brand lg:hidden"><img src={companyLogo} alt="" /><span>LYSANDRI <small>EXECUTIVE</small></span></div>
+            <div className="lx-login-intro mb-7">
+              <h2 className="lx-login-heading mb-2">
                 {activeTab ===
                 'login'
-                  ? 'Acceso corporativo'
-                  : 'Nuevos estudiantes'}
-              </span>
-
-              <h2 className="mb-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {activeTab ===
-                'login'
-                  ? 'Bienvenido de nuevo'
-                  : 'Solicitar información'}
+                  ? 'Accede a tu cuenta.'
+                  : 'Hablemos de formación.'}
               </h2>
 
-              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+              <p>
                 {activeTab ===
                 'login'
-                  ? 'Ingresa tus credenciales corporativas para continuar.'
-                  : 'Déjanos tus datos y un asesor se comunicará contigo para brindarte información.'}
+                  ? 'Ingresa tus credenciales para continuar con tus programas.'
+                  : 'Déjanos tus datos para recibir información sobre los programas.'}
               </p>
             </div>
 
             {/* Pestañas */}
-            <div className="mb-7 flex border-b border-slate-200 dark:border-slate-800">
+            <div className="lx-login-tabs mb-7 flex" aria-label="Tipo de acceso">
               <button
                 type="button"
                 onClick={() =>
@@ -318,19 +318,10 @@ export const LoginView:
                     'login',
                   )
                 }
-                className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
-                  activeTab ===
-                  'login'
-                    ? 'text-cyan-600 dark:text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
-                }`}
+                aria-pressed={activeTab === 'login'}
+                className={`lx-login-tab ${activeTab === 'login' ? 'is-active' : ''}`}
               >
                 Iniciar sesión
-
-                {activeTab ===
-                  'login' && (
-                  <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-t-full bg-gradient-to-r from-cyan-400 to-indigo-500" />
-                )}
               </button>
 
               <button
@@ -340,24 +331,15 @@ export const LoginView:
                     'request',
                   )
                 }
-                className={`relative w-1/2 py-3 text-center text-sm font-semibold transition-colors ${
-                  activeTab ===
-                  'request'
-                    ? 'text-cyan-600 dark:text-cyan-400'
-                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-500 dark:hover:text-slate-300'
-                }`}
+                aria-pressed={activeTab === 'request'}
+                className={`lx-login-tab ${activeTab === 'request' ? 'is-active' : ''}`}
               >
-                Inscribirse
-
-                {activeTab ===
-                  'request' && (
-                  <span className="absolute bottom-0 left-0 h-0.5 w-full rounded-t-full bg-gradient-to-r from-cyan-400 to-indigo-500" />
-                )}
+                Solicitar información
               </button>
             </div>
 
             {errorMessage && (
-              <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
+              <div role="alert" className="lx-login-alert is-error mb-5 flex items-start gap-3 px-4 py-3 text-sm">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
 
                 <span>
@@ -367,7 +349,7 @@ export const LoginView:
             )}
 
             {successMessage && (
-              <div className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-300">
+              <div role="status" className="lx-login-alert is-success mb-5 flex items-start gap-3 px-4 py-3 text-sm">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
 
                 <span>
@@ -377,10 +359,11 @@ export const LoginView:
             )}
 
             <form
+              key={activeTab}
               onSubmit={
                 handleSubmit
               }
-              className="space-y-4"
+              className="lx-login-form space-y-4"
             >
               {activeTab ===
               'login' ? (
@@ -416,12 +399,12 @@ export const LoginView:
                       <input
                         id="remember"
                         type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 bg-transparent text-cyan-500 focus:ring-cyan-500/20 dark:border-slate-700"
+                        className="lx-login-remember h-4 w-4"
                       />
 
                       <label
                         htmlFor="remember"
-                        className="ml-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400"
+                        className="lx-login-subtle ml-2 cursor-pointer text-xs"
                       >
                         Mantener sesión iniciada
                       </label>
@@ -429,7 +412,7 @@ export const LoginView:
 
                     <button
                       type="button"
-                      className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-500 hover:underline dark:text-cyan-400"
+                      className="lx-login-link text-xs font-medium"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -477,7 +460,7 @@ export const LoginView:
                     }
                   />
 
-                  <p className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-500">
+                  <p className="lx-login-consent text-xs leading-relaxed">
                     Al enviar este formulario
                     autorizas a Lysandri a
                     comunicarse contigo para
@@ -493,7 +476,7 @@ export const LoginView:
                 disabled={
                   isSubmitting
                 }
-                className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-sm font-bold text-white shadow-[0_8px_28px_rgba(6,182,212,0.20)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_36px_rgba(79,70,229,0.28)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                className="lx-login-submit mt-6 flex h-12 w-full items-center justify-center gap-2 text-sm font-bold"
               >
                 {isSubmitting && (
                   <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -539,10 +522,10 @@ const InputField:
     onChange,
   }) => {
     return (
-      <div>
+      <div className="lx-login-field">
         <label
           htmlFor={id}
-          className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
+          className="mb-1.5 block text-xs font-semibold"
         >
           {label}
         </label>
@@ -563,7 +546,7 @@ const InputField:
               event.target.value,
             )
           }
-          className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100 dark:placeholder:text-slate-600"
+          className="h-12 w-full px-4 text-sm"
         />
       </div>
     );

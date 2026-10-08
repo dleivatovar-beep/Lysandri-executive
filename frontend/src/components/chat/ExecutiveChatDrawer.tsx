@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, FileText, LoaderCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useRef, useEffect, useId } from 'react';
+import { X, Send, FileText, LoaderCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Playbook } from '../../types';
 import { storeService, RagCitation } from '../../services/storeService';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
+import '../marketplace/editorial-overlays.css';
 
 interface ChatMessage {
   id: string;
@@ -30,7 +32,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'ia',
-      text: 'Estimado ejecutivo, soy el Asistente Inteligente de Lysandri Executive. ¿En qué puedo orientarle hoy sobre nuestras mallas curriculares, requisitos directivos o acreditación en Moodle LMS?',
+      text: 'Hola. Puedo ayudarte a consultar la información disponible de los programas. ¿Qué te gustaría saber?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -38,6 +40,8 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const dialogRef = useDialogAccessibility<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
     if (activePlaybook) {
@@ -46,7 +50,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
         {
           id: `context-${Date.now()}`,
           sender: 'ia',
-          text: `He fijado el contexto en el programa ejecutivo: "${activePlaybook.title}". ¿Tiene alguna duda específica sobre el contenido de su sílabo o perfil de egreso?`,
+          text: `Estamos hablando de "${activePlaybook.title}". ¿Qué te gustaría saber sobre este programa?`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -95,7 +99,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'ia',
-        text: 'Lo sentimos, el motor RAG está procesando alta demanda en este momento. Por favor, reintente en unos segundos.',
+        text: 'No pude responder ahora. Comprueba tu conexión e inténtalo de nuevo en unos momentos.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -118,37 +122,38 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="lx-overlay lx-chat-overlay fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+        className="lx-overlay-backdrop absolute inset-0"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-lg border-l border-cyan-500/20 bg-slate-900 text-slate-100 shadow-2xl flex flex-col">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="lx-drawer lx-chat flex w-screen max-w-lg flex-col"
+        >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-6 py-4">
+          <div className="lx-overlay-header flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-2.5 text-white shadow-md shadow-cyan-500/20">
-                <Bot className="h-5 w-5" />
-              </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-white">Asistente Ejecutivo RAG</h2>
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400">pgvector + Embeddings 1536d</p>
+                <h2 id={titleId}>Consulta sobre programas</h2>
+                <p>Asistente de Lysandri Executive</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              data-dialog-close
+              aria-label="Cerrar asistente"
+              className="lx-overlay-close flex h-11 w-11 items-center justify-center"
             >
               <X className="h-5 w-5" />
             </button>
@@ -156,7 +161,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
 
           {/* Active Context Banner */}
           {activePlaybook && (
-            <div className="flex items-center justify-between border-b border-slate-800/80 bg-cyan-950/40 px-6 py-2.5 text-xs">
+            <div className="lx-chat-context flex items-center justify-between border-b px-6 py-2.5 text-xs">
               <div className="flex items-center gap-2 text-cyan-300 truncate">
                 <FileText className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">Contexto: {activePlaybook.title}</span>
@@ -174,7 +179,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div role="log" aria-label="Mensajes del asistente" aria-live="polite" aria-relevant="additions" aria-busy={isLoading} className="flex-1 overflow-y-auto p-6 space-y-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -251,7 +256,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                   key={idx}
                   type="button"
                   onClick={() => handleSend(prompt)}
-                  className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-[10px] text-slate-400 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors"
+                  className="min-h-11 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-400 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors"
                 >
                   {prompt}
                 </button>
@@ -272,13 +277,15 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                 type="text"
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
+                aria-label="Consulta para el asistente"
                 placeholder="Escribe tu consulta sobre los programas o sílabos..."
-                className="flex-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={!inputQuestion.trim() || isLoading}
-                className="rounded-xl bg-cyan-500 p-2.5 text-slate-950 hover:bg-cyan-400 disabled:opacity-40 transition-colors"
+                aria-label="Enviar consulta"
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-40 transition-colors"
               >
                 <Send className="h-4 w-4" />
               </button>

@@ -296,12 +296,16 @@
 }
 
 /* Light mode: identidad Lysandri */
+html:not(.dark) {
+  color-scheme: light;
+}
+
 html:not(.dark) body {
   background: #f3f8fc;
   color: #12213a;
 }
 
-html:not(.dark) header {
+html:not(.dark) header:not(.lx-site-header) {
   background: rgba(248, 252, 255, 0.92) !important;
   border-bottom-color: rgba(6, 182, 212, 0.22) !important;
   box-shadow: 0 8px 24px rgba(30, 64, 175, 0.05);
@@ -369,14 +373,14 @@ html:not(.dark) .bg-slate-50 {
 }
 
 /* Controles de la navbar */
-html:not(.dark) header button,
-html:not(.dark) header .bg-slate-50,
-html:not(.dark) header .bg-slate-100 {
+html:not(.dark) header:not(.lx-site-header) button,
+html:not(.dark) header:not(.lx-site-header) .bg-slate-50,
+html:not(.dark) header:not(.lx-site-header) .bg-slate-100 {
   border-color: #c7dceb !important;
   background-color: #f4f9fd !important;
 }
 
-html:not(.dark) header button:hover {
+html:not(.dark) header:not(.lx-site-header) button:hover {
   border-color: rgba(6, 182, 212, 0.55) !important;
   background-color: #ecfaff !important;
 }
@@ -397,6 +401,37 @@ html:not(.dark) input:focus,
 html:not(.dark) textarea:focus {
   border-color: #06b6d4 !important;
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1) !important;
+}
+
+/* Los paneles oscuros conservan su contraste también cuando la página está en modo claro. */
+.dark-surface {
+  color-scheme: dark;
+}
+
+html:not(.dark) .dark-surface input,
+html:not(.dark) .dark-surface textarea {
+  border-color: #475569 !important;
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  caret-color: #67e8f9;
+}
+
+html:not(.dark) .dark-surface input::placeholder,
+html:not(.dark) .dark-surface textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .dark-surface .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+html:not(.dark) .dark-surface .text-slate-500 {
+  color: #a6b5c9 !important;
+}
+
+.dark-surface :is(button, input, textarea, a, [tabindex]):focus-visible {
+  outline: 2px solid #67e8f9 !important;
+  outline-offset: 2px;
 }
 
 /* Chips y elementos secundarios */
