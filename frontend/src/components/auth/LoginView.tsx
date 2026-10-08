@@ -79,6 +79,18 @@ interface GeneratedWelcome {
 
 const DEFAULT_STAFF: GeneratedWelcome[] = [
   {
+    fullName: 'Danny Ronaldo Leiva Tovar',
+    personalEmail: 'danny@lysandri.com',
+    assignedUsername: 'dannylev94',
+    areaId: 'ADMINISTRACION',
+    areaLabel: 'Administración & Dirección',
+    role: 'ADMIN',
+    activationCode: 'INT-55012',
+    tempPassword: 'Danny2026!',
+    phone: '+51 941 238 905',
+    date: '08 oct 2026',
+  },
+  {
     fullName: 'Antony brayan Ruiz susanibar',
     personalEmail: 'antonybrayanruizsusanibar@gmail.com',
     assignedUsername: 'antonyruiz96',

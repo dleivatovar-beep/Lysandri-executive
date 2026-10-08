@@ -161,6 +161,30 @@ export const academicService = {
       baseUsers = [
         {
           idUser: 1,
+          nombres: 'Danny Ronaldo',
+          apellidos: 'Leiva Tovar',
+          email: 'danny@lysandri.com',
+          telefono: '+51 941 238 905',
+          rol: 'ADMIN',
+        },
+        {
+          idUser: 2,
+          nombres: 'Antony Brayan',
+          apellidos: 'Ruiz Susanibar',
+          email: 'antonybrayanruizsusanibar@gmail.com',
+          telefono: '+51 987 242 796',
+          rol: 'ADMIN',
+        },
+        {
+          idUser: 3,
+          nombres: 'Director General',
+          apellidos: 'Lysandri Executive',
+          email: 'admin@lysandri.com',
+          telefono: '+51 999 000 111',
+          rol: 'ADMIN',
+        },
+        {
+          idUser: 4,
           nombres: 'Carlos',
           apellidos: 'Vargas Silva',
           email: 'carlos.vargas@empresa.com',
@@ -168,7 +192,7 @@ export const academicService = {
           rol: 'ESTUDIANTE',
         },
         {
-          idUser: 2,
+          idUser: 5,
           nombres: 'Mariana',
           apellidos: 'Sánchez Ríos',
           email: 'm.sanchez@corporacion.pe',
@@ -176,7 +200,7 @@ export const academicService = {
           rol: 'ESTUDIANTE',
         },
         {
-          idUser: 3,
+          idUser: 6,
           nombres: 'Dra. Elena',
           apellidos: 'Alarcón',
           email: 'elena.alarcon@lysandri.com',
@@ -184,20 +208,12 @@ export const academicService = {
           rol: 'INSTRUCTOR',
         },
         {
-          idUser: 4,
+          idUser: 7,
           nombres: 'Mg. Roberto',
           apellidos: 'Valenzuela',
           email: 'roberto.valenzuela@lysandri.com',
           telefono: '+51 965 890 123',
           rol: 'INSTRUCTOR',
-        },
-        {
-          idUser: 5,
-          nombres: 'Director',
-          apellidos: 'Académico',
-          email: 'admin@lysandri.com',
-          telefono: '+51 999 000 111',
-          rol: 'ADMIN',
         },
       ];
     }
