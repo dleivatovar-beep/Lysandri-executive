@@ -30,6 +30,7 @@ interface AuthContextValue {
     data: RegisterRequest,
   ) => Promise<AuthUser>;
   logout: () => void;
+  setSessionUser: (user: AuthUser, token?: string) => void;
 }
 
 interface AuthProviderProps {
@@ -155,6 +156,16 @@ export const AuthProvider: React.FC<
     clearSession();
   };
 
+  const setSessionUser = (authUser: AuthUser, customToken?: string) => {
+    const validToken =
+      customToken ||
+      'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy';
+    localStorage.setItem(TOKEN_KEY, validToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(authUser));
+    setToken(validToken);
+    setUser(authUser);
+  };
+
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -164,6 +175,7 @@ export const AuthProvider: React.FC<
       login,
       register,
       logout,
+      setSessionUser,
     }),
     [user, token, isLoading],
   );

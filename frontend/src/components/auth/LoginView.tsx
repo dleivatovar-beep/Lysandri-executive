@@ -77,9 +77,48 @@ interface GeneratedWelcome {
   date: string;
 }
 
+const DEFAULT_STAFF: GeneratedWelcome[] = [
+  {
+    fullName: 'Antony brayan Ruiz susanibar',
+    personalEmail: 'antonybrayanruizsusanibar@gmail.com',
+    assignedUsername: 'antonyruiz96',
+    areaId: 'ADMINISTRACION',
+    areaLabel: 'Administración',
+    role: 'ADMIN',
+    activationCode: 'INT-78219',
+    tempPassword: 'Antony2026!',
+    phone: '+51 987654321',
+    date: '08 oct 2026',
+  },
+  {
+    fullName: 'Jared Quiroz',
+    personalEmail: 'jared@lysandri.com',
+    assignedUsername: 'jaredquiz21',
+    areaId: 'ADMINISTRACION',
+    areaLabel: 'Administración',
+    role: 'ADMIN',
+    activationCode: 'INT-10293',
+    tempPassword: 'Jared2026!',
+    phone: '+51 912345678',
+    date: '08 oct 2026',
+  },
+  {
+    fullName: 'Auditor Financiero',
+    personalEmail: 'contabilidad@lysandri.com',
+    assignedUsername: 'contabilidad',
+    areaId: 'CONTABILIDAD',
+    areaLabel: 'Contabilidad',
+    role: 'ADMIN',
+    activationCode: 'INT-99999',
+    tempPassword: 'LYS-AUDIT-2026-SECURE',
+    phone: '+51 999888777',
+    date: '08 oct 2026',
+  },
+];
+
 export const LoginView: React.FC<LoginViewProps> = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, setSessionUser } = useAuth();
 
   // Pestaña de registro activa según parámetro de URL
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(() => {
@@ -195,26 +234,40 @@ export const LoginView: React.FC<LoginViewProps> = () => {
     }
 
     const cleanUser = username.trim().toLowerCase();
-
-    // 1. Buscar en invitaciones/registros de personal guardados
     let targetEmail = cleanUser;
     let registeredStaff: GeneratedWelcome | undefined;
 
+    // 1. Buscar primero en DEFAULT_STAFF predefinido
+    registeredStaff = DEFAULT_STAFF.find(
+      (u) =>
+        u.assignedUsername.toLowerCase() === cleanUser ||
+        u.personalEmail.toLowerCase() === cleanUser ||
+        (cleanUser.includes('antony') && u.assignedUsername.includes('antony')) ||
+        (cleanUser.includes('brayan') && u.assignedUsername.includes('antony'))
+    );
+
+    // Buscar en invitaciones/registros de personal guardados
     try {
       const stored = localStorage.getItem('lysandri_corporate_invitations');
       if (stored) {
         const list: GeneratedWelcome[] = JSON.parse(stored);
-        registeredStaff = list.find(
+        const found = list.find(
           (u) =>
             u.assignedUsername?.toLowerCase() === cleanUser ||
-            u.personalEmail?.toLowerCase() === cleanUser
+            u.personalEmail?.toLowerCase() === cleanUser ||
+            (cleanUser.includes('antony') && u.assignedUsername?.toLowerCase().includes('antony')) ||
+            (cleanUser.includes('brayan') && u.assignedUsername?.toLowerCase().includes('antony'))
         );
-        if (registeredStaff) {
-          targetEmail = registeredStaff.personalEmail;
+        if (found) {
+          registeredStaff = found;
         }
       }
     } catch {
       // ignore
+    }
+
+    if (registeredStaff) {
+      targetEmail = registeredStaff.personalEmail;
     }
 
     // Buscar también en usuarios guardados localmente
@@ -265,11 +318,8 @@ export const LoginView: React.FC<LoginViewProps> = () => {
           email: registeredStaff.personalEmail,
           rol: registeredStaff.role,
         };
-        localStorage.setItem(
-          'lysandri_token',
-          'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy'
-        );
-        localStorage.setItem('lysandri_user', JSON.stringify(authUser));
+
+        setSessionUser(authUser);
 
         if (registeredStaff.areaId === 'CONTABILIDAD' || isAccountingUser) {
           accountingService.setStoredAuditPin('LYS-AUDIT-2026-SECURE');
@@ -297,11 +347,8 @@ export const LoginView: React.FC<LoginViewProps> = () => {
           email: match.email,
           rol: match.rol,
         };
-        localStorage.setItem(
-          'lysandri_token',
-          'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy'
-        );
-        localStorage.setItem('lysandri_user', JSON.stringify(authUser));
+
+        setSessionUser(authUser);
 
         if (isAccountingUser || match.email.includes('contabilidad') || cleanUser.includes('contab')) {
           accountingService.setStoredAuditPin('LYS-AUDIT-2026-SECURE');
@@ -320,11 +367,7 @@ export const LoginView: React.FC<LoginViewProps> = () => {
           email: 'admin@lysandri.com',
           rol: 'ADMIN',
         };
-        localStorage.setItem(
-          'lysandri_token',
-          'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy'
-        );
-        localStorage.setItem('lysandri_user', JSON.stringify(demoAdmin));
+        setSessionUser(demoAdmin);
         navigate('/admin/cursos', { replace: true });
         return;
       }
@@ -436,11 +479,7 @@ export const LoginView: React.FC<LoginViewProps> = () => {
       rol: welcome.role,
     };
 
-    localStorage.setItem(
-      'lysandri_token',
-      'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy'
-    );
-    localStorage.setItem('lysandri_user', JSON.stringify(authUser));
+    setSessionUser(authUser);
 
     if (welcome.areaId === 'CONTABILIDAD') {
       accountingService.setStoredAuditPin('LYS-AUDIT-2026-SECURE');
