@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import {
   Layers,
   LoaderCircle,
@@ -40,12 +40,14 @@ interface MarketplaceViewProps {
   onSelectPlaybook?: (playbook: Playbook) => void | Promise<void>;
 }
 
-export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
+export const MarketplaceView: FC<MarketplaceViewProps> = ({
   playbooks,
   categories,
   isLoading = false,
   errorMessage = '',
+  selectingId = null,
   onRetry,
+  onSelectPlaybook,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -60,11 +62,18 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [selectedForCheckout, setSelectedForCheckout] = useState<Playbook | null>(null);
 
   // Escuchar evento de apertura de Chatbot RAG desde la Navbar pública
-  React.useEffect(() => {
+  useEffect(() => {
     const handleChatEvent = () => setIsAiOpen(true);
     window.addEventListener('open-executive-ai-chat', handleChatEvent);
     return () => window.removeEventListener('open-executive-ai-chat', handleChatEvent);
   }, []);
+
+  const handleSelectPlaybook = (playbook: Playbook) => {
+    setSelectedForCheckout(playbook);
+    if (onSelectPlaybook) {
+      onSelectPlaybook(playbook);
+    }
+  };
 
   // Spotlight Playbook (first ENTERPRISE playbook or first available)
   const spotlightPlaybook = useMemo(() => {
@@ -284,7 +293,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
                     <button
                       type="button"
-                      onClick={() => setSelectedForCheckout(spotlightPlaybook)}
+                      onClick={() => handleSelectPlaybook(spotlightPlaybook)}
                       className="group/spotIns relative overflow-hidden flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-cyan-500 bg-[length:200%_auto] py-2.5 text-xs font-bold text-white shadow-md shadow-cyan-500/20 transition-all duration-500 hover:bg-right hover:-translate-y-0.5 hover:shadow-lg hover:shadow-cyan-500/35 active:scale-95"
                     >
                       <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-in-out group-hover/spotIns:translate-x-full" />
@@ -584,10 +593,11 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             <PlaybookCard
               key={playbook.id}
               playbook={playbook}
-              onSelect={(pb) => setSelectedForCheckout(pb)}
+              onSelect={handleSelectPlaybook}
               onPreviewSyllabus={(pb) => setSelectedForSyllabus(pb)}
               onAddToCart={(pb) => addToCart(pb)}
               onAskAi={handleAskAi}
+              isSubmitting={selectingId === String(playbook.id)}
             />
           ))}
         </div>
@@ -664,7 +674,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         isOpen={Boolean(selectedForSyllabus)}
         onClose={() => setSelectedForSyllabus(null)}
         playbook={selectedForSyllabus}
-        onSelect={(pb) => setSelectedForCheckout(pb)}
+        onSelect={handleSelectPlaybook}
         onAddToCart={(pb) => addToCart(pb)}
         onAskAi={handleAskAi}
       />
