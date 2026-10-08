@@ -138,14 +138,8 @@ export const Footer: React.FC = () => {
                 <span className="font-mono text-[10px] text-emerald-400 font-semibold">Escenarios Reales</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
-                <a
-                  href="/contabilidad"
-                  className="hover:text-amber-300 transition-colors flex items-center gap-1.5"
-                  title="Acceso al Portal Contable y Facturación SUNAT"
-                >
-                  <span className="underline underline-offset-2 decoration-amber-500/50">Facturación SUNAT (Área Contable)</span>
-                </a>
-                <span className="font-mono text-[10px] text-amber-400 font-semibold">Emisión Inmediata</span>
+                <span>Facturación Electrónica</span>
+                <span className="font-mono text-[10px] text-amber-400 font-semibold">Boleta o Factura</span>
               </li>
               <li className="flex items-center justify-between text-slate-400">
                 <span>Certificación Oficial</span>
@@ -190,7 +184,7 @@ export const Footer: React.FC = () => {
             <span>•</span>
             <a href="#catalogo-section" className="hover:text-slate-300 transition-colors">Garantía Académica</a>
             <span>•</span>
-            <a href="/contabilidad" className="hover:text-amber-400 text-amber-500/90 font-semibold transition-colors">Portal Contable & SUNAT</a>
+            <a href="#catalogo-section" className="hover:text-slate-300 transition-colors">Catálogo de Programas</a>
           </div>
         </div>
       </div>

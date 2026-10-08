@@ -113,15 +113,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="sm:hidden">IA</span>
               </button>
 
-              <a
-                href="/contabilidad"
-                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 hover:border-amber-400 hover:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-950/60 transition-all shadow-sm"
-                title="Portal de Contabilidad y Facturación SUNAT"
-              >
-                <Calculator className="h-3.5 w-3.5 text-amber-500" />
-                <span>Área Contable</span>
-              </a>
-
               <div className="relative">
                 <button
                   type="button"

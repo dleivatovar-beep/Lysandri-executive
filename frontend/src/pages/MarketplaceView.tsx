@@ -17,7 +17,6 @@ import {
   Filter,
   Crown,
   Zap,
-  Calculator,
 } from 'lucide-react';
 import { CategoryFilter } from '../components/marketplace/CategoryFilter';
 import { PlaybookCard } from '../components/marketplace/PlaybookCard';
@@ -164,20 +163,10 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
                 <div className="text-2xl font-black text-emerald-400">1,250+</div>
                 <div className="text-[11px] text-slate-400 font-medium">Líderes Formados</div>
               </div>
-              <a
-                href="/contabilidad"
-                className="group rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3.5 backdrop-blur-md hover:border-amber-400 hover:bg-amber-900/30 transition-all block cursor-pointer"
-                title="Ir al Portal del Área Contable y Facturación SUNAT"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-black text-amber-400">SUNAT</div>
-                  <Calculator className="h-4 w-4 text-amber-400/80 group-hover:scale-110 transition-transform" />
-                </div>
-                <div className="text-[11px] text-amber-300 font-medium flex items-center gap-1 mt-0.5">
-                  <span>Área Contable</span>
-                  <ArrowRight className="h-3 w-3 inline text-amber-400 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </a>
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 backdrop-blur-md">
+                <div className="text-2xl font-black text-amber-400">4.9/5</div>
+                <div className="text-[11px] text-slate-400 font-medium">Satisfacción Directiva</div>
+              </div>
             </div>
 
             {/* Action CTAs */}
