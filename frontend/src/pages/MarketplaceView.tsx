@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,7 +47,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   categories,
   isLoading = false,
   errorMessage = '',
+  selectingId = null,
   onRetry,
+  onSelectPlaybook,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');

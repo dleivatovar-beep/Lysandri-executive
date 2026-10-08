@@ -26,4 +26,13 @@ public interface BillingPort {
      * Busca el comprobante de pago asociado a una orden específica.
      */
     Optional<ComprobantePago> buscarPorOrdenId(Long idOrden);
+
+    /**
+     * Anula un comprobante de pago registrado por motivo justificado (emisión de nota de crédito / error en RUC).
+     *
+     * @param idComprobante Identificador del comprobante.
+     * @param motivo Justificación tributaria de la anulación.
+     * @return ComprobantePago actualizado con estado ANULADO.
+     */
+    ComprobantePago anularComprobante(Long idComprobante, String motivo);
 }

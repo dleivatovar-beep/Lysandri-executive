@@ -6,10 +6,13 @@ import {
   Building,
   User,
   Mail,
+  Phone,
   AlertCircle,
   LoaderCircle,
   ShieldCheck,
   CheckCircle2,
+  GraduationCap,
+  Sparkles,
 } from 'lucide-react';
 import { Playbook } from '../../types';
 import { storeService } from '../../services/storeService';
@@ -27,6 +30,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [email, setEmail] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [tipoComprobante, setTipoComprobante] = useState<'BOLETA' | 'FACTURA'>('BOLETA');
   const [numeroDocumento, setNumeroDocumento] = useState('');
   const [razonSocial, setRazonSocial] = useState('');
@@ -85,8 +89,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       const response = await storeService.createCheckoutSession({
         programaIds: [playbook.programId],
+        programaTitulo: playbook.title,
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
+        telefono: telefono.trim(),
         tipoComprobante,
         numeroDocumento: numeroDocumento.trim(),
         nombreFacturacion: tipoComprobante === 'FACTURA' ? razonSocial.trim() : nombreCompleto.trim(),
@@ -145,6 +151,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </div>
 
+        <div className="p-6 pb-0">
+          <div className="rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/50 via-slate-900 to-indigo-950/40 p-3.5 shadow-inner">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
+              <GraduationCap className="h-4 w-4 shrink-0" />
+              <span>Alta Automática en Aula Virtual Moodle</span>
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[9px] font-mono text-cyan-300">
+                <Sparkles className="h-2.5 w-2.5" /> 100% Automático
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-300 leading-relaxed">
+              Al completar tus datos y el pago, el sistema <strong>creará automáticamente tu usuario y contraseña de Moodle</strong> para que accedas de inmediato a tus clases en vivo, grabaciones y materiales de estudio.
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMessage && (
             <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/40 bg-rose-950/40 p-3 text-xs text-rose-300">
@@ -170,24 +191,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Correo electrónico *
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="c.mendoza@empresa.com"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Correo electrónico *
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="c.mendoza@empresa.com"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
+                />
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">
+                Tus accesos a Moodle y factura llegarán aquí.
+              </p>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              Recibirás tus credenciales de acceso y comprobante de pago en esta dirección.
-            </p>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                Celular (WhatsApp)
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="+51 984 567 123"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
+                />
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">
+                Para soporte de bienvenida por WhatsApp.
+              </p>
+            </div>
           </div>
 
           <div>
@@ -263,35 +305,39 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-[11px] text-slate-400">
             <div className="flex items-center gap-2 text-emerald-400">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>Acceso inmediato al aula virtual</span>
+              <span>Creación automática de cuenta en Aula Virtual Moodle</span>
             </div>
             <div className="flex items-center gap-2 text-cyan-400">
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Acceso inmediato a clases en vivo, grabadas y contenidos</span>
+            </div>
+            <div className="flex items-center gap-2 text-indigo-400">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Emisión de comprobante electrónico</span>
+              <span>Emisión de comprobante electrónico oficial SUNAT</span>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 px-6 py-3.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <>
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                <span>Procesando...</span>
+                <span>Procesando pago y creando cuenta Moodle...</span>
               </>
             ) : (
               <>
                 <Lock className="h-4 w-4" />
-                <span>Continuar al pago • ${getPrice()} USD</span>
+                <span>Inscribirme, Pagar & Activar Moodle • ${getPrice()} USD</span>
               </>
             )}
           </button>
 
           <p className="text-center text-[10px] text-slate-500 flex items-center justify-center gap-1">
             <Lock className="h-3 w-3" />
-            <span>Pagos procesados de forma segura con Stripe</span>
+            <span>Pagos procesados de forma segura con Stripe 256-bit SSL</span>
           </p>
         </form>
       </div>

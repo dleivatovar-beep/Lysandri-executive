@@ -43,11 +43,12 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/programas/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes-informacion").permitAll()
+                        .requestMatchers("/api/v1/solicitudes-informacion/**", "/api/v1/admin/solicitudes-informacion/**").permitAll()
                         .requestMatchers("/api/v1/chat/**", "/api/chat/**").permitAll()
                         .requestMatchers("/api/v1/webhooks/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/checkout", "/api/v1/orders/create-checkout-session").permitAll() // Compra como invitado
                         .requestMatchers("/api/v1/orders/confirm/**").permitAll() // Para redirección post-Stripe
+                        .requestMatchers("/api/v1/usuarios/**").permitAll()
                         .requestMatchers("/api/v1/internal/**").permitAll() // Protegido mediante X-Audit-PIN en controlador
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

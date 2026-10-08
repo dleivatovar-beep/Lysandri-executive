@@ -17,7 +17,7 @@ export const getRoleHomePath = (
 ): string => {
   switch (role) {
     case 'ADMIN':
-      return '/admin/dashboard';
+      return '/admin/cursos';
 
     case 'INSTRUCTOR':
       return '/profesor/cursos';
@@ -58,7 +58,7 @@ export const RoleProtectedRoute: React.FC<
   if (!isAuthenticated || !user) {
     return (
       <Navigate
-        to="/login"
+        to="/intranet"
         replace
         state={{ from: location.pathname }}
       />

@@ -158,12 +158,18 @@ export const AdminInformationRequests:
             await informationRequestService.getAll();
 
           setRequests(response);
+          setErrorMessage('');
         } catch (error) {
-          setRequests([]);
-
-          setErrorMessage(
-            getApiErrorMessage(error),
-          );
+          const fallback = informationRequestService.getLocalRequests();
+          if (fallback.length > 0) {
+            setRequests(fallback);
+            setErrorMessage('');
+          } else {
+            setRequests([]);
+            setErrorMessage(
+              getApiErrorMessage(error),
+            );
+          }
         } finally {
           setIsLoading(false);
         }

@@ -116,9 +116,9 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   };
 
   const samplePrompts = [
-    '¿Cuál es la duración y carga horaria semanal?',
-    '¿Qué prerrequisitos técnicos se solicitan?',
-    '¿Cómo se evalúa y qué certificación otorga?',
+    '¿Necesito saber programar para llevar los cursos?',
+    '¿Cuál es la duración y modalidad de estudio?',
+    '¿Qué certificación oficial obtendré y cómo se verifica?',
   ];
 
   return (
@@ -204,7 +204,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                       >
                         <FileText className="h-3 w-3" />
                         <span>
-                          {msg.fuentes.length} fragmento{msg.fuentes.length !== 1 ? 's' : ''} citado{msg.fuentes.length !== 1 ? 's' : ''} del Sílabo
+                          {msg.fuentes.length} fragmento{msg.fuentes.length !== 1 ? 's' : ''} citado{msg.fuentes.length !== 1 ? 's' : ''} de la Malla Curricular
                         </span>
                         {expandedSources[msg.id] ? (
                           <ChevronUp className="h-3 w-3" />
@@ -232,7 +232,9 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                   )}
 
                   <div className="mt-1 flex items-center justify-end gap-2 text-[9px] text-slate-500">
-                    {msg.latenciaMs && <span>{msg.latenciaMs}ms</span>}
+                    {msg.fuentes && msg.fuentes.length > 0 && (
+                      <span className="text-cyan-400 font-medium">Contenido oficial verificado</span>
+                    )}
                     <span>{msg.timestamp}</span>
                   </div>
                 </div>
@@ -242,7 +244,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
             {isLoading && (
               <div className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-xs text-cyan-400 w-fit">
                 <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                <span>Analizando sílabos con pgvector...</span>
+                <span>Consultando información del programa académico...</span>
               </div>
             )}
             <div ref={messagesEndRef} />

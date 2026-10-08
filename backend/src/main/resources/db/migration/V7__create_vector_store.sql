@@ -1,8 +1,3 @@
--- ============================================================================
--- Migración V7: Almacén Vectorial para RAG (Retrieval-Augmented Generation)
--- Modelo de embedding esperado: all-MiniLM-L6-v2 (dimensión 384)
--- ============================================================================
-
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS documento_chunks (

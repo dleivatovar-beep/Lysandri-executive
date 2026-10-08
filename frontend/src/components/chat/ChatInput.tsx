@@ -7,9 +7,9 @@ interface ChatInputProps {
 }
 
 const PROMPT_SUGGESTIONS = [
-  "¿Cuál es el ROI de migrar a arquitectura orientada a eventos con Kafka?",
-  "Revisa nuestro modelo de costos FinOps para AWS EKS",
-  "¿Qué guardrails de seguridad OPA aplican a nuestro gateway LLM?"
+  "¿Cómo puedo empezar a usar Inteligencia Artificial en mi empresa sin saber programar?",
+  "¿Cómo evitamos fraudes digitales, robo de información y estafas en nuestro negocio?",
+  "¿Qué herramientas No-Code recomiendan para automatizar ventas y cobranzas?"
 ];
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
@@ -78,7 +78,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
         <button 
           disabled={isLoading}
           className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Adjuntar documento o arquitectura (.pdf, .json, .tf)"
+          title="Adjuntar documento o caso de consulta (.pdf, .docx, .xlsx)"
         >
           <Paperclip className="w-4 h-4" />
         </button>
@@ -92,7 +92,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           placeholder={
             isLoading
               ? "Lysandri Executive está redactando una respuesta..."
-              : "Consulte al Asistente IA RAG sobre arquitectura, costos FinOps o activos tecnológicos..."
+              : "Pregunta al Asesor Ejecutivo sobre IA, automatizaciones o programas para tu empresa..."
           }
           rows={1}
           disabled={isLoading}

@@ -56,9 +56,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================================================
-# ESQUEMAS PYDANTIC
-# ============================================================================
 
 class QueryRequest(BaseModel):
     pregunta: str = Field(..., min_length=2, description="Consulta del usuario a responder con contexto RAG")
@@ -68,9 +65,6 @@ class QueryResponse(BaseModel):
     respuesta: str = Field(..., description="Respuesta generada o mensaje de contexto no encontrado")
     fuentes: List[str] = Field(default_factory=list, description="Lista de manuales y páginas que fundamentan la respuesta")
 
-# ============================================================================
-# FUNCIONES AUXILIARES DE BASE DE DATOS Y LLM
-# ============================================================================
 
 def get_db_connection():
     """Retorna una conexión a PostgreSQL con soporte pgvector."""
@@ -171,9 +165,6 @@ def generate_llm_response(pregunta: str, chunks: List[dict]) -> str:
         f"(Respuesta sintetizada automáticamente a partir del contexto documental de pgvector)."
     )
 
-# ============================================================================
-# ENDPOINTS
-# ============================================================================
 
 @app.get("/")
 def read_root():

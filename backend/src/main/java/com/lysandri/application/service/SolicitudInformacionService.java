@@ -43,4 +43,28 @@ public class SolicitudInformacionService implements SolicitudInformacionUseCase 
     public List<SolicitudInformacion> listarSolicitudes() {
         return repository.listarTodas();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SolicitudInformacion obtenerPorId(Long id) {
+        return repository.buscarPorId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada con ID: " + id));
+    }
+
+    @Override
+    @Transactional
+    public SolicitudInformacion actualizarEstado(Long id, String estado) {
+        log.info("Actualizando estado de solicitud ID {} a {}", id, estado);
+        SolicitudInformacion existente = obtenerPorId(id);
+        existente.setEstado(estado != null ? estado.trim().toUpperCase() : "PENDIENTE");
+        return repository.guardar(existente);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarSolicitud(Long id) {
+        log.info("Eliminando solicitud ID {}", id);
+        obtenerPorId(id);
+        repository.eliminar(id);
+    }
 }

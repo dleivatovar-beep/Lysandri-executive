@@ -1,12 +1,6 @@
--- ============================================================================
--- Migración V8: Purga de LMS propietario y migración a Tienda de Conocimiento
--- Integración con Moodle LMS externo + Stripe + RAG pgvector (1536 dim)
--- ============================================================================
-
 CREATE EXTENSION IF NOT EXISTS "vector";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. Eliminar tablas obsoletas del LMS propietario
 DROP TABLE IF EXISTS PROGRESO_LECCION CASCADE;
 DROP TABLE IF EXISTS ACTIVIDAD_BLOQUE CASCADE;
 DROP TABLE IF EXISTS LECCION CASCADE;

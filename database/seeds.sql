@@ -1,14 +1,6 @@
--- ============================================================================
--- AVISO DE CIBERSEGURIDAD Y PROTECCIÓN DE DATOS (MOCK DATA / SYNTHETIC SEEDS)
--- ============================================================================
--- 1. Los registros contenidos en este archivo son 100% SINTÉTICOS / FICTICIOS.
--- 2. Creados únicamente para pruebas funcionales y desarrollo en entorno local.
--- 3. NO contienen Información Personal Identificable (PII) real de usuarios ni clientes.
--- ============================================================================
-
 INSERT INTO USUARIO (id_user, nombres, apellidos, email, passw, telefono, rol, moodle_user_id) VALUES
-(1, 'Admin', 'Lysandri', 'admin@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '999888777', 'ADMIN', 2),
-(2, 'Carlos', 'Mendoza', 'carlos.mendoza@corporativo.com', '$2a$10$WEX4ZF7I7KTjt1H7I25O5esf/EFiuZhing/Gd9uTZSFocFphUhRQq', '977666555', 'CLIENTE', 3)
+(1, 'Administrador', 'Lysandri', 'admin@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '941238905', 'ADMIN', 2),
+(2, 'Carlos', 'Mendoza Torres', 'carlos.mendoza@corporativo.com', '$2a$10$WEX4ZF7I7KTjt1H7I25O5esf/EFiuZhing/Gd9uTZSFocFphUhRQq', '987654321', 'CLIENTE', 3)
 ON CONFLICT (email) DO UPDATE SET
   nombres = EXCLUDED.nombres,
   apellidos = EXCLUDED.apellidos,

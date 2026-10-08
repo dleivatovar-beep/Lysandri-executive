@@ -3,10 +3,10 @@ import { ChatResponse } from '../types';
 
 const RAW_API_URL =
   import.meta.env.VITE_API_URL ||
-  'http://localhost:8080/api/v1';
+  (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 export const API_BASE_URL = RAW_API_URL.replace(/\/api\/v1\/?$/, '');
-export const API_V1_URL = `${API_BASE_URL}/api/v1`;
+export const API_V1_URL = RAW_API_URL;
 
 const TOKEN_KEY = 'lysandri_token';
 const USER_KEY = 'lysandri_user';

@@ -130,5 +130,62 @@ class InternalAccountingControllerTest {
         assertEquals(1, reporte.getCantidadFacturas());
         assertEquals(2, reporte.getVentasConsolidadas().size());
         assertEquals(2, reporte.getComprobantesEmitidos().size());
+        assertNotNull(reporte.getLiquidacionTributaria());
+        assertEquals(new BigDecimal("300.00"), reporte.getLiquidacionTributaria().getVentasNetasGravadas());
+        assertEquals(new BigDecimal("54.00"), reporte.getLiquidacionTributaria().getDebitoFiscalIgv());
+    }
+
+    @Test
+    void exportarTxtSire_pinValido_debeGenerarFormatoSunatPipe() {
+        ComprobantePago factura = ComprobantePago.builder()
+                .idComprobante(2L)
+                .idOrden(101L)
+                .tipo(TipoComprobante.FACTURA)
+                .serie("F001")
+                .correlativo(1)
+                .tipoDocumentoIdentidad("RUC")
+                .numeroDocumentoIdentidad("20555666777")
+                .razonSocialONombre("Inversiones SAC")
+                .montoSubtotal(new BigDecimal("200.00"))
+                .montoIgv(new BigDecimal("36.00"))
+                .montoTotal(new BigDecimal("236.00"))
+                .moneda("PEN")
+                .fechaEmision(LocalDateTime.of(2026, 10, 4, 12, 0))
+                .estado(EstadoComprobante.EMITIDO)
+                .codigoHash("A89B7F12C==")
+                .build();
+
+        when(billingPort.listarComprobantes()).thenReturn(List.of(factura));
+
+        ResponseEntity<?> response = accountingController.exportarTxtSire(VALID_PIN);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody() instanceof String);
+        String txtSire = (String) response.getBody();
+        assertTrue(txtSire.contains("20609812451|YUNIX INGENIEROS E.I.R.L.|"));
+        assertTrue(txtSire.contains("|01|F001|00000001|"));
+        assertTrue(txtSire.contains("|20555666777|Inversiones SAC|"));
+        assertTrue(txtSire.contains("|200.00|0.00|36.00|"));
+    }
+
+    @Test
+    void anularComprobante_exitoso() {
+        ComprobantePago anulado = ComprobantePago.builder()
+                .idComprobante(5L)
+                .serie("F001")
+                .correlativo(5)
+                .estado(EstadoComprobante.ANULADO)
+                .motivoAnulacion("Error en RUC")
+                .build();
+
+        when(billingPort.anularComprobante(5L, "Error en RUC")).thenReturn(anulado);
+
+        ResponseEntity<?> response = accountingController.anularComprobante(VALID_PIN, 5L, Map.of("motivo", "Error en RUC"));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertTrue(response.getBody() instanceof Map);
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("ANULADO", body.get("estado"));
+        assertEquals("Error en RUC", body.get("motivoAnulacion"));
     }
 }

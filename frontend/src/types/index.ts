@@ -17,9 +17,18 @@ export type ActiveView =
   | 'ENROLLMENTS'
   | 'INFORMATION_REQUESTS'
   | 'REPORTS'
+  | 'ACCOUNTING'
   | 'LOGIN';
 
-export interface Playbook {
+export interface CourseModule {
+  id?: string;
+  titulo: string;
+  duracion: string;
+  temas: string[];
+  entregable?: string;
+}
+
+export interface ProgramaEjecutivo {
   id: string;
   programId: number;
   title: string;
@@ -34,7 +43,13 @@ export interface Playbook {
   tags: string[];
   duration?: string;
   instructor?: string;
+  price?: number;
+  modalidad?: string;
+  syllabus?: CourseModule[];
 }
+
+// Alias de compatibilidad arquitectónica
+export type Playbook = ProgramaEjecutivo;
 
 export interface Category {
   id: string;
@@ -116,6 +131,11 @@ export interface ProgramaResponse {
   fechaFinalGlobal?: string;
   requisitos?: string;
   metodologia?: string;
+  precio?: number;
+  descripcion?: string;
+  coverUrl?: string;
+  modalidad?: string;
+  syllabus?: CourseModule[];
 }
 
 export interface InscripcionRequest {

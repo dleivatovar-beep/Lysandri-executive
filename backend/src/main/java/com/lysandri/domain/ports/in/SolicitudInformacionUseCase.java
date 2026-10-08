@@ -19,4 +19,10 @@ public interface SolicitudInformacionUseCase {
     SolicitudInformacion registrarSolicitud(CreateSolicitudCommand command);
 
     List<SolicitudInformacion> listarSolicitudes();
+
+    SolicitudInformacion obtenerPorId(Long id);
+
+    SolicitudInformacion actualizarEstado(Long id, String estado);
+
+    void eliminarSolicitud(Long id);
 }
