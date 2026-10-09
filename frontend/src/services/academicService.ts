@@ -12,6 +12,7 @@ import {
 } from '../types';
 
 import { apiClient } from './api';
+import { checkDuplicateAccount } from '../utils/credentials';
 
 const CUSTOM_PROGRAMS_KEY = 'lysandri_custom_programs';
 const CUSTOM_USERS_KEY = 'lysandri_custom_users';
@@ -56,7 +57,23 @@ export const academicService = {
   async createUser(
     data: UsuarioRequest,
   ): Promise<UsuarioResponse> {
-    const customUsers = getCustomUsers();
+    // 1. Validar duplicados de cuenta (correo o celular) contra todos los usuarios existentes
+    const allUsers = await this.getUsers();
+    const duplicateCheck = checkDuplicateAccount(
+      {
+        email: data.email,
+        phone: data.telefono,
+      },
+      allUsers
+    );
+
+    if (duplicateCheck.isDuplicate) {
+      throw new Error(
+        duplicateCheck.message ||
+          'No se permiten cuentas duplicadas: el correo o celular ya se encuentra registrado.'
+      );
+    }
+
     const newUser: UsuarioResponse = {
       idUser: Date.now(),
       nombres: data.nombres,
@@ -66,9 +83,6 @@ export const academicService = {
       rol: data.rol,
     };
 
-    customUsers.push(newUser);
-    saveCustomUsers(customUsers);
-
     try {
       const response =
         await apiClient.post<UsuarioResponse>(
@@ -76,8 +90,24 @@ export const academicService = {
           data,
         );
 
+      // Sincronizar en almacenamiento local si el backend respondió exitosamente
+      const customUsers = getCustomUsers();
+      if (!customUsers.some((u) => u.idUser === response.data.idUser || u.email.toLowerCase() === response.data.email.toLowerCase())) {
+        customUsers.push(response.data);
+        saveCustomUsers(customUsers);
+      }
+
       return response.data;
-    } catch {
+    } catch (err: any) {
+      // Si el servidor respondió con un error de negocio/validación (ej: 409 duplicado, 400 datos inválidos), propagarlo
+      if (err?.response?.data?.message || err?.response?.status) {
+        throw err;
+      }
+
+      // Si el backend está desconectado/offline, permitir persistencia local mockeada
+      const customUsers = getCustomUsers();
+      customUsers.push(newUser);
+      saveCustomUsers(customUsers);
       return newUser;
     }
   },
@@ -86,6 +116,26 @@ export const academicService = {
     idUser: number,
     data: Partial<UsuarioRequest>,
   ): Promise<UsuarioResponse> {
+    // Validar duplicados de correo o celular contra otros usuarios
+    if (data.email || data.telefono) {
+      const allUsers = await this.getUsers();
+      const duplicateCheck = checkDuplicateAccount(
+        {
+          email: data.email,
+          phone: data.telefono,
+          excludeUserId: idUser,
+        },
+        allUsers
+      );
+
+      if (duplicateCheck.isDuplicate) {
+        throw new Error(
+          duplicateCheck.message ||
+            'No se puede actualizar: ya existe otra cuenta con este correo o celular.'
+        );
+      }
+    }
+
     const customUsers = getCustomUsers();
     const index = customUsers.findIndex((u) => u.idUser === idUser);
     let updatedUser: UsuarioResponse;
@@ -118,7 +168,10 @@ export const academicService = {
 
     try {
       await apiClient.put(`/usuarios/${idUser}`, data);
-    } catch {
+    } catch (err: any) {
+      if (err?.response?.data?.message || err?.response?.status) {
+        throw err;
+      }
       // offline/mock fallback
     }
 

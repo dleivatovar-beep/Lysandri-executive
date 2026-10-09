@@ -60,10 +60,27 @@ public class UserManagementService implements UserManagementUseCase {
 
         usuario.setEmail(emailLimpio);
 
+        // Validar no duplicado de número de teléfono
+        if (usuario.getTelefono() != null && !usuario.getTelefono().trim().isBlank()) {
+            String telLimpio = usuario.getTelefono().replaceAll("\\D", "");
+            if (telLimpio.length() >= 7) {
+                boolean telDuplicado = userRepositoryPort.listarTodos().stream()
+                        .filter(u -> u.getTelefono() != null && !u.getTelefono().isBlank())
+                        .anyMatch(u -> {
+                            String t = u.getTelefono().replaceAll("\\D", "");
+                            return t.length() >= 7 && (t.endsWith(telLimpio) || telLimpio.endsWith(t));
+                        });
+                if (telDuplicado) {
+                    throw new IllegalStateException("El número de teléfono ya se encuentra registrado por otra cuenta.");
+                }
+            }
+        }
+
         if (usuario.getPassw() != null && !usuario.getPassw().isBlank()) {
             usuario.setPassw(passwordEncoder.encode(usuario.getPassw()));
         } else {
-            usuario.setPassw(passwordEncoder.encode("Lysandri2026!"));
+            String securePass = "Lys#" + java.util.UUID.randomUUID().toString().substring(0, 6) + "!";
+            usuario.setPassw(passwordEncoder.encode(securePass));
         }
 
         if (usuario.getRol() == null) {
@@ -101,6 +118,18 @@ public class UserManagementService implements UserManagementUseCase {
         }
 
         if (datos.getTelefono() != null) {
+            String telLimpio = datos.getTelefono().replaceAll("\\D", "");
+            if (telLimpio.length() >= 7) {
+                boolean telDuplicado = userRepositoryPort.listarTodos().stream()
+                        .filter(u -> !u.getIdUser().equals(id) && u.getTelefono() != null && !u.getTelefono().isBlank())
+                        .anyMatch(u -> {
+                            String t = u.getTelefono().replaceAll("\\D", "");
+                            return t.length() >= 7 && (t.endsWith(telLimpio) || telLimpio.endsWith(t));
+                        });
+                if (telDuplicado) {
+                    throw new IllegalStateException("El número de teléfono ya está en uso por otra cuenta.");
+                }
+            }
             existente.setTelefono(datos.getTelefono().trim());
         }
 

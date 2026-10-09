@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useState,
-  useMemo,
 } from 'react';
 
 import {
@@ -14,6 +13,7 @@ import {
   DollarSign,
   Edit3,
   GraduationCap,
+  KeyRound,
   Layers,
   LoaderCircle,
   Mail,
@@ -32,6 +32,11 @@ import {
 import { getApiErrorMessage } from '../../services/authService';
 import { academicService } from '../../services/academicService';
 import { ProgramEditorModal } from '../../components/admin/ProgramEditorModal';
+import {
+  generateUniqueUsername,
+  generateSecurePassword,
+  checkDuplicateAccount,
+} from '../../utils/credentials';
 
 import {
   ProgramaResponse,
@@ -227,17 +232,18 @@ export const AdminDashboard: React.FC<
   const handleSaveUser = async (userData: Partial<UsuarioResponse> & { passw?: string }) => {
     if (editingUser) {
       await academicService.updateUser(editingUser.idUser, userData);
+      setIsUserEditorOpen(false);
     } else {
       await academicService.createUser({
         nombres: userData.nombres || '',
         apellidos: userData.apellidos || '',
         email: userData.email || '',
-        passw: userData.passw || '123456',
+        passw: userData.passw || '',
         telefono: userData.telefono || '',
         rol: userData.rol || 'ESTUDIANTE',
       });
+      // Dejar modal abierto en pantalla de bienvenida para que el administrador copie credenciales o envíe WhatsApp
     }
-    setIsUserEditorOpen(false);
     await loadData();
   };
 
@@ -487,6 +493,7 @@ export const AdminDashboard: React.FC<
         onClose={() => setIsUserEditorOpen(false)}
         user={editingUser}
         onSave={handleSaveUser}
+        existingUsers={users}
       />
     </section>
   );
@@ -692,6 +699,7 @@ interface UserEditorModalProps {
   onClose: () => void;
   user: UsuarioResponse | null;
   onSave: (userData: Partial<UsuarioResponse> & { passw?: string }) => Promise<void>;
+  existingUsers?: UsuarioResponse[];
 }
 
 const UserEditorModal: React.FC<UserEditorModalProps> = ({
@@ -699,6 +707,7 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({
   onClose,
   user,
   onSave,
+  existingUsers = [],
 }) => {
   const isEditing = Boolean(user);
   const [nombres, setNombres] = useState('');
@@ -715,6 +724,12 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({
   const [welcomeResult, setWelcomeResult] = useState<GeneratedWelcome | null>(null);
   const [hasCopiedWelcome, setHasCopiedWelcome] = useState(false);
   const [hasCopiedWhatsApp, setHasCopiedWhatsApp] = useState(false);
+
+  // Credenciales generadas únicas y diferenciadas (sin repetición)
+  const [assignedUsername, setAssignedUsername] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [isManualUsername, setIsManualUsername] = useState(false);
+  const [isManualPassword, setIsManualPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -741,42 +756,38 @@ const UserEditorModal: React.FC<UserEditorModalProps> = ({
       setRol('ADMIN');
       setError('');
       setWelcomeResult(null);
+      setIsManualUsername(false);
+      setIsManualPassword(false);
+      setAssignedUsername('');
+      setTempPassword('');
     }
   }, [user, isOpen]);
 
-  // Generación automática de usuario a partir de nombres y apellidos (ej: jared quizpe -> jaredquiz21)
-  const generatedUsername = useMemo(() => {
-    const normalize = (str: string) =>
-      str
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]/g, '');
+  // Generación dinámica de usuario único a partir de nombres y apellidos
+  useEffect(() => {
+    if (!isEditing && !isManualUsername) {
+      const knownUsernames = existingUsers.map((u) => u.email.split('@')[0]);
+      setAssignedUsername(generateUniqueUsername(nombres, apellidos, knownUsernames));
+    }
+  }, [nombres, apellidos, isEditing, isManualUsername, existingUsers]);
 
-    const first = normalize(nombres.trim().split(' ')[0] || '');
-    const last = normalize(apellidos.trim().split(' ')[0] || '');
-    const lastShort = last.slice(0, 4);
+  // Contraseña única y aleatorizada de alta seguridad (sin repetición)
+  useEffect(() => {
+    if (!isEditing && !isManualPassword) {
+      setTempPassword(generateSecurePassword(nombres));
+    }
+  }, [nombres, isEditing, isManualPassword]);
 
-    const phoneDigits = telefono.replace(/\D/g, '');
-    const suffix = phoneDigits.length >= 2 ? phoneDigits.slice(-2) : '21';
+  const handleRegenerateUsername = () => {
+    const knownUsernames = existingUsers.map((u) => u.email.split('@')[0]);
+    setAssignedUsername(generateUniqueUsername(nombres, apellidos, knownUsernames));
+    setIsManualUsername(false);
+  };
 
-    if (first && lastShort) return `${first}${lastShort}${suffix}`;
-    if (first) return `${first}${suffix}`;
-    return 'usuario21';
-  }, [nombres, apellidos, telefono]);
-
-  // Contraseña personalizada derivada del nombre (ej: Jared2026!)
-  const generatedPassword = useMemo(() => {
-    const clean = (s: string) =>
-      s
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z]/g, '');
-
-    const first = clean(nombres.trim().split(' ')[0] || 'Lysandri');
-    const cap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
-    return `${cap}2026!`;
-  }, [nombres]);
+  const handleRegeneratePassword = () => {
+    setTempPassword(generateSecurePassword(nombres));
+    setIsManualPassword(false);
+  };
 
   if (!isOpen) return null;
 
@@ -863,6 +874,28 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
     }
 
     const formattedPhone = `${currentCountry.dialCode} ${phoneDigits}`;
+    const targetEmail = email.trim().toLowerCase();
+
+    // Validar duplicados de cuenta (correo o celular) contra usuarios existentes
+    if (existingUsers.length > 0) {
+      const duplicateCheck = checkDuplicateAccount(
+        {
+          email: targetEmail,
+          phone: formattedPhone,
+          excludeUserId: user?.idUser,
+        },
+        existingUsers
+      );
+
+      if (duplicateCheck.isDuplicate) {
+        setError(
+          duplicateCheck.message ||
+            'No se permiten cuentas duplicadas: el correo o celular ya se encuentra registrado.'
+        );
+        return;
+      }
+    }
+
     const areaConfig = REGISTRATION_AREAS.find((a) => a.id === selectedArea) || REGISTRATION_AREAS[0];
     const roleToAssign = isEditing ? rol : areaConfig.role;
 
@@ -872,34 +905,34 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
         await onSave({
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),
-          email: email.trim().toLowerCase(),
+          email: targetEmail,
           telefono: formattedPhone,
           rol: roleToAssign,
         });
         onClose();
       } else {
-        const tempPassword = generatedPassword;
-        const usernameToAssign = generatedUsername;
+        const passToAssign = tempPassword.trim() || generateSecurePassword(nombres);
+        const usernameToAssign = assignedUsername.trim() || generateUniqueUsername(nombres, apellidos);
         const activationCode = `INT-${Math.floor(10000 + Math.random() * 90000)}`;
 
         await onSave({
           nombres: nombres.trim(),
           apellidos: apellidos.trim(),
-          email: email.trim().toLowerCase(),
+          email: targetEmail,
           telefono: formattedPhone,
           rol: roleToAssign,
-          passw: tempPassword,
+          passw: passToAssign,
         });
 
         const welcomeData: GeneratedWelcome = {
           fullName: `${nombres.trim()} ${apellidos.trim()}`,
-          personalEmail: email.trim().toLowerCase(),
+          personalEmail: targetEmail,
           assignedUsername: usernameToAssign,
           areaId: selectedArea,
           areaLabel: areaConfig.label,
           role: roleToAssign,
           activationCode,
-          tempPassword,
+          tempPassword: passToAssign,
           phone: formattedPhone,
           date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
         };
@@ -1080,6 +1113,10 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
                     setApellidos('');
                     setEmail('');
                     setTelefono('');
+                    setIsManualUsername(false);
+                    setIsManualPassword(false);
+                    setAssignedUsername('');
+                    setTempPassword('');
                   }}
                   className="flex-1 text-center text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline py-2"
                 >
@@ -1197,6 +1234,73 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
                   <option value="INSTRUCTOR">Profesor / Docente</option>
                   <option value="ADMIN">Administrador</option>
                 </select>
+              </div>
+            )}
+
+            {/* Vista Previa de Credenciales Asignadas Únicas y Diferenciadas */}
+            {!isEditing && (
+              <div className="rounded-2xl border border-cyan-500/20 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-900/40">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
+                    <KeyRound className="h-3.5 w-3.5" />
+                    Credenciales Asignadas (Únicas)
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">Sin duplicados · Alta seguridad</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {/* Usuario Único */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-[#0a0d14]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Usuario Asignado</label>
+                      <button
+                        type="button"
+                        onClick={handleRegenerateUsername}
+                        title="Generar otro usuario único"
+                        className="text-cyan-600 hover:text-cyan-500 text-[10px] flex items-center gap-1 font-semibold transition-colors"
+                      >
+                        <RefreshCw className="h-2.5 w-2.5" />
+                        Cambiar
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={assignedUsername}
+                      onChange={(e) => {
+                        setAssignedUsername(e.target.value);
+                        setIsManualUsername(true);
+                      }}
+                      placeholder="usuario.aleatorio"
+                      className="w-full font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 bg-transparent outline-none"
+                    />
+                  </div>
+
+                  {/* Contraseña Segura No Repetitiva */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-[#0a0d14]">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] uppercase font-bold text-slate-500">Contraseña Segura</label>
+                      <button
+                        type="button"
+                        onClick={handleRegeneratePassword}
+                        title="Generar nueva contraseña segura aleatoria"
+                        className="text-cyan-600 hover:text-cyan-500 text-[10px] flex items-center gap-1 font-semibold transition-colors"
+                      >
+                        <RefreshCw className="h-2.5 w-2.5" />
+                        Regenerar
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={tempPassword}
+                      onChange={(e) => {
+                        setTempPassword(e.target.value);
+                        setIsManualPassword(true);
+                      }}
+                      placeholder="ContraseñaSegura!23"
+                      className="w-full font-mono text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 

@@ -83,6 +83,28 @@ class UserManagementServiceTest {
     }
 
     @Test
+    void crearUsuario_telefonoDuplicado_lanzaExcepcion() {
+        Usuario usuarioConTel = Usuario.builder()
+                .idUser(2L)
+                .email("otro@lysandri.com")
+                .telefono("+51 987 654 321")
+                .build();
+
+        Usuario nuevo = Usuario.builder()
+                .nombres("Pedro")
+                .apellidos("Gomez")
+                .email("pedro@lysandri.com")
+                .telefono("987654321")
+                .build();
+
+        when(userRepositoryPort.existePorEmail("pedro@lysandri.com")).thenReturn(false);
+        when(userRepositoryPort.listarTodos()).thenReturn(List.of(usuarioConTel));
+
+        assertThrows(IllegalStateException.class, () -> userManagementService.crearUsuario(nuevo));
+        verify(userRepositoryPort, never()).guardar(any(Usuario.class));
+    }
+
+    @Test
     void listarUsuarios_todos() {
         when(userRepositoryPort.listarTodos()).thenReturn(List.of(usuarioMock));
 

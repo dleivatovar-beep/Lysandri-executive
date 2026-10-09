@@ -1,7 +1,6 @@
 import React, {
   useEffect,
   useState,
-  useMemo,
 } from 'react';
 
 import {
@@ -13,6 +12,7 @@ import {
   LoaderCircle,
   Mail,
   MessageCircle,
+  RefreshCw,
   Send,
   ShieldAlert,
   Sparkles,
@@ -32,6 +32,11 @@ import { accountingService } from '../../services/accountingService';
 import { AuthUser, UserRole } from '../../types';
 import { InternationalPhoneInput } from '../common/InternationalPhoneInput';
 import { getCountryByCode } from '../../utils/countries';
+import {
+  generateUniqueUsername,
+  generateSecurePassword,
+  checkDuplicateAccount,
+} from '../../utils/credentials';
 
 interface LoginViewProps {
   onBack?: () => void;
@@ -198,45 +203,56 @@ export const LoginView: React.FC<LoginViewProps> = () => {
     };
   }, []);
 
+  // Credenciales generadas únicas y de alta seguridad (sin repetición)
+  const [assignedUsername, setAssignedUsername] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [isManualUsername, setIsManualUsername] = useState(false);
+  const [isManualPassword, setIsManualPassword] = useState(false);
+
   const changeTab = (tab: 'login' | 'register') => {
     setActiveTab(tab);
     setErrorMessage('');
     setSuccessMessage('');
   };
 
-  // Generación automática de usuario a partir de nombres y apellidos (ej: jared quizpe -> jaredquiz21)
-  const generatedUsername = useMemo(() => {
-    const normalize = (str: string) =>
-      str
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]/g, '');
+  // Generación dinámica de usuario único a partir de nombres y apellidos
+  useEffect(() => {
+    if (!isManualUsername) {
+      const knownUsernames = DEFAULT_STAFF.map((s) => s.assignedUsername);
+      const generated = generateUniqueUsername(regNombres, regApellidos, knownUsernames);
+      setAssignedUsername(generated);
+    }
+  }, [regNombres, regApellidos, isManualUsername]);
 
-    const first = normalize(regNombres.trim().split(' ')[0] || '');
-    const last = normalize(regApellidos.trim().split(' ')[0] || '');
-    const lastShort = last.slice(0, 4);
+  // Contraseña única y aleatorizada de alta entropía (sin repetición)
+  useEffect(() => {
+    if (!isManualPassword) {
+      const generated = generateSecurePassword(regNombres);
+      setTempPassword(generated);
+    }
+  }, [regNombres, isManualPassword]);
 
-    const phoneDigits = regPhone.replace(/\D/g, '');
-    const suffix = phoneDigits.length >= 2 ? phoneDigits.slice(-2) : '21';
+  const handleRegenerateUsername = async () => {
+    try {
+      const allUsers = await academicService.getUsers();
+      const existing = [
+        ...DEFAULT_STAFF.map((s) => s.assignedUsername),
+        ...allUsers.map((u) => u.email.split('@')[0]),
+      ];
+      setAssignedUsername(generateUniqueUsername(regNombres, regApellidos, existing));
+      setIsManualUsername(false);
+    } catch {
+      setAssignedUsername(
+        generateUniqueUsername(regNombres, regApellidos, DEFAULT_STAFF.map((s) => s.assignedUsername))
+      );
+      setIsManualUsername(false);
+    }
+  };
 
-    if (first && lastShort) return `${first}${lastShort}${suffix}`;
-    if (first) return `${first}${suffix}`;
-    return 'usuario21';
-  }, [regNombres, regApellidos, regPhone]);
-
-  // Contraseña personalizada derivada del nombre (ej: Jared2026!)
-  const generatedPassword = useMemo(() => {
-    const clean = (s: string) =>
-      s
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z]/g, '');
-
-    const first = clean(regNombres.trim().split(' ')[0] || 'Lysandri');
-    const cap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
-    return `${cap}2026!`;
-  }, [regNombres]);
+  const handleRegeneratePassword = () => {
+    setTempPassword(generateSecurePassword(regNombres));
+    setIsManualPassword(false);
+  };
 
   // Inicio de sesión utilizando Usuario (ej: jaredquiz21) o Correo
   const submitLogin = async () => {
@@ -413,19 +429,68 @@ export const LoginView: React.FC<LoginViewProps> = () => {
     }
 
     const formattedCellphone = `${currentCountry.dialCode} ${phoneDigits}`;
-    const areaConfig = CORPORATE_AREAS.find((a) => a.id === selectedArea) || CORPORATE_AREAS[0];
-    const usernameToAssign = generatedUsername;
-    const tempPassword = generatedPassword;
-    const activationCode = `INT-${Math.floor(10000 + Math.random() * 90000)}`;
     const emailToUse = regPersonalEmail.trim().toLowerCase();
 
+    // 1. Verificación previa de cuentas duplicadas (por correo y celular)
     try {
-      // Registrar al usuario en la plataforma académica con su celular validado
+      const allUsers = await academicService.getUsers();
+      let storedInvitations: GeneratedWelcome[] = [];
+      try {
+        const stored = localStorage.getItem('lysandri_corporate_invitations');
+        if (stored) storedInvitations = JSON.parse(stored);
+      } catch {}
+
+      const checkList = [
+        ...allUsers,
+        ...DEFAULT_STAFF.map((s) => ({
+          idUser: 0,
+          nombres: s.fullName,
+          apellidos: '',
+          email: s.personalEmail,
+          telefono: s.phone,
+          rol: s.role,
+        })),
+        ...storedInvitations.map((i) => ({
+          idUser: 0,
+          nombres: i.fullName,
+          apellidos: '',
+          email: i.personalEmail,
+          telefono: i.phone,
+          rol: i.role,
+        })),
+      ];
+
+      const duplicateCheck = checkDuplicateAccount(
+        {
+          email: emailToUse,
+          phone: formattedCellphone,
+        },
+        checkList
+      );
+
+      if (duplicateCheck.isDuplicate) {
+        setErrorMessage(
+          duplicateCheck.message ||
+            'No se permiten cuentas duplicadas: ya existe una cuenta con este correo o número de celular.'
+        );
+        return;
+      }
+    } catch {
+      // Continuar si hubo error en obtención previa
+    }
+
+    const areaConfig = CORPORATE_AREAS.find((a) => a.id === selectedArea) || CORPORATE_AREAS[0];
+    const usernameToAssign = assignedUsername.trim() || generateUniqueUsername(regNombres, regApellidos);
+    const finalPassword = tempPassword.trim() || generateSecurePassword(regNombres);
+    const activationCode = `INT-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    try {
+      // Registrar al usuario en la plataforma académica con celular validado y credenciales únicas
       await academicService.createUser({
         nombres: regNombres.trim(),
         apellidos: regApellidos.trim(),
         email: emailToUse,
-        passw: tempPassword,
+        passw: finalPassword,
         telefono: formattedCellphone,
         rol: areaConfig.role,
       });
@@ -438,7 +503,7 @@ export const LoginView: React.FC<LoginViewProps> = () => {
         areaLabel: areaConfig.label,
         role: areaConfig.role,
         activationCode,
-        tempPassword,
+        tempPassword: finalPassword,
         phone: formattedCellphone,
         date: new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
       };
@@ -454,7 +519,7 @@ export const LoginView: React.FC<LoginViewProps> = () => {
       }
 
       setWelcomeResult(welcomeData);
-      setSuccessMessage(`¡Personal registrado! Hemos generado los accesos para ${welcomeData.fullName}.`);
+      setSuccessMessage(`¡Personal registrado! Hemos generado los accesos únicos para ${welcomeData.fullName}.`);
     } catch (err) {
       setErrorMessage(getApiErrorMessage(err));
     }
@@ -907,6 +972,10 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
                         setRegApellidos('');
                         setRegPersonalEmail('');
                         setRegPhone('');
+                        setIsManualUsername(false);
+                        setIsManualPassword(false);
+                        setAssignedUsername('');
+                        setTempPassword('');
                       }}
                       className="mt-2 text-center w-full text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 py-1"
                     >
@@ -990,7 +1059,70 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
                     </div>
                   </div>
 
+                  {/* Vista Previa de Credenciales Asignadas Únicas y Diferenciadas */}
+                  <div className="rounded-2xl border border-cyan-500/20 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-900/40">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Credenciales Asignadas (Únicas)
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">Sin duplicados · Alta seguridad</span>
+                    </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {/* Usuario Único */}
+                      <div className="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-[#0a0d14]">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-500">Usuario Asignado</label>
+                          <button
+                            type="button"
+                            onClick={() => void handleRegenerateUsername()}
+                            title="Generar otro usuario único"
+                            className="text-cyan-600 hover:text-cyan-500 text-[10px] flex items-center gap-1 font-semibold transition-colors"
+                          >
+                            <RefreshCw className="h-2.5 w-2.5" />
+                            Cambiar
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={assignedUsername}
+                          onChange={(e) => {
+                            setAssignedUsername(e.target.value);
+                            setIsManualUsername(true);
+                          }}
+                          placeholder="usuario.aleatorio"
+                          className="w-full font-mono text-xs font-bold text-cyan-700 dark:text-cyan-400 bg-transparent outline-none"
+                        />
+                      </div>
+
+                      {/* Contraseña Segura No Repetitiva */}
+                      <div className="rounded-xl border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-[#0a0d14]">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[10px] uppercase font-bold text-slate-500">Contraseña Segura</label>
+                          <button
+                            type="button"
+                            onClick={handleRegeneratePassword}
+                            title="Generar nueva contraseña segura aleatoria"
+                            className="text-cyan-600 hover:text-cyan-500 text-[10px] flex items-center gap-1 font-semibold transition-colors"
+                          >
+                            <RefreshCw className="h-2.5 w-2.5" />
+                            Regenerar
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={tempPassword}
+                          onChange={(e) => {
+                            setTempPassword(e.target.value);
+                            setIsManualPassword(true);
+                          }}
+                          placeholder="ContraseñaSegura!23"
+                          className="w-full font-mono text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Botón de Registro */}
                   <button
