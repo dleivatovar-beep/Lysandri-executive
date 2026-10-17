@@ -11,6 +11,9 @@ import java.util.Optional;
 public interface SpringDataOrderRepository extends JpaRepository<OrdenEntity, Long> {
     Optional<OrdenEntity> findByCodigoOrden(String codigoOrden);
     Optional<OrdenEntity> findByStripeSessionId(String stripeSessionId);
+    Optional<OrdenEntity> findByIzipayTransactionId(String izipayTransactionId);
+    Optional<OrdenEntity> findByIzipayOrderId(String izipayOrderId);
     List<OrdenEntity> findByIdUserOrderByFechaOrdenDesc(Long idUser);
     List<OrdenEntity> findAllByOrderByFechaOrdenDesc();
+    List<OrdenEntity> findByEstadoOrdenOrderByFechaOrdenDesc(com.lysandri.domain.model.EstadoOrden estadoOrden);
 }

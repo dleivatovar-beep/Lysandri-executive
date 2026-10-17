@@ -43,6 +43,15 @@ moodle:
   url: ${MOODLE_URL:http://localhost:8080}
   token: ${MOODLE_TOKEN:dev_moodle_wstoken_lysandri}
 
+izipay:
+  shop-id: ${IZIPAY_SHOP_ID:test_shop_lysandri}
+  api-key: ${IZIPAY_API_KEY:test_password_lysandri_key}
+  public-key: ${IZIPAY_PUBLIC_KEY:test_public_key_lysandri}
+  sha256-key: ${IZIPAY_SHA256_KEY:test_hmac_sha256_key}
+  endpoint: ${IZIPAY_ENDPOINT:https://api.micuentaweb.pe}
+  success-url: ${IZIPAY_SUCCESS_URL:http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}}
+  cancel-url: ${IZIPAY_CANCEL_URL:http://localhost:3000/checkout/cancel}
+
 stripe:
   api-key: ${STRIPE_API_KEY:sk_test_mock_lysandri_key}
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_mock_lysandri_secret}

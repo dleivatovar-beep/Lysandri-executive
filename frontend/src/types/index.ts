@@ -18,6 +18,8 @@ export type ActiveView =
   | 'INFORMATION_REQUESTS'
   | 'REPORTS'
   | 'ACCOUNTING'
+  | 'MANUAL_PAYMENTS'
+  | 'IN_COMPANY'
   | 'LOGIN';
 
 export interface CourseModule {
@@ -111,6 +113,8 @@ export interface ProgramaResponse {
   idInstructorDni: string;
   nombreInstructor: string;
   tituloPrograma: string;
+  titulo?: string;
+  moodleCourseId?: number;
   duracionPrograma?: string;
   tipoPrograma?: string;
   level?: string;
@@ -239,9 +243,15 @@ export interface SolicitudInformacionRequest {
 export interface SolicitudInformacionResponse {
   idSolicitud: number;
   nombreCompleto: string;
+  nombres?: string;
+  apellidos?: string;
   email: string;
   telefono: string;
   estado: SolicitudInformacionEstado;
   fechaSolicitud: string;
   fechaActualizacion: string;
+  empresa?: string;
+  cargo?: string;
+  mensaje?: string;
+  idPrograma?: number;
 }

@@ -6,8 +6,6 @@ import React, {
 
 import {
   Bot,
-  CheckCircle2,
-  CircleAlert,
   Database,
 } from 'lucide-react';
 
@@ -33,6 +31,8 @@ import { useAuth } from './context/AuthContext';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminEnrollments } from './pages/admin/AdminEnrollments';
 import { AdminInformationRequests } from './pages/admin/AdminInformationRequests';
+import { AdminManualPayments } from './pages/admin/AdminManualPayments';
+import { AdminCorporateEnrollment } from './pages/admin/AdminCorporateEnrollment';
 import { InstructorCourses } from './pages/instructor/InstructorCourses';
 import { InstructorStudents } from './pages/instructor/InstructorStudents';
 import { MarketplaceView } from './pages/MarketplaceView';
@@ -44,7 +44,6 @@ import { AccountingView } from './pages/AccountingView';
 
 import { academicService } from './services/academicService';
 import { enviarMensajeChat } from './services/api';
-import { getApiErrorMessage } from './services/authService';
 
 import {
   buildCategories,
@@ -186,6 +185,12 @@ const VIEW_PATHS: Record<
     INFORMATION_REQUESTS:
       '/admin/solicitudes-informacion',
 
+    MANUAL_PAYMENTS:
+      '/admin/pagos-manuales',
+
+    IN_COMPANY:
+      '/admin/in-company',
+
     REPORTS:
       '/admin/reportes',
 
@@ -239,6 +244,12 @@ const PATH_VIEWS: Record<
 
   '/admin/solicitudes-informacion':
     'INFORMATION_REQUESTS',
+
+  '/admin/pagos-manuales':
+    'MANUAL_PAYMENTS',
+
+  '/admin/in-company':
+    'IN_COMPANY',
 
   '/admin/reportes':
     'REPORTS',
@@ -331,206 +342,45 @@ const EmptySectionPage:
     );
   };
 
-const MarketplacePage:
-  React.FC = () => {
-    const navigate =
-      useNavigate();
+const MarketplacePage: React.FC = () => {
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
-    const { user } =
-      useAuth();
+  const loadPrograms = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
 
-    const [
-      playbooks,
-      setPlaybooks,
-    ] = useState<Playbook[]>([]);
+    try {
+      const programs = await academicService.getPrograms();
 
-    const [
-      isLoading,
-      setIsLoading,
-    ] = useState(true);
-
-    const [
-      errorMessage,
-      setErrorMessage,
-    ] = useState('');
-
-    const [
-      selectingId,
-      setSelectingId,
-    ] = useState<string | null>(
-      null,
-    );
-
-    const [
-      message,
-      setMessage,
-    ] = useState('');
-
-    const [
-      messageTone,
-      setMessageTone,
-    ] = useState<
-      'success' | 'error'
-    >('success');
-
-    const loadPrograms =
-      async () => {
-        setIsLoading(true);
-        setErrorMessage('');
-
-        try {
-          const programs =
-            await academicService
-              .getPrograms();
-
-          if (programs && programs.length > 0) {
-            setPlaybooks(
-              programs.map(
-                toCatalogCourse,
-              ),
-            );
-          } else {
-            setPlaybooks(FALLBACK_PLAYBOOKS);
-          }
-        } catch {
-          // Fallback resiliente con datos ejecutivos
-          setPlaybooks(FALLBACK_PLAYBOOKS);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-    useEffect(() => {
-      void loadPrograms();
-    }, []);
-
-    const handleSelect =
-      async (
-        playbook: Playbook,
-      ) => {
-        if (!user) {
-          navigate('/intranet');
-          return;
-        }
-
-        if (
-          user.rol !==
-          'ESTUDIANTE'
-        ) {
-          setMessage(
-            'La inscripción solamente está disponible para ejecutivos.',
-          );
-
-          setMessageTone(
-            'error',
-          );
-
-          return;
-        }
-
-        setSelectingId(
-          playbook.id,
-        );
-
-        try {
-          await academicService
-            .enroll({
-              programaId:
-                playbook.programId,
-            });
-
-          setMessage(
-            `Te inscribiste correctamente en “${playbook.title}”.`,
-          );
-
-          setMessageTone(
-            'success',
-          );
-        } catch (error) {
-          setMessage(
-            getApiErrorMessage(
-              error,
-            ),
-          );
-
-          setMessageTone(
-            'error',
-          );
-        } finally {
-          setSelectingId(null);
-        }
-      };
-
-    useEffect(() => {
-      if (!message) {
-        return;
+      if (programs && programs.length > 0) {
+        setPlaybooks(programs.map(toCatalogCourse));
+      } else {
+        setPlaybooks(FALLBACK_PLAYBOOKS);
       }
-
-      const timeout =
-        window.setTimeout(
-          () => {
-            setMessage('');
-          },
-          4500,
-        );
-
-      return () => {
-        window.clearTimeout(
-          timeout,
-        );
-      };
-    }, [message]);
-
-    return (
-      <>
-        <MarketplaceView
-          playbooks={playbooks}
-          categories={
-            buildCategories(
-              playbooks,
-            )
-          }
-          isLoading={
-            isLoading
-          }
-          errorMessage={
-            errorMessage
-          }
-          selectingId={
-            selectingId
-          }
-          onRetry={() =>
-            void loadPrograms()
-          }
-          onSelectPlaybook={
-            handleSelect
-          }
-        />
-
-        {message && (
-          <div
-            className={`fixed bottom-6 right-6 z-50 flex max-w-md items-center gap-3 rounded-xl border bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl ${
-              messageTone ===
-              'success'
-                ? 'border-emerald-500/30'
-                : 'border-rose-500/30'
-            }`}
-          >
-            {messageTone ===
-            'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-            ) : (
-              <CircleAlert className="h-4 w-4 shrink-0 text-rose-400" />
-            )}
-
-            <span>
-              {message}
-            </span>
-          </div>
-        )}
-      </>
-    );
+    } catch {
+      // Fallback resiliente con datos ejecutivos
+      setPlaybooks(FALLBACK_PLAYBOOKS);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    void loadPrograms();
+  }, []);
+
+  return (
+    <MarketplaceView
+      playbooks={playbooks}
+      categories={buildCategories(playbooks)}
+      isLoading={isLoading}
+      errorMessage={errorMessage}
+      onRetry={() => void loadPrograms()}
+    />
+  );
+};
 
 const ChatPage: React.FC = () => {
   const { user, token } = useAuth();
@@ -1149,6 +999,20 @@ const App: React.FC =
               path="/admin/solicitudes-informacion"
               element={
                 <AdminInformationRequests />
+              }
+            />
+
+            <Route
+              path="/admin/pagos-manuales"
+              element={
+                <AdminManualPayments />
+              }
+            />
+
+            <Route
+              path="/admin/in-company"
+              element={
+                <AdminCorporateEnrollment />
               }
             />
 

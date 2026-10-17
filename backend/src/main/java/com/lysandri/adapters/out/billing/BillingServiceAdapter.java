@@ -89,7 +89,7 @@ public class BillingServiceAdapter implements BillingPort {
         String rawDataToHash = String.format("20609812451|%s|%s|%08d|%s|%s|%s",
                 tipoDoc, serie, siguienteCorrelativo, montoIgv, montoTotal, docCliente, LocalDateTime.now());
         String codigoHash = generarHashSha256(rawDataToHash);
-        String medioPago = orden.getMetodoPago() != null ? orden.getMetodoPago() : "STRIPE_CHECKOUT";
+        String medioPago = orden.getMetodoPago() != null ? orden.getMetodoPago() : "IZIPAY_ONLINE";
 
         String pdfUrl = String.format("https://lysandri.com/comprobantes/%s-%08d.pdf", serie, siguienteCorrelativo);
 

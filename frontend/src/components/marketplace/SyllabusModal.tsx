@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, BookOpen, Bot, CheckCircle2, Clock, Award, FileText, ArrowRight } from 'lucide-react';
+import { X, BookOpen, Bot, CheckCircle2, Clock, Award, FileText, ArrowRight, MessageCircle } from 'lucide-react';
 import { Playbook } from '../../types';
 
 interface SyllabusModalProps {
@@ -226,13 +226,38 @@ export const SyllabusModal: React.FC<SyllabusModalProps> = ({
             <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-center">
               <Award className="h-4 w-4 text-indigo-400 mx-auto mb-1" />
               <div className="text-[10px] text-slate-400">Certificación</div>
-              <div className="text-xs font-bold text-slate-200">Ejecutiva Yunix</div>
+              <div className="text-xs font-bold text-slate-200">Ejecutiva Lysandri</div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-center">
               <BookOpen className="h-4 w-4 text-emerald-400 mx-auto mb-1" />
               <div className="text-[10px] text-slate-400">Entorno de Aprendizaje</div>
               <div className="text-xs font-bold text-slate-200">Campus Moodle LMS</div>
             </div>
+          </div>
+
+          {/* Asesoría Académica Personalizada */}
+          <div className="flex items-center justify-between rounded-2xl border border-indigo-500/25 bg-gradient-to-r from-indigo-950/40 via-purple-950/20 to-slate-900 p-3.5 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <div className="h-9 w-9 rounded-full bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center text-cyan-300 font-bold text-xs">
+                  SV
+                </div>
+                <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-400 border border-slate-900" />
+              </div>
+              <div>
+                <p className="font-semibold text-white text-xs">¿Dudas sobre si esta malla se ajusta a tu cargo?</p>
+                <p className="text-[10px] text-slate-400">Lic. Sofía Valdivia puede orientar tu plan de estudios por WhatsApp.</p>
+              </div>
+            </div>
+            <a
+              href={`https://wa.me/51941238905?text=${encodeURIComponent('Hola Sofía, tengo dudas sobre la malla curricular de: ' + playbook.title)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-950/50 px-3 py-1.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-900/40 transition-colors shadow-sm shrink-0"
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Consultar</span>
+            </a>
           </div>
 
           {/* Description */}

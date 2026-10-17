@@ -28,8 +28,7 @@ public class ChatRagService implements ChatRagUseCase {
     private static final double MIN_SIMILARITY = 0.60;
 
     private static final String SYSTEM_PROMPT = """
-        Eres el Asistente Ejecutivo de Admisiones y Asesoría Académica de 'Lysandri Executive' 
-        (división de Yunix Ingenieros E.I.R.L.).
+        Eres el Asistente Ejecutivo de Admisiones y Asesoría Académica de 'Lysandri Executive'.
         Tu objetivo es resolver dudas de ejecutivos, líderes tecnológicos y gerentes sobre los 
         programas ejecutivos, mallas curriculares, metodologías, duraciones y requisitos de admisión.
         

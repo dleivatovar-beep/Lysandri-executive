@@ -16,4 +16,6 @@ public class CreateOrderRequest {
     private String tipoComprobante; // "BOLETA" o "FACTURA"
     private String numeroDocumento; // DNI o RUC
     private String nombreFacturacion; // Razón social o Nombre completo
+    private String metodoPago; // "STRIPE", "YAPE", "PLIN", "TRANSFERENCIA"
+    private String numeroOperacion; // Número de constancia o voucher manual
 }

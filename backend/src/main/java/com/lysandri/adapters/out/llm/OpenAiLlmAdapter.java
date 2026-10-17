@@ -82,7 +82,7 @@ public class OpenAiLlmAdapter implements LlmClientPort {
     public LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura) {
         if (apiKey == null || apiKey.startsWith("mock") || apiKey.isBlank()) {
             log.debug("Generando respuesta asistida basada en el contexto curricular provisto.");
-            String simulatedResponse = "Basado en los lineamientos académicos de Lysandri Executive y Yunix Ingenieros E.I.R.L., nuestros programas combinan sesiones síncronas de alta dirección con seguimiento en el Campus Virtual y certificación oficial. Si requieres evaluar el plan de estudios o coordinar una propuesta corporativa in-company, puedes contactar con nuestro equipo de admisiones.";
+            String simulatedResponse = "Basado en los lineamientos académicos de Lysandri Executive, nuestros programas combinan sesiones síncronas de alta dirección con seguimiento en el Campus Virtual y certificación oficial. Si requieres evaluar el plan de estudios o coordinar una propuesta corporativa in-company, puedes contactar con nuestro equipo de admisiones.";
             return new LlmCompletion(simulatedResponse, 120, 45, 165);
         }
 

@@ -43,6 +43,30 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     }
 
     @Override
+    public Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId) {
+        return repository.findByIzipayTransactionId(izipayTransactionId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorCualquierIdentificador(String id) {
+        if (id == null || id.isBlank()) return Optional.empty();
+        // 1. Buscar por izipayTransactionId
+        Optional<Orden> orden = repository.findByIzipayTransactionId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 2. Buscar por izipayOrderId
+        orden = repository.findByIzipayOrderId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 3. Buscar por codigoOrden
+        orden = repository.findByCodigoOrden(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 4. Buscar por stripeSessionId
+        return repository.findByStripeSessionId(id).map(this::toDomain);
+    }
+
+    @Override
     public List<Orden> buscarPorUsuario(Long idUsuario) {
         return repository.findByIdUserOrderByFechaOrdenDesc(idUsuario).stream().map(this::toDomain).toList();
     }
@@ -50,6 +74,11 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     @Override
     public List<Orden> listarTodas() {
         return repository.findAllByOrderByFechaOrdenDesc().stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Orden> listarPorEstado(com.lysandri.domain.model.EstadoOrden estado) {
+        return repository.findByEstadoOrdenOrderByFechaOrdenDesc(estado).stream().map(this::toDomain).toList();
     }
 
     private OrdenEntity toEntity(Orden d) {
@@ -61,14 +90,19 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .estadoOrden(d.getEstadoOrden())
                 .total(d.getTotal())
                 .moneda(d.getMoneda() != null ? d.getMoneda() : "USD")
-                .metodoPago(d.getMetodoPago() != null ? d.getMetodoPago() : "STRIPE")
+                .metodoPago(d.getMetodoPago() != null ? d.getMetodoPago() : "IZIPAY")
                 .stripeSessionId(d.getStripeSessionId())
                 .stripePaymentIntentId(d.getStripePaymentIntentId())
+                .izipayTransactionId(d.getIzipayTransactionId())
+                .izipayOrderId(d.getIzipayOrderId())
+                .izipayUuid(d.getIzipayUuid())
                 .moodleMatriculaSincronizada(d.isMoodleMatriculaSincronizada())
                 .fechaPago(d.getFechaPago())
                 .tipoComprobanteSolicitado(d.getTipoComprobanteSolicitado())
                 .numeroDocumentoCliente(d.getNumeroDocumentoCliente())
                 .nombreFacturacion(d.getNombreFacturacion())
+                .numeroOperacion(d.getNumeroOperacion())
+                .notasAdmin(d.getNotasAdmin())
                 .build();
 
         if (d.getItems() != null) {
@@ -119,11 +153,16 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .metodoPago(e.getMetodoPago())
                 .stripeSessionId(e.getStripeSessionId())
                 .stripePaymentIntentId(e.getStripePaymentIntentId())
+                .izipayTransactionId(e.getIzipayTransactionId())
+                .izipayOrderId(e.getIzipayOrderId())
+                .izipayUuid(e.getIzipayUuid())
                 .moodleMatriculaSincronizada(e.isMoodleMatriculaSincronizada())
                 .fechaPago(e.getFechaPago())
                 .tipoComprobanteSolicitado(e.getTipoComprobanteSolicitado())
                 .numeroDocumentoCliente(e.getNumeroDocumentoCliente())
                 .nombreFacturacion(e.getNombreFacturacion())
+                .numeroOperacion(e.getNumeroOperacion())
+                .notasAdmin(e.getNotasAdmin())
                 .items(items)
                 .build();
     }

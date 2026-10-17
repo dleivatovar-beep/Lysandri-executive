@@ -20,14 +20,14 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Lysandri Executive API - Tienda de Conocimiento y Motor RAG")
-                        .description("API REST para la plataforma ejecutiva de Yunix Ingenieros E.I.R.L. "
-                                + "Integra pagos con Stripe, aprovisionamiento en Moodle LMS y consultas semánticas con pgvector.")
+                        .description("API REST para la plataforma ejecutiva de Lysandri. "
+                                + "Integra pasarela de pagos izipay Online (tarjetas globales y wallets), aprovisionamiento automático en Moodle LMS, liquidación Interbank/BCP y consultas semánticas con pgvector.")
                         .version("2.0.0")
                         .contact(new Contact()
-                                .name("Yunix Ingenieros E.I.R.L.")
+                                .name("Lysandri")
                                 .email("contacto@lysandri.com"))
                         .license(new License()
-                                .name("Propietario - Yunix Ingenieros E.I.R.L.")))
+                                .name("Propietario - Lysandri")))
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
                 .components(new Components()
                         .addSecuritySchemes(SECURITY_SCHEME_NAME,

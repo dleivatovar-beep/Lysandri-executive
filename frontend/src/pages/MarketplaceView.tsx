@@ -17,6 +17,11 @@ import {
   Filter,
   Crown,
   Zap,
+  Users,
+  MessageCircle,
+  Star,
+  ChevronDown,
+  HelpCircle,
 } from 'lucide-react';
 import { CategoryFilter } from '../components/marketplace/CategoryFilter';
 import { PlaybookCard } from '../components/marketplace/PlaybookCard';
@@ -36,7 +41,6 @@ interface MarketplaceViewProps {
   errorMessage?: string;
   selectingId?: string | null;
   onRetry?: () => void;
-  onSelectPlaybook?: (playbook: Playbook) => void | Promise<void>;
 }
 
 export const MarketplaceView: FC<MarketplaceViewProps> = ({
@@ -46,11 +50,11 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
   errorMessage = '',
   selectingId = null,
   onRetry,
-  onSelectPlaybook,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Modales y Drawers
   const { cartItems, addToCart, removeFromCart, clearCart, isCartOpen, setIsCartOpen } = useCart();
@@ -69,9 +73,6 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
 
   const handleSelectPlaybook = (playbook: Playbook) => {
     setSelectedForCheckout(playbook);
-    if (onSelectPlaybook) {
-      onSelectPlaybook(playbook);
-    }
   };
 
   // Spotlight Playbook (first ENTERPRISE playbook or first available)
@@ -125,7 +126,7 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-3.5 py-1.5 font-mono text-[10px] font-bold tracking-wider text-cyan-300 backdrop-blur-md shadow-md">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                Yunix Ingenieros • Formación Ejecutiva Empresarial
+                Lysandri • Formación Ejecutiva Empresarial
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-950/60 px-3 py-1 font-mono text-[10px] font-medium text-indigo-300 backdrop-blur-md">
                 <GraduationCap className="h-3.5 w-3.5 text-indigo-400" />
@@ -169,6 +170,38 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
               </div>
             </div>
 
+            {/* Concierge Welcome Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/50 via-purple-950/25 to-slate-900/80 p-3.5 backdrop-blur-md shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 p-0.5 shadow-md">
+                    <div className="h-full w-full rounded-full bg-slate-900 flex items-center justify-center text-cyan-300 font-bold text-xs">
+                      SV
+                    </div>
+                  </div>
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border border-slate-900 animate-pulse" title="En línea para orientarte" />
+                </div>
+                <div className="text-xs text-slate-300">
+                  <p className="font-bold text-white flex items-center gap-1.5">
+                    <span>Lic. Sofía Valdivia</span>
+                    <span className="text-[10px] font-normal text-indigo-300">· Coordinación de Admisiones</span>
+                  </p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    «¿Dudas sobre qué especialización directiva elegir? Te orientamos en minutos por WhatsApp.»
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://wa.me/51941238905?text=Hola%20Sof%C3%ADa,%20deseo%20orientaci%C3%B3n%20sobre%20los%20programas%20ejecutivos%20de%20Lysandri"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-950/60 px-3.5 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-900/60 transition-colors shadow-sm"
+              >
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Hablar con Sofía</span>
+              </a>
+            </div>
+
             {/* Action CTAs */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
@@ -205,13 +238,13 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
             {/* Floating Top Pill */}
             <div className="absolute -top-4 -right-2 z-20 hidden sm:flex items-center gap-2 rounded-full border border-cyan-400/40 bg-slate-950/90 px-3.5 py-1.5 text-[10px] font-mono font-bold text-cyan-300 shadow-xl backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>⚡ Acceso Inmediato al Campus Virtual</span>
+              <span>Acceso Inmediato al Campus Virtual</span>
             </div>
 
             {/* Floating Bottom Pill */}
             <div className="absolute -bottom-4 -left-2 z-20 hidden sm:flex items-center gap-2 rounded-full border border-emerald-400/40 bg-slate-950/90 px-3.5 py-1.5 text-[10px] font-mono font-bold text-emerald-300 shadow-xl backdrop-blur-md">
               <Award className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Certificación Directiva Oficial Yunix</span>
+              <span>Certificación Directiva Oficial Lysandri</span>
             </div>
 
             {/* Spotlight Container Card */}
@@ -394,7 +427,7 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
               Certificación Oficial para tu Perfil Directivo
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-              Diploma ejecutivo respaldado por Yunix Ingenieros E.I.R.L. con código de verificación QR oficial para respaldar tu currículum, perfil de LinkedIn y comités directivos.
+              Diploma ejecutivo respaldado por Lysandri con código de verificación QR oficial para respaldar tu currículum, perfil de LinkedIn y comités directivos.
             </p>
             <div className="flex items-center gap-2 font-mono text-[10px] text-emerald-500 font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -425,7 +458,7 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] font-medium text-emerald-300 backdrop-blur-md">
                 <Award className="h-3.5 w-3.5 text-emerald-400" />
-                Certificación Oficial Yunix
+                Certificación Oficial Lysandri
               </span>
             </div>
 
@@ -531,7 +564,7 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
       {isLoading ? (
         <div className="flex min-h-[350px] flex-col items-center justify-center gap-3 rounded-3xl border border-slate-200 bg-white p-12 text-slate-500 dark:border-slate-800 dark:bg-[#0d121a]">
           <LoaderCircle className="h-10 w-10 animate-spin text-cyan-500" />
-          <p className="text-xs font-semibold">Cargando catálogo ejecutivo de Yunix Ingenieros...</p>
+          <p className="text-xs font-semibold">Cargando catálogo ejecutivo de Lysandri...</p>
         </div>
       ) : errorMessage ? (
         <div className="flex min-h-[350px] flex-col items-center justify-center gap-4 rounded-3xl border border-rose-200 bg-rose-50/50 p-12 text-center dark:border-rose-900/40 dark:bg-rose-950/20">
@@ -597,14 +630,14 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
           <div className="max-w-2xl space-y-4">
             <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-950/90 px-3.5 py-1 font-mono text-[10px] font-bold text-indigo-300">
-              <Building2 className="h-3.5 w-3.5" />
-              CAPACITACIÓN CORPORATIVA PARA EQUIPOS GERENCIALES
+              <Users className="h-3.5 w-3.5" />
+              FORMACIÓN CORPORATIVA PARA EQUIPOS
             </span>
             <h3 className="text-2xl font-black text-white sm:text-3xl leading-snug">
-              ¿Deseas capacitar al equipo de tu empresa?
+              ¿Buscas capacitar a tu equipo o área de trabajo?
             </h3>
             <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">
-              Diseñamos programas a la medida de tu organización para modernizar la gestión empresarial, implementar Inteligencia Artificial en tus procesos y optimizar los costos operativos de tu empresa.
+              Diseñamos cohortes y talleres prácticos adaptados a las herramientas y objetivos reales de tu empresa. Con horarios flexibles, laboratorios aplicados y facturación con RUC deducible.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs text-slate-300">
@@ -618,11 +651,11 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Seguimiento de progreso y reportes de impacto para gerencia</span>
+                <span>Seguimiento de progreso y reportes para gerencia</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Acompañamiento personalizado y sesiones en vivo</span>
+                <span>Acompañamiento directo con instructores en activo</span>
               </div>
             </div>
           </div>
@@ -633,15 +666,411 @@ export const MarketplaceView: FC<MarketplaceViewProps> = ({
               onClick={() => setIsCorporateOpen(true)}
               className="flex items-center justify-center gap-2.5 rounded-xl bg-white px-7 py-4 text-xs font-bold text-slate-950 shadow-xl shadow-white/10 hover:bg-slate-100 active:scale-95 transition-all"
             >
-              <Building2 className="h-4 w-4 text-indigo-600" />
-              <span>Solicitar Cotización Empresarial</span>
+              <Users className="h-4 w-4 text-indigo-600" />
+              <span>Coordinar Capacitación para mi Equipo</span>
             </button>
             <p className="text-center font-mono text-[10px] text-slate-400">
-              Respuesta en menos de 24 horas laborables
+              Atención directa con nuestro equipo académico
             </p>
           </div>
         </div>
       </section>
+
+      {/* Sección 1: Dirección Académica & Mentores en Activo */}
+      <section className="space-y-6">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3.5 py-1 font-mono text-[10px] font-bold text-cyan-400">
+            <GraduationCap className="h-3.5 w-3.5" />
+            DIRECCIÓN ACADÉMICA & MENTORÍA EN ACTIVO
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white md:text-3xl">
+            Aprende de Líderes Reales con Experiencia en las Empresas Más Influyentes
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            Nuestros mentores son directores, consultores C-Suite y líderes de tecnología en activo. No enseñamos teoría abstracta, sino metodologías probadas con impacto directo en balance, ahorro operativo y crecimiento.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Mentor 1 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 transition-all duration-300 hover:border-cyan-400/50 hover:shadow-xl dark:border-slate-800 dark:bg-[#0d121c] flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3.5">
+                <img
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"
+                  alt="Dr. Alejandro Benavides"
+                  className="h-14 w-14 rounded-2xl object-cover border-2 border-cyan-400/40 shadow-md"
+                />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Dr. Alejandro Benavides
+                  </h3>
+                  <p className="text-[11px] text-cyan-500 font-medium">
+                    Director Académico de IA & Estrategia
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    PhD Stanford • Ex-VP Analítica en Banca
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                «El valor de la IA para la alta dirección no está en saber codificar algoritmos, sino en formular las preguntas correctas y dirigir equipos técnicos con autoridad de negocio.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center justify-between text-[10px] text-slate-500">
+              <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
+                <CheckCircle2 className="h-3 w-3" /> Mentor Activo 2026
+              </span>
+              <span>Casos Prácticos Reales</span>
+            </div>
+          </div>
+
+          {/* Mentor 2 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 transition-all duration-300 hover:border-indigo-400/50 hover:shadow-xl dark:border-slate-800 dark:bg-[#0d121c] flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3.5">
+                <img
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80"
+                  alt="Dra. Valeria Quintana"
+                  className="h-14 w-14 rounded-2xl object-cover border-2 border-indigo-400/40 shadow-md"
+                />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Dra. Valeria Quintana
+                  </h3>
+                  <p className="text-[11px] text-indigo-400 font-medium">
+                    Mentora Principal en Ciberseguridad & Riesgos
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    MBA INSEAD • Asesora de Directorios C-Suite
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                «Blindar una corporación moderna contra fraudes y ciberataques es una decisión estratégica de gobernanza, no un asunto confinado al área de sistemas.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center justify-between text-[10px] text-slate-500">
+              <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
+                <CheckCircle2 className="h-3 w-3" /> Asesoría Directa
+              </span>
+              <span>Gobernanza Corporativa</span>
+            </div>
+          </div>
+
+          {/* Mentor 3 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 transition-all duration-300 hover:border-fuchsia-400/50 hover:shadow-xl dark:border-slate-800 dark:bg-[#0d121c] flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3.5">
+                <img
+                  src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
+                  alt="Ing. Martín Solano"
+                  className="h-14 w-14 rounded-2xl object-cover border-2 border-fuchsia-400/40 shadow-md"
+                />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Ing. Martín Solano
+                  </h3>
+                  <p className="text-[11px] text-fuchsia-400 font-medium">
+                    Mentor en Automatización No-Code & Eficiencia
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    Ex-McKinsey & Co. • Líder de Transformación
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                «Mi compromiso en cada módulo es que el alumno identifique procesos redundantes y automatice flujos que le ahorren al menos 10 horas semanales a su equipo.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center justify-between text-[10px] text-slate-500">
+              <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
+                <CheckCircle2 className="h-3 w-3" /> Metodología No-Code
+              </span>
+              <span>Retorno Inmediato</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sección 2: Historias Reales & Testimonios Directivos */}
+      <section className="space-y-6">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-950/40 px-3.5 py-1 font-mono text-[10px] font-bold text-amber-400">
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            HISTORIAS DE ÉXITO & TESTIMONIOS DIRECTIVOS
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white md:text-3xl">
+            Lo que Opinan los Directores que ya se Graduaron
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            Casos de éxito reales de líderes empresariales que transformaron sus áreas, optimizaron costos y certificaron a sus equipos directivos con Lysandri.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Testimonio 1 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 dark:border-slate-800 dark:bg-[#0c111a] shadow-sm flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                «Redujimos en un 38% el tiempo de generación de reportes para el comité de gerencia. Lo que más destaco es la calidez y el acompañamiento: cuando tuve dudas sobre cómo aplicar un flujo a mi ERP, la orientación fue inmediata.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center gap-3">
+              <img
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80"
+                alt="Carlos Villacorta"
+                className="h-10 w-10 rounded-full object-cover border border-cyan-400/40"
+              />
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  MBA Carlos Villacorta
+                </h4>
+                <p className="text-[10px] text-slate-500">
+                  Gerente de Operaciones • Retail & Consumo Masivo
+                </p>
+                <span className="font-mono text-[9px] text-emerald-500 font-semibold flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Factura Electrónica SUNAT
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonio 2 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 dark:border-slate-800 dark:bg-[#0c111a] shadow-sm flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                «La experiencia de pago con izipay fue impecable; en 2 minutos ya tenía mis accesos a Moodle y mi factura con RUC en el correo. El enfoque sin código es perfecto para quienes no venimos del mundo técnico.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center gap-3">
+              <img
+                src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80"
+                alt="Dra. Patricia Arbulú"
+                className="h-10 w-10 rounded-full object-cover border border-indigo-400/40"
+              />
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  Dra. Patricia Arbulú
+                </h4>
+                <p className="text-[10px] text-slate-500">
+                  Directora de Finanzas (CFO) • Grupo Industrial
+                </p>
+                <span className="font-mono text-[9px] text-cyan-500 font-semibold flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Pago izipay Online
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonio 3 */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 dark:border-slate-800 dark:bg-[#0c111a] shadow-sm flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                «Capacitamos a 6 gerentes de área en automatización con IA. La atención de Sofía Valdivia por WhatsApp fue de primer nivel, resolvió nuestras dudas en minutos y el aula virtual estuvo disponible 24/7 sin fricción.»
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 mt-4 flex items-center gap-3">
+              <img
+                src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80"
+                alt="Ing. Gonzalo De la Torre"
+                className="h-10 w-10 rounded-full object-cover border border-fuchsia-400/40"
+              />
+              <div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                  Ing. Gonzalo De la Torre
+                </h4>
+                <p className="text-[10px] text-slate-500">
+                  CEO • Operador Logístico 3PL LatAm
+                </p>
+                <span className="font-mono text-[9px] text-indigo-400 font-semibold flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Formación In-Company
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sección 3: Garantía Humana de Satisfacción Lysandri (7 Días Cero Riesgo) */}
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 p-8 md:p-12 shadow-2xl">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-[80px]" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div className="max-w-2xl space-y-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-950/90 px-3.5 py-1 font-mono text-[10px] font-bold text-emerald-300">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              GARANTÍA DE SATISFACCIÓN TOTAL LYSANDRI • 7 DÍAS
+            </span>
+            <h3 className="text-2xl font-black text-white sm:text-3xl leading-snug">
+              Prueba el Campus Virtual sin Ningún Riesgo para tu Empresa
+            </h3>
+            <p className="text-xs leading-relaxed text-slate-300 sm:text-sm">
+              Sabemos que tu tiempo y tu inversión son valiosos. Explora las primeras lecciones, interactúa con el Asesor Inteligente y revisa el material. Si durante los primeros 7 días consideras que el programa no supera tus estándares de excelencia directiva, te reembolsamos el <strong>100% de tu dinero</strong> de inmediato mediante izipay Online. Sin preguntas incómodas ni trámites engorrosos.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>Reembolso 100% inmediato</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>Sin preguntas ni burocracia</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>Atención directa por WhatsApp</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0 flex flex-col items-center justify-center p-6 rounded-2xl border border-emerald-500/30 bg-slate-950/80 text-center backdrop-blur-md">
+            <div className="h-16 w-16 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 mb-3 shadow-lg shadow-emerald-500/20">
+              <ShieldCheck className="h-8 w-8" />
+            </div>
+            <span className="font-mono text-2xl font-black text-white">7 DÍAS</span>
+            <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
+              100% Garantizado
+            </span>
+            <span className="text-[10px] text-slate-400 mt-1 max-w-[180px]">
+              Protegido por izipay Online & Lysandri Executive
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Sección 4: Preguntas Frecuentes Respondidas de Persona a Persona (FAQ) */}
+      <section className="space-y-6">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3.5 py-1 font-mono text-[10px] font-bold text-cyan-400">
+            <HelpCircle className="h-3.5 w-3.5" />
+            PREGUNTAS FRECUENTES RESUELTAS DE PERSONA A PERSONA
+          </span>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white md:text-3xl">
+            Todo lo que Necesitas Saber Antes de Iniciar tu Formación
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+            Respuestas transparentes y directas a las dudas más comunes de ejecutivos y gerentes.
+          </p>
+        </div>
+
+        <div className="max-w-3xl mx-auto space-y-3">
+          {[
+            {
+              pregunta: '¿Qué sucede exactamente después de completar mi pago con izipay Online?',
+              respuesta:
+                'Tu matrícula se procesa de forma 100% automatizada. En menos de 60 segundos recibirás un correo de bienvenida con tus credenciales de acceso (usuario y contraseña) a nuestro Campus Virtual Moodle (campus.yunixingenieros.com). Podrás ingresar de inmediato a todas las videoclases, plantillas descargables y activar el Asesor Inteligente con IA.',
+            },
+            {
+              pregunta: '¿Puedo solicitar Factura con RUC para deducir impuestos de mi empresa (SUNAT)?',
+              respuesta:
+                'Sí, por supuesto. Al momento de inscribirte en el Checkout, simplemente selecciona la opción "Empresa (Factura con RUC)" e ingresa el RUC y Razón Social de tu organización. Emitimos Factura Electrónica homologada por SUNAT, 100% válida para crédito fiscal y deducción de gastos de capacitación según la normativa tributaria peruana.',
+            },
+            {
+              pregunta: '¿Qué pasa si mi agenda es muy apretada y no puedo ingresar todos los días?',
+              respuesta:
+                'Nuestros programas están diseñados específicamente para directores y gerentes con agendas demandantes. Toda la formación es 100% asincrónica y flexible: tienes acceso permanente y vitalicio a los contenidos y a las actualizaciones futuras de los módulos. Puedes avanzar a tu propio ritmo, en fines de semana o en sesiones de 30 minutos.',
+            },
+            {
+              pregunta: '¿Cómo es el acompañamiento y quién resuelve mis dudas durante el curso?',
+              respuesta:
+                'Cuentas con acompañamiento dual: por un lado, tienes a Lic. Sofía Valdivia en WhatsApp para cualquier coordinación administrativa o emisión de certificados; y por otro lado, dispones de un Asesor Inteligente con IA entrenado con la bibliografía y casos prácticos de cada programa para resolver consultas de aplicación en tu negocio 24/7.',
+            },
+            {
+              pregunta: '¿Qué garantía tengo si el programa no cumple mis expectativas directivas?',
+              respuesta:
+                'Tu inversión está 100% respaldada por nuestra Garantía de Satisfacción Total de 7 Días. Puedes explorar el campus, ver los primeros módulos y probar el material. Si por cualquier motivo consideras que el programa no aporta valor inmediato a tu perfil, te reembolsamos el 100% de tu dinero de inmediato mediante izipay Online. Sin preguntas incómodas ni trámites burocráticos.',
+            },
+          ].map((faq, index) => {
+            const isOpen = openFaqIndex === index;
+            return (
+              <div
+                key={index}
+                className="rounded-2xl border border-slate-200/90 bg-white transition-all dark:border-slate-800 dark:bg-[#0d121c] overflow-hidden"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                  className="w-full flex items-center justify-between p-5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                >
+                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white pr-4">
+                    {faq.pregunta}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-cyan-500 transition-transform duration-300 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 pt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed border-t border-slate-100 dark:border-slate-800/80">
+                    <p>{faq.respuesta}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer de FAQ con contacto humano */}
+        <div className="text-center pt-2">
+          <p className="text-xs text-slate-400">
+            ¿Tienes alguna consulta adicional antes de matricularte?{' '}
+            <a
+              href="https://wa.me/51941238905?text=Hola%20Sof%C3%ADa,%20tengo%20una%20consulta%20sobre%20mi%20matr%C3%ADcula%20en%20Lysandri"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 font-bold hover:underline inline-flex items-center gap-1"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Chatea con Sofía Valdivia en WhatsApp
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* Floating Concierge Widget (Bottom Right) */}
+      <div className="fixed bottom-6 right-6 z-40 hidden sm:block">
+        <a
+          href="https://wa.me/51941238905?text=Hola%20Sof%C3%ADa,%20deseo%20orientaci%C3%B3n%20sobre%20los%20programas%20ejecutivos%20de%20Lysandri"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-3 rounded-full border border-emerald-500/40 bg-slate-950/90 p-2 pr-4 shadow-2xl backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-emerald-400 hover:shadow-emerald-500/25 active:scale-95"
+        >
+          <div className="relative">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 p-0.5">
+              <div className="h-full w-full rounded-full bg-slate-900 flex items-center justify-center text-cyan-300 font-bold text-xs">
+                SV
+              </div>
+            </div>
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-slate-950 animate-pulse" />
+          </div>
+          <div className="text-left text-xs">
+            <div className="font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+              <span>Lic. Sofía Valdivia</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </div>
+            <div className="text-[10px] text-slate-400 font-mono">
+              Admisiones • En línea por WhatsApp
+            </div>
+          </div>
+        </a>
+      </div>
 
 
       {/* Modales y drawers */}

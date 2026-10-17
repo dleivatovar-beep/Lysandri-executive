@@ -33,7 +33,7 @@ export const Footer: React.FC = () => {
             <span className="hidden sm:inline text-slate-700">•</span>
             <span className="hidden sm:flex items-center gap-1.5">
               <Globe2 className="h-3.5 w-3.5 text-indigo-400" />
-              Sede Principal: Lima, Perú / Yunix Ingenieros E.I.R.L.
+              Sede Principal: Lima, Perú / Lysandri Executive
             </span>
           </div>
         </div>
@@ -61,18 +61,18 @@ export const Footer: React.FC = () => {
             </div>
 
             <p className="text-xs leading-relaxed text-slate-400">
-              División de Educación Ejecutiva de <strong className="text-slate-200">Yunix Ingenieros E.I.R.L.</strong> Formación de alto impacto en Inteligencia Artificial, Ciberseguridad Práctica, Optimización de Costos y Liderazgo para directores, gerentes y dueños de negocios.
+              División de Educación Ejecutiva de <strong className="text-slate-200">Lysandri.</strong> Formación de alto impacto en Inteligencia Artificial, Ciberseguridad Práctica, Optimización de Costos y Liderazgo para directores, gerentes y dueños de negocios.
             </p>
 
             <div className="space-y-1.5 pt-1 text-[11px] text-slate-400">
               <div className="flex items-center gap-2">
                 <Building2 className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-                <span>Razón Social: Yunix Ingenieros E.I.R.L.</span>
+                <span>Razón Social: Lysandri</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-                <a href="mailto:contacto@yunix.pe" className="hover:text-cyan-300 transition-colors">
-                  contacto@yunix.pe
+                <a href="mailto:admisiones@lysandri.com" className="hover:text-cyan-300 transition-colors">
+                  admisiones@lysandri.com
                 </a>
               </div>
             </div>
@@ -174,7 +174,7 @@ export const Footer: React.FC = () => {
       <div className="border-t border-slate-800/80 bg-[#030508] py-6 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-slate-500">
-            © {new Date().getFullYear()} <strong className="text-slate-400">Yunix Ingenieros E.I.R.L.</strong> Todos los derechos reservados. Lysandri Executive es una marca registrada.
+            © {new Date().getFullYear()} <strong className="text-slate-400">Lysandri.</strong> Todos los derechos reservados. Lysandri Executive es una marca registrada.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-500">

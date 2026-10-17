@@ -51,13 +51,22 @@ public class OrdenEntity {
 
     @Column(name = "metodo_pago", nullable = false, length = 50)
     @Builder.Default
-    private String metodoPago = "STRIPE";
+    private String metodoPago = "IZIPAY";
 
     @Column(name = "stripe_session_id", unique = true, length = 255)
     private String stripeSessionId;
 
     @Column(name = "stripe_payment_intent_id", unique = true, length = 255)
     private String stripePaymentIntentId;
+
+    @Column(name = "izipay_transaction_id", length = 255)
+    private String izipayTransactionId;
+
+    @Column(name = "izipay_order_id", length = 255)
+    private String izipayOrderId;
+
+    @Column(name = "izipay_uuid", length = 255)
+    private String izipayUuid;
 
     @Column(name = "moodle_matricula_sincronizada", nullable = false)
     @Builder.Default
@@ -74,6 +83,12 @@ public class OrdenEntity {
 
     @Column(name = "nombre_facturacion", length = 200)
     private String nombreFacturacion;
+
+    @Column(name = "numero_operacion", length = 100)
+    private String numeroOperacion;
+
+    @Column(name = "notas_admin", length = 500)
+    private String notasAdmin;
 
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

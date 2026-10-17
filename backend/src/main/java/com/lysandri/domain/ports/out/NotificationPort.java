@@ -23,4 +23,17 @@ public interface NotificationPort {
             String moodlePassword,
             ComprobantePago comprobante
     );
+
+    /**
+     * Envía un correo electrónico de bienvenida institucional a un colaborador matriculado
+     * en un programa corporativo In-Company con sus credenciales del Campus Moodle.
+     */
+    void enviarBienvenidaCorporativa(
+            String email,
+            String nombre,
+            String empresaNombre,
+            String cursoTitulo,
+            String username,
+            String moodlePassword
+    );
 }

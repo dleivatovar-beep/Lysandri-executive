@@ -663,7 +663,7 @@ export const AccountingView: React.FC = () => {
 
     const fechaHoy = new Date().toISOString().slice(0, 10);
     link.href = url;
-    link.setAttribute('download', `Registro_Ventas_RVIE_SIRE_YUNIX_${fechaHoy}.csv`);
+    link.setAttribute('download', `Registro_Ventas_RVIE_SIRE_LYSANDRI_${fechaHoy}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -869,7 +869,7 @@ export const AccountingView: React.FC = () => {
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 dark:text-slate-300 dark:bg-slate-900 dark:border-slate-800 px-2.5 py-0.5 rounded-md">
-                Yunix Ingenieros E.I.R.L. · RUC: 20609812451
+                Lysandri · RUC: 20609812451
               </span>
               <span className="font-mono text-[11px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-200 dark:text-cyan-400 dark:bg-cyan-950/60 dark:border-cyan-500/30 px-2.5 py-0.5 rounded-md">
                 Régimen MYPE Tributario (RMT)
@@ -1410,24 +1410,24 @@ export const AccountingView: React.FC = () => {
 
                 {/* Leyenda y Desglose por Canal */}
                 <div className="flex-1 space-y-2.5 w-full">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-                      <div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                          <span>Stripe Checkout</span>
-                          <span className="rounded bg-cyan-100 px-1.5 py-0.2 text-[10px] font-mono text-cyan-800 border border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800/40">
-                            {metricasCalculadas.pctStripe}%
-                          </span>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-fuchsia-500 dark:bg-fuchsia-400 shadow-sm shadow-fuchsia-400/50" />
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>izipay Online</span>
+                            <span className="rounded bg-fuchsia-100 px-1.5 py-0.2 text-[10px] font-mono text-fuchsia-800 border border-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800/40">
+                              {metricasCalculadas.pctStripe}%
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countStripe} órdenes (Tarjetas & Wallets)</span>
                         </div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countStripe} órdenes online con tarjeta</span>
+                      </div>
+                      <div className="text-right font-mono">
+                        <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.stripeGross)}</div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Neto: {formatSoles(metricasCalculadas.stripeNet)}</div>
                       </div>
                     </div>
-                    <div className="text-right font-mono">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.stripeGross)}</div>
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Neto: {formatSoles(metricasCalculadas.stripeNet)}</div>
-                    </div>
-                  </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -2105,7 +2105,7 @@ export const AccountingView: React.FC = () => {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1 dark:border-slate-800 dark:bg-slate-950">
                 <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400">RUC Contribuyente</span>
                 <p className="text-base font-black text-slate-900 dark:text-white font-mono">20609812451</p>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">YUNIX INGENIEROS E.I.R.L.</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">LYSANDRI</span>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1 dark:border-slate-800 dark:bg-slate-950">
@@ -2481,7 +2481,7 @@ export const AccountingView: React.FC = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl transition-colors">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono uppercase flex items-center gap-2">
               <Wallet className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              <span>Cuentas Bancarias de Tesorería — Yunix Ingenieros E.I.R.L.</span>
+              <span>Cuentas Bancarias de Tesorería — Lysandri</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
@@ -2710,10 +2710,10 @@ export const AccountingView: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-300">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <img src={companyLogo} alt="Yunix" className="h-9 w-9 object-contain" />
+                  <img src={companyLogo} alt="Lysandri" className="h-9 w-9 object-contain" />
                   <div>
                     <h3 className="text-base font-black tracking-tight text-slate-900 leading-none">
-                      YUNIX INGENIEROS E.I.R.L.
+                      LYSANDRI
                     </h3>
                     <p className="text-[10px] text-slate-500 font-semibold tracking-wide">
                       LYSANDRI EXECUTIVE EDUCATION

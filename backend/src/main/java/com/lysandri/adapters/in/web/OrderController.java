@@ -1,5 +1,6 @@
 package com.lysandri.adapters.in.web;
 
+import com.lysandri.adapters.in.web.dto.ConfirmarPagoManualRequest;
 import com.lysandri.adapters.in.web.dto.CreateOrderRequest;
 import com.lysandri.adapters.out.database.entity.UsuarioEntity;
 import com.lysandri.domain.model.Orden;
@@ -13,9 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping({"/api/v1/orders", "/api/v1/admin/orders"})
 @RequiredArgsConstructor
 @Tag(name = "Órdenes y Checkout", description = "Procesamiento de compras y matrículas automáticas en Moodle")
 public class OrderController {
@@ -23,7 +26,7 @@ public class OrderController {
     private final BuyCourseUseCase buyCourseUseCase;
 
     @PostMapping({"/checkout", "/create-checkout-session"})
-    @Operation(summary = "Inicia el proceso de checkout y retorna URL de Stripe Checkout")
+    @Operation(summary = "Inicia el proceso de checkout y retorna sesión de izipay Online o confirmación de pago manual")
     public ResponseEntity<BuyCourseUseCase.CheckoutSessionResponse> iniciarCompra(
             @AuthenticationPrincipal UsuarioEntity usuario,
             @Valid @RequestBody CreateOrderRequest request) {
@@ -39,11 +42,21 @@ public class OrderController {
                 nombre,
                 request.getTipoComprobante(),
                 request.getNumeroDocumento(),
-                request.getNombreFacturacion()
+                request.getNombreFacturacion(),
+                request.getMetodoPago(),
+                request.getNumeroOperacion()
         );
 
         BuyCourseUseCase.CheckoutSessionResponse response = buyCourseUseCase.iniciarCompra(command);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    @Operation(summary = "Lista todas las órdenes de compra con filtros por estado y búsqueda")
+    public ResponseEntity<List<Orden>> listarOrdenes(
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(buyCourseUseCase.listarOrdenes(estado, search));
     }
 
     @PostMapping("/confirm/{sessionId}")
@@ -51,6 +64,23 @@ public class OrderController {
     public ResponseEntity<Orden> confirmarPago(@PathVariable String sessionId) {
         log.info("Llamada de confirmación de pago para sesión Stripe: {}", sessionId);
         Orden orden = buyCourseUseCase.confirmarPagoYMatricular(sessionId);
+        return ResponseEntity.ok(orden);
+    }
+
+    @PostMapping("/{idOrden}/confirmar-pago-manual")
+    @Operation(summary = "Aprobación administrativa de pagos manuales (Yape, Plin, Transferencia bancaria)")
+    public ResponseEntity<Orden> confirmarPagoManual(
+            @PathVariable Long idOrden,
+            @RequestBody(required = false) ConfirmarPagoManualRequest request) {
+        log.info("Llamada administrativa de aprobación para orden ID: {}", idOrden);
+        BuyCourseUseCase.ConfirmarPagoManualCommand command = request != null
+                ? new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        request.getNumeroOperacion(),
+                        request.getMetodoPago(),
+                        request.getNotasAdmin()
+                )
+                : null;
+        Orden orden = buyCourseUseCase.confirmarPagoManual(idOrden, command);
         return ResponseEntity.ok(orden);
     }
 

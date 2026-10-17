@@ -26,12 +26,18 @@ public class Orden {
     private String metodoPago;
     private String stripeSessionId;
     private String stripePaymentIntentId;
+    private String izipayTransactionId;
+    private String izipayOrderId;
+    private String izipayUuid;
     private boolean moodleMatriculaSincronizada;
     private OffsetDateTime fechaPago;
 
     private String tipoComprobanteSolicitado;
     private String numeroDocumentoCliente;
     private String nombreFacturacion;
+
+    private String numeroOperacion;
+    private String notasAdmin;
 
     @Builder.Default
     private List<DetalleOrden> items = new ArrayList<>();

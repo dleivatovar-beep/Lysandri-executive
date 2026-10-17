@@ -16,7 +16,9 @@ import {
   Search,
   ShieldAlert,
   Trash2,
+  Building2,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { getApiErrorMessage } from '../../services/authService';
 
@@ -652,6 +654,16 @@ export const AdminInformationRequests:
                         request.idSolicitud && (
                         <LoaderCircle className="pointer-events-none absolute right-9 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-cyan-500" />
                       )}
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        to="/admin/in-company"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-400"
+                      >
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span>Matricular Nómina In-Company</span>
+                      </Link>
                     </div>
                   </div>
                 </article>

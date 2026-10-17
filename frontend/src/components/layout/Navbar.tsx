@@ -86,7 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </div>
                 <span className="hidden font-mono text-[9px] tracking-tight text-slate-500 dark:text-slate-400 sm:block">
-                  Yunix Ingenieros E.I.R.L.
+                  Lysandri
                 </span>
               </div>
             </a>

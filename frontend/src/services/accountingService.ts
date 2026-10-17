@@ -67,7 +67,7 @@ const MOCK_REPORTE: ReporteVentasResponse = {
     periodoTributario: '2026-10',
     regimenTributario: 'Régimen MYPE Tributario (RMT) - SUNAT',
     rucEmisor: '20609812451',
-    razonSocialEmisor: 'YUNIX INGENIEROS E.I.R.L.',
+    razonSocialEmisor: 'LYSANDRI',
     ventasNetasGravadas: 42983.04,
     debitoFiscalIgv: 7736.96,
     tasaRentaMype: 1.00,
@@ -463,7 +463,7 @@ export const accountingService = {
   exportarTxtSireSUNAT(reporte: ReporteVentasResponse): string {
     const lines: string[] = [];
     const rucEmisor = reporte.liquidacionTributaria?.rucEmisor || '20609812451';
-    const razonSocial = reporte.liquidacionTributaria?.razonSocialEmisor || 'YUNIX INGENIEROS E.I.R.L.';
+    const razonSocial = reporte.liquidacionTributaria?.razonSocialEmisor || 'LYSANDRI';
     const periodo = '20261000';
 
     reporte.ventasConsolidadas.forEach((v, index) => {

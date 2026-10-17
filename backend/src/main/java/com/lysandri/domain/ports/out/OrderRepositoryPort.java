@@ -15,7 +15,13 @@ public interface OrderRepositoryPort {
 
     Optional<Orden> buscarPorStripeSessionId(String stripeSessionId);
 
+    Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId);
+
+    Optional<Orden> buscarPorCualquierIdentificador(String id);
+
     List<Orden> buscarPorUsuario(Long idUsuario);
 
     List<Orden> listarTodas();
+
+    List<Orden> listarPorEstado(com.lysandri.domain.model.EstadoOrden estado);
 }

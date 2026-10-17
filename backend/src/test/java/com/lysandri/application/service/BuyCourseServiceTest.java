@@ -121,7 +121,7 @@ class BuyCourseServiceTest {
                         .build()))
                 .build();
 
-        when(orderRepository.buscarPorStripeSessionId("cs_test_123")).thenReturn(Optional.of(ordenMock));
+        when(orderRepository.buscarPorCualquierIdentificador("cs_test_123")).thenReturn(Optional.of(ordenMock));
         when(userRepository.buscarPorId(1L)).thenReturn(Optional.of(usuarioMock));
         when(lmsClientPort.buscarUsuarioPorEmail("ceo@empresa.com")).thenReturn(Optional.of(55L));
         when(billingPort.emitirComprobante(any(Orden.class))).thenReturn(comprobanteMock);
@@ -173,7 +173,7 @@ class BuyCourseServiceTest {
                 .moneda("PEN")
                 .build();
 
-        when(orderRepository.buscarPorStripeSessionId("cs_guest_999")).thenReturn(Optional.of(ordenInvitado));
+        when(orderRepository.buscarPorCualquierIdentificador("cs_guest_999")).thenReturn(Optional.of(ordenInvitado));
         when(userRepository.buscarPorId(1L)).thenReturn(Optional.of(usuarioMock));
         when(lmsClientPort.buscarUsuarioPorEmail("ceo@empresa.com")).thenReturn(Optional.empty());
         when(lmsClientPort.crearUsuario(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(88L);
@@ -194,5 +194,47 @@ class BuyCourseServiceTest {
                 anyString(),
                 eq(facturaMock)
         );
+    }
+
+    @Test
+    void confirmarPagoManual_exitoso() {
+        Orden ordenManual = Orden.builder()
+                .idOrden(5L)
+                .idUser(1L)
+                .codigoOrden("ORD-YAPE-005")
+                .estadoOrden(EstadoOrden.PENDIENTE)
+                .metodoPago("YAPE")
+                .total(new BigDecimal("799.00"))
+                .moneda("PEN")
+                .moodleMatriculaSincronizada(false)
+                .items(List.of(DetalleOrden.builder()
+                        .idPrograma(10L)
+                        .programa(programaMock)
+                        .precioUnitario(new BigDecimal("799.00"))
+                        .cantidad(1)
+                        .subtotal(new BigDecimal("799.00"))
+                        .build()))
+                .build();
+
+        when(orderRepository.buscarPorId(5L)).thenReturn(Optional.of(ordenManual));
+        when(userRepository.buscarPorId(1L)).thenReturn(Optional.of(usuarioMock));
+        when(lmsClientPort.buscarUsuarioPorEmail("ceo@empresa.com")).thenReturn(Optional.of(55L));
+        when(billingPort.emitirComprobante(any(Orden.class))).thenReturn(comprobanteMock);
+        when(orderRepository.guardar(any(Orden.class))).thenAnswer(i -> i.getArgument(0));
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand cmd = new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                "YAPE-OP-987654",
+                "YAPE",
+                "Voucher validado correctamente"
+        );
+
+        Orden resultado = buyCourseService.confirmarPagoManual(5L, cmd);
+
+        assertNotNull(resultado);
+        assertEquals(EstadoOrden.PAGADO, resultado.getEstadoOrden());
+        assertEquals("YAPE-OP-987654", resultado.getNumeroOperacion());
+        assertTrue(resultado.isMoodleMatriculaSincronizada());
+        verify(lmsClientPort).matricularUsuarioEnCurso(eq(55L), eq(101L), eq(5));
+        verify(billingPort).emitirComprobante(ordenManual);
     }
 }

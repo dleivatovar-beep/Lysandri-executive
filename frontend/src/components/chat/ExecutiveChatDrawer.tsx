@@ -30,7 +30,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'ia',
-      text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Yunix Ingenieros E.I.R.L. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
+      text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Lysandri. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

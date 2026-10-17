@@ -155,4 +155,97 @@ public class EmailNotificationAdapter implements NotificationPort {
                 pdfUrl
         );
     }
+
+    @Override
+    public void enviarBienvenidaCorporativa(
+            String email,
+            String nombre,
+            String empresaNombre,
+            String cursoTitulo,
+            String username,
+            String moodlePassword) {
+
+        log.info("Preparando correo corporativo de bienvenida para: {} ({}) - Empresa: {}", email, cursoTitulo, empresaNombre);
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail, "Lysandri Executive Education");
+            helper.setTo(email);
+            helper.setSubject("¡Bienvenido(a) al Campus Virtual! Acceso a tu Programa Corporativo en Lysandri");
+
+            String htmlBody = construirPlantillaCorporativaHtml(nombre, empresaNombre, cursoTitulo, username, moodlePassword);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+            log.info("Correo corporativo de bienvenida enviado exitosamente a: {}", email);
+        } catch (Exception e) {
+            log.error("Fallo al enviar correo corporativo a {}: {}", email, e.getMessage());
+        }
+    }
+
+    private String construirPlantillaCorporativaHtml(
+            String nombre,
+            String empresaNombre,
+            String cursoTitulo,
+            String username,
+            String password) {
+
+        return """
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0f19; color: #e2e8f0; margin: 0; padding: 20px; }
+                        .container { max-width: 620px; margin: 0 auto; background: #131b2e; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+                        .header { background: linear-gradient(135deg, #1e1b4b 0%%, #4338ca 100%%); padding: 30px 25px; text-align: center; }
+                        .header h1 { margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; }
+                        .header p { margin: 8px 0 0 0; color: #c7d2fe; font-size: 14px; }
+                        .content { padding: 30px 25px; }
+                        .welcome { font-size: 15px; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px; }
+                        .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+                        .card-title { font-size: 14px; font-weight: 600; color: #818cf8; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; }
+                        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+                        .data-label { color: #94a3b8; }
+                        .data-value { color: #f8fafc; font-weight: 600; font-family: monospace; }
+                        .btn-cta { display: inline-block; background: #4f46e5; color: #ffffff !important; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; margin: 15px 0 5px 0; }
+                        .footer { background: #0f172a; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #1e293b; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>LYSANDRI EXECUTIVE</h1>
+                            <p>Programa Corporativo In-Company</p>
+                        </div>
+                        <div class="content">
+                            <p class="welcome">Estimado(a) <strong>%s</strong>,<br><br>Tu organización <strong>%s</strong> ha coordinado tu matrícula en el programa ejecutivo <strong>%s</strong> a través de nuestra división corporativa.</p>
+                            <div class="card">
+                                <h3 class="card-title">Tus Credenciales del Campus Virtual Moodle</h3>
+                                <div class="data-row"><span class="data-label">Plataforma:</span> <span class="data-value">%s</span></div>
+                                <div class="data-row"><span class="data-label">Usuario:</span> <span class="data-value">%s</span></div>
+                                <div class="data-row"><span class="data-label">Contraseña Temporal:</span> <span class="data-value">%s</span></div>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <a href="%s" class="btn-cta">Ingresar al Campus Virtual</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="footer">
+                            <p>© 2026 Lysandri Executive Education. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """.formatted(
+                nombre,
+                empresaNombre != null && !empresaNombre.isBlank() ? empresaNombre : "tu empresa",
+                cursoTitulo,
+                moodleUrl,
+                username,
+                password,
+                moodleUrl
+        );
+    }
 }

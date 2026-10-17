@@ -17,6 +17,7 @@ import {
   Award,
   KeyRound,
   User,
+  MessageCircle,
 } from 'lucide-react';
 import { storeService, OrderConfirmation } from '../services/storeService';
 
@@ -93,7 +94,7 @@ Correo registrado: ${emailDestino}`;
               Creando tu cuenta en Moodle & confirmando matrícula...
             </h2>
             <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-              Estamos validando la transacción con Stripe, generando tu usuario en el Aula Virtual Moodle y habilitando tus clases.
+              Estamos validando la transacción con izipay Online, generando tu usuario en el Aula Virtual Moodle y habilitando tus clases.
             </p>
           </div>
         ) : errorMessage ? (
@@ -124,17 +125,17 @@ Correo registrado: ${emailDestino}`;
                 </div>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                <Sparkles className="h-3 w-3" />
-                <span>Pago Confirmado & Matrícula Moodle Activa</span>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-emerald-400 shadow-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Pago Confirmado con izipay Online & Matrícula Moodle Activa</span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                ¡Tu cuenta en Moodle ha sido creada automáticamente!
+                ¡Felicitaciones y bienvenido a Lysandri Executive!
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-lg mx-auto">
-                Tu inscripción en <strong className="text-cyan-400">{courseTitle}</strong> se completó con éxito. Ya puedes ingresar al aula virtual con tus credenciales y acceder a todas las clases y contenidos.
+                Es un honor acompañarte en este salto profesional en <strong className="text-cyan-400">{courseTitle}</strong>. Tu usuario y contraseña privada han sido generados automáticamente para que comiences de inmediato.
               </p>
             </div>
 
@@ -218,6 +219,33 @@ Correo registrado: ${emailDestino}`;
                   <GraduationCap className="h-5 w-5" />
                   <span>Acceder a mis Clases y Contenido en Moodle</span>
                   <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
+
+              {/* Tarjeta de Acompañamiento Personal Humano */}
+              <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 flex flex-wrap items-center justify-between gap-3 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-cyan-400 to-emerald-400 p-0.5 shadow-md">
+                      <div className="h-full w-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-xs text-emerald-300">
+                        SV
+                      </div>
+                    </div>
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border border-slate-900" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white text-xs">Lic. Sofía Valdivia · Tu Asesora Académica</p>
+                    <p className="text-[11px] text-slate-300">¿Deseas ayuda para entrar al aula o tienes alguna duda de tus clases?</p>
+                  </div>
+                </div>
+                <a
+                  href={`https://wa.me/51941238905?text=${encodeURIComponent(`¡Hola Sofía! Acabo de matricularme en ${courseTitle} (Orden ${order?.codigoOrden || 'izipay'}). ¡Deseo confirmar mis accesos al Campus Virtual Moodle!`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-bold text-white transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>Chatear con Sofía</span>
                 </a>
               </div>
             </div>

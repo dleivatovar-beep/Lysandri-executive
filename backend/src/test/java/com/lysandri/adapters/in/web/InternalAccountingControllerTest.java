@@ -162,7 +162,7 @@ class InternalAccountingControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody() instanceof String);
         String txtSire = (String) response.getBody();
-        assertTrue(txtSire.contains("20609812451|YUNIX INGENIEROS E.I.R.L.|"));
+        assertTrue(txtSire.contains("20609812451|LYSANDRI|"));
         assertTrue(txtSire.contains("|01|F001|00000001|"));
         assertTrue(txtSire.contains("|20555666777|Inversiones SAC|"));
         assertTrue(txtSire.contains("|200.00|0.00|36.00|"));

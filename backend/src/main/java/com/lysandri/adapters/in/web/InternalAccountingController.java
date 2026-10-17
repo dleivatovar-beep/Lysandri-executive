@@ -44,7 +44,7 @@ public class InternalAccountingController {
     private String auditPin;
 
     private static final String RUC_EMISOR = "20609812451";
-    private static final String RAZON_SOCIAL_EMISOR = "YUNIX INGENIEROS E.I.R.L.";
+    private static final String RAZON_SOCIAL_EMISOR = "LYSANDRI";
     private static final DateTimeFormatter FORMATO_FECHA_SUNAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @GetMapping("/ventas")
@@ -146,7 +146,7 @@ public class InternalAccountingController {
             BigDecimal montoDetraccion = comp != null ? comp.getMontoDetraccion() : BigDecimal.ZERO;
             BigDecimal porcDetraccion = comp != null ? comp.getPorcentajeDetraccion() : BigDecimal.ZERO;
             String estadoComp = comp != null ? comp.getEstado().name() : "PENDIENTE";
-            String medioPago = comp != null && comp.getMedioPago() != null ? comp.getMedioPago() : (orden.getMetodoPago() != null ? orden.getMetodoPago() : "STRIPE_CHECKOUT");
+            String medioPago = comp != null && comp.getMedioPago() != null ? comp.getMedioPago() : (orden.getMetodoPago() != null ? orden.getMetodoPago() : "IZIPAY_ONLINE");
             String hash = comp != null ? comp.getCodigoHash() : null;
             String motivoAnulacion = comp != null ? comp.getMotivoAnulacion() : null;
             String cuo = String.format("M%06d", cuoContador++);

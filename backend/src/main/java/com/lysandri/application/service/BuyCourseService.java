@@ -98,6 +98,10 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
                 ? command.nombreFacturacion().trim()
                 : usuario.getNombreCompleto();
 
+        String metodoPago = (command.metodoPago() != null && !command.metodoPago().isBlank())
+                ? command.metodoPago().toUpperCase()
+                : "IZIPAY";
+
         Orden orden = Orden.builder()
                 .idUser(usuario.getIdUser())
                 .usuario(usuario)
@@ -106,7 +110,8 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
                 .estadoOrden(EstadoOrden.PENDIENTE)
                 .total(total)
                 .moneda("PEN")
-                .metodoPago("STRIPE")
+                .metodoPago(metodoPago)
+                .numeroOperacion(command.numeroOperacion())
                 .tipoComprobanteSolicitado(tipoComp)
                 .numeroDocumentoCliente(docCliente)
                 .nombreFacturacion(razonSocial)
@@ -116,39 +121,143 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
 
         orden = orderRepository.guardar(orden);
 
-        // Crear la sesión en Stripe
+        // Si es pago manual (Yape, Plin, Transferencia bancaria directa), no llamamos a la pasarela izipay
+        boolean isOnlineGateway = "IZIPAY".equalsIgnoreCase(metodoPago)
+                || "STRIPE".equalsIgnoreCase(metodoPago)
+                || "TARJETA".equalsIgnoreCase(metodoPago)
+                || "ONLINE".equalsIgnoreCase(metodoPago);
+
+        if (!isOnlineGateway) {
+            String localCheckoutUrl = "/checkout/success?session_id=" + codigoOrden + "&manual=true";
+            log.info("Orden {} registrada con método manual {}. Esperando validación administrativa.", codigoOrden, metodoPago);
+            return new CheckoutSessionResponse(
+                    codigoOrden,
+                    localCheckoutUrl,
+                    codigoOrden,
+                    localCheckoutUrl,
+                    null,
+                    null,
+                    codigoOrden
+            );
+        }
+
+        // Crear la sesión en la pasarela de pagos (izipay Online)
         PaymentPort.PaymentSessionResult sessionResult = paymentPort.crearSesionPago(
                 orden,
                 usuario.getEmail(),
                 razonSocial
         );
 
+        orden.setIzipayTransactionId(sessionResult.paymentIntentId());
+        orden.setIzipayOrderId(sessionResult.sessionId());
         orden.setStripeSessionId(sessionResult.sessionId());
         orden.setStripePaymentIntentId(sessionResult.paymentIntentId());
         orderRepository.guardar(orden);
 
-        log.info("Orden {} creada con éxito. Sesión Stripe: {}", codigoOrden, sessionResult.sessionId());
+        log.info("Orden {} creada con éxito en izipay Online. Sesión/Tx: {}", codigoOrden, sessionResult.sessionId());
 
         return new CheckoutSessionResponse(
                 codigoOrden,
                 sessionResult.checkoutUrl(),
+                sessionResult.sessionId(),
+                sessionResult.checkoutUrl(),
+                sessionResult.formToken(),
+                sessionResult.publicKey(),
                 sessionResult.sessionId()
         );
     }
 
     @Override
     @Transactional
-    public Orden procesarPagoExitoso(String stripeSessionId) {
-        log.info("Procesando pago exitoso y aprovisionamiento para sesión Stripe: {}", stripeSessionId);
+    public Orden procesarPagoExitoso(String sessionIdOrTransactionId) {
+        log.info("Procesando pago exitoso y aprovisionamiento para sesión/transacción: {}", sessionIdOrTransactionId);
 
-        Orden orden = orderRepository.buscarPorStripeSessionId(stripeSessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada para la sesión de pago: " + stripeSessionId));
+        Orden orden = orderRepository.buscarPorCualquierIdentificador(sessionIdOrTransactionId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada para la sesión de pago: " + sessionIdOrTransactionId));
 
         if (orden.getEstadoOrden() == EstadoOrden.PAGADO && orden.isMoodleMatriculaSincronizada()) {
             log.info("La orden {} ya fue procesada y matriculada previamente. Idempotencia garantizada.", orden.getCodigoOrden());
             return orden;
         }
 
+        return ejecutarAprovisionamientoYFacturacion(orden);
+    }
+
+    @Override
+    @Transactional
+    public Orden confirmarPagoYMatricular(String sessionIdOrTransactionId) {
+        return procesarPagoExitoso(sessionIdOrTransactionId);
+    }
+
+    @Override
+    @Transactional
+    public Orden confirmarPagoManual(Long idOrden, ConfirmarPagoManualCommand command) {
+        log.info("Confirmando pago manual para orden ID: {}", idOrden);
+
+        Orden orden = orderRepository.buscarPorId(idOrden)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada con ID: " + idOrden));
+
+        if (orden.getEstadoOrden() == EstadoOrden.PAGADO && orden.isMoodleMatriculaSincronizada()) {
+            log.info("La orden {} ya fue aprobada y matriculada previamente. Idempotencia garantizada.", orden.getCodigoOrden());
+            return orden;
+        }
+
+        if (command != null) {
+            if (command.numeroOperacion() != null && !command.numeroOperacion().isBlank()) {
+                orden.setNumeroOperacion(command.numeroOperacion().trim());
+            }
+            if (command.metodoPago() != null && !command.metodoPago().isBlank()) {
+                orden.setMetodoPago(command.metodoPago().trim().toUpperCase());
+            }
+            if (command.notasAdmin() != null && !command.notasAdmin().isBlank()) {
+                orden.setNotasAdmin(command.notasAdmin().trim());
+            }
+        }
+
+        return ejecutarAprovisionamientoYFacturacion(orden);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Orden> listarOrdenes(String estado, String search) {
+        List<Orden> ordenes;
+        if (estado != null && !estado.isBlank()) {
+            try {
+                EstadoOrden estadoOrden = EstadoOrden.valueOf(estado.trim().toUpperCase());
+                ordenes = orderRepository.listarPorEstado(estadoOrden);
+            } catch (IllegalArgumentException e) {
+                ordenes = orderRepository.listarTodas();
+            }
+        } else {
+            ordenes = orderRepository.listarTodas();
+        }
+
+        if (search != null && !search.trim().isBlank()) {
+            String q = search.trim().toLowerCase();
+            ordenes = ordenes.stream()
+                    .filter(o -> (o.getCodigoOrden() != null && o.getCodigoOrden().toLowerCase().contains(q))
+                            || (o.getNombreFacturacion() != null && o.getNombreFacturacion().toLowerCase().contains(q))
+                            || (o.getNumeroDocumentoCliente() != null && o.getNumeroDocumentoCliente().contains(q))
+                            || (o.getNumeroOperacion() != null && o.getNumeroOperacion().toLowerCase().contains(q))
+                            || (o.getUsuario() != null && o.getUsuario().getEmail() != null && o.getUsuario().getEmail().toLowerCase().contains(q))
+                    )
+                    .toList();
+        }
+
+        return ordenes;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Orden obtenerOrdenPorCodigo(String codigoOrden) {
+        return orderRepository.buscarPorCodigo(codigoOrden)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + codigoOrden));
+    }
+
+    /**
+     * Orquestación central de aprovisionamiento en Moodle LMS, facturación electrónica y notificación.
+     */
+    private Orden ejecutarAprovisionamientoYFacturacion(Orden orden) {
         Usuario usuario = userRepository.buscarPorId(orden.getIdUser())
                 .orElseThrow(() -> new IllegalStateException("Usuario asociado a la orden no existe"));
 
@@ -224,19 +333,6 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
                 orden.getCodigoOrden(), comprobante.getSerie(), comprobante.getCorrelativo());
 
         return ordenGuardada;
-    }
-
-    @Override
-    @Transactional
-    public Orden confirmarPagoYMatricular(String stripeSessionId) {
-        return procesarPagoExitoso(stripeSessionId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Orden obtenerOrdenPorCodigo(String codigoOrden) {
-        return orderRepository.buscarPorCodigo(codigoOrden)
-                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada: " + codigoOrden));
     }
 
     /**

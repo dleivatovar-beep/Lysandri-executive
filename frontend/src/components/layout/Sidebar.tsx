@@ -12,8 +12,10 @@ import {
   MessageSquareText,
   Store,
   Users,
-  LogOut,
   Calculator,
+  CreditCard,
+  Building2,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -121,6 +123,16 @@ const ROLE_NAVIGATION: Record<
       label: 'Solicitudes',
       view: 'INFORMATION_REQUESTS',
       icon: MessageSquareText,
+    },
+    {
+      label: 'Pagos Manuales',
+      view: 'MANUAL_PAYMENTS',
+      icon: CreditCard,
+    },
+    {
+      label: 'In-Company',
+      view: 'IN_COMPANY',
+      icon: Building2,
     },
     {
       label: 'Área Contable',
