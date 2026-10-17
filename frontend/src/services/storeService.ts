@@ -206,7 +206,7 @@ export const storeService = {
         } else if (q.includes('duracion') || q.includes('tiempo') || q.includes('hora') || q.includes('semana') || q.includes('modalidad')) {
           respuesta = 'Nuestros programas ejecutivos tienen una duración de 6 a 8 semanas en modalidad 100% online y flexible a través de nuestro Campus Virtual disponible 24/7. Están diseñados para adaptarse a la agenda de gerentes y líderes, con una dedicación recomendada de 3 a 5 horas semanales a tu propio ritmo.';
         } else if (q.includes('certifica') || q.includes('diploma') || q.includes('titulo') || q.includes('validez')) {
-          respuesta = 'Al culminar satisfactoriamente el programa, recibirás una Certificación Oficial emitida por Yunix Ingenieros E.I.R.L. con código de verificación QR digital único. Este diploma acredita tus competencias directivas ante comités de gerencia y en tu perfil profesional de LinkedIn.';
+          respuesta = 'Al culminar satisfactoriamente el programa, recibirás una certificación digital con un código QR único para verificar su autenticidad. Podrás compartirla en tu perfil profesional.';
         } else if (q.includes('pago') || q.includes('precio') || q.includes('cuota') || q.includes('costo') || q.includes('factura') || q.includes('sunat') || q.includes('ruc')) {
           respuesta = 'Aceptamos pagos seguros vía tarjeta de crédito o débito a través de Stripe, así como transferencias bancarias empresariales (BCP Telecrédito / Interbank). Para empresas y profesionales en Perú, emitimos Factura electrónica con RUC deducible o Boleta de venta oficial SUNAT con entrega inmediata.';
         } else if (q.includes('empresa') || q.includes('in-company') || q.includes('equipo') || q.includes('corporativ')) {
@@ -227,7 +227,7 @@ export const storeService = {
             {
               idDocumento: 2,
               pagina: 1,
-              extracto: 'Acreditación ejecutiva con código QR digital respaldada por Yunix Ingenieros E.I.R.L.',
+              extracto: 'Acreditación ejecutiva con código QR digital verificable.',
               similitud: 0.95,
             },
           ],

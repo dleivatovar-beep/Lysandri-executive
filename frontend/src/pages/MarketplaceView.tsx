@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,9 +47,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   categories,
   isLoading = false,
   errorMessage = '',
-  selectingId = null,
   onRetry,
-  onSelectPlaybook,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -102,18 +100,21 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <button type="button" className="lx-hero-cta" onClick={scrollToCatalog}>
             Explorar programas <ArrowRight aria-hidden="true" />
           </button>
-          <div className="lx-hero-signature">Formación ejecutiva de Yunix Ingenieros E.I.R.L.</div>
+          <div className="lx-hero-signature">Tecnología aplicada. Liderazgo ejecutivo.</div>
         </div>
 
         <aside className="lx-feature" aria-label="Programa destacado">
           {featured ? (
             <>
               <div className="lx-feature-top">
-                <span className="lx-feature-counter">{String((featuredIndex % playbooks.length) + 1).padStart(2, '0')} <span>/ {String(playbooks.length).padStart(2, '0')}</span></span>
+                <span className="lx-feature-counter">Programa destacado</span>
                 <div className="lx-feature-nav">
                   <button type="button" onClick={() => shiftFeatured(-1)} disabled={playbooks.length < 2} aria-label="Programa anterior"><ArrowLeft aria-hidden="true" /></button>
                   <button type="button" onClick={() => shiftFeatured(1)} disabled={playbooks.length < 2} aria-label="Programa siguiente"><ArrowRight aria-hidden="true" /></button>
                 </div>
+              </div>
+              <div className="lx-feature-progress" role="progressbar" aria-label="Posición en programas destacados" aria-valuemin={1} aria-valuemax={playbooks.length} aria-valuenow={(featuredIndex % playbooks.length) + 1}>
+                <span style={{ transform: `scaleX(${((featuredIndex % playbooks.length) + 1) / playbooks.length})` }} />
               </div>
               <div key={featured.id} className={`lx-feature-slide lx-feature-slide-${featuredDirection}`} aria-live="polite" aria-atomic="true">
                 <div className="lx-feature-content">
@@ -168,8 +169,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           </div>
         ) : (
           <div className="lx-program-list">
-            {filteredPlaybooks.map((playbook, index) => (
-              <ProgramRow key={playbook.id} playbook={playbook} index={index} onPreviewSyllabus={setSelectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} />
+            {filteredPlaybooks.map((playbook) => (
+              <ProgramRow key={playbook.id} playbook={playbook} onPreviewSyllabus={setSelectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} />
             ))}
           </div>
         )}
@@ -196,7 +197,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <article>
             <ShieldCheck aria-hidden="true" />
             <h3>Certificación verificable</h3>
-            <p>Diploma emitido por Yunix Ingenieros E.I.R.L. con un mecanismo público de verificación mediante código QR.</p>
+            <p>Diploma digital con código QR para verificar su autenticidad.</p>
             <span><CheckCircle2 aria-hidden="true" /> Verificación de autenticidad</span>
           </article>
         </div>

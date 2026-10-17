@@ -65,6 +65,15 @@ const PRESENTATION_BY_TITLE: Record<
     tier: 'ADVANCED',
   },
 
+  'ciberseguridad & proteccion antifraude para empresas': {
+    coverUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80',
+    description:
+      'Protege a tu organización contra estafas digitales, ransomware, robo de información confidencial y fraudes bancarios. Diseñado para directivos y líderes de negocio.',
+    category: 'Seguridad y Riesgos',
+    tags: ['Ciberseguridad', 'Protección de Datos', 'Antifraude', 'Gestión de Riesgos'],
+    tier: 'ADVANCED',
+  },
+
   'ciberseguridad corporativa & estrategia zero-trust': {
     coverUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80',
     description:
@@ -75,6 +84,15 @@ const PRESENTATION_BY_TITLE: Record<
   },
 
   'finops empresarial': {
+    coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
+    description:
+      'Aprende a auditar y reducir hasta un 40% en gastos de tecnología, servicios en la nube y licencias operativas, maximizando el margen de rentabilidad y retorno de inversión (ROI).',
+    category: 'Finanzas y Gestión',
+    tags: ['Finanzas', 'Reducción de Costos', 'ROI', 'Presupuestos'],
+    tier: 'ENTERPRISE',
+  },
+
+  'gestion financiera estrategica & optimizacion de costos': {
     coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
     description:
       'Aprende a auditar y reducir hasta un 40% en gastos de tecnología, servicios en la nube y licencias operativas, maximizando el margen de rentabilidad y retorno de inversión (ROI).',

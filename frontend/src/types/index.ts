@@ -43,7 +43,6 @@ export interface ProgramaEjecutivo {
   tags: string[];
   duration?: string;
   instructor?: string;
-  price?: number;
   modalidad?: string;
   syllabus?: CourseModule[];
 }
@@ -131,7 +130,6 @@ export interface ProgramaResponse {
   fechaFinalGlobal?: string;
   requisitos?: string;
   metodologia?: string;
-  precio?: number;
   descripcion?: string;
   coverUrl?: string;
   modalidad?: string;

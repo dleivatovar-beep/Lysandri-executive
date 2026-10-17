@@ -28,7 +28,25 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
   const { itemCount, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
   const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const targets = sections
+      .map(({ id }) => document.getElementById(id))
+      .filter((element): element is HTMLElement => Boolean(element));
+    if (!targets.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveSection(visible.target.id);
+    }, { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.15, 0.4] });
+
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -70,7 +88,7 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
 
         <nav className="lx-editorial-desktop-nav" aria-label="Navegación principal">
           {sections.map((section) => (
-            <a key={section.id} href={`/#${section.id}`} onClick={(event) => jumpTo(event, section.id)}>
+            <a key={section.id} className={activeSection === section.id ? 'is-active' : undefined} aria-current={activeSection === section.id ? 'location' : undefined} href={`/#${section.id}`} onClick={(event) => jumpTo(event, section.id)}>
               {section.label}
             </a>
           ))}
@@ -107,9 +125,9 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
       </div>
 
       <nav id="lx-editorial-mobile-menu" className={`lx-editorial-mobile-nav${mobileOpen ? ' is-open' : ''}`} aria-label="Navegación móvil" aria-hidden={!mobileOpen}>
-        {sections.map((section, index) => (
+        {sections.map((section) => (
           <a key={section.id} href={`/#${section.id}`} onClick={(event) => jumpTo(event, section.id)} tabIndex={mobileOpen ? 0 : -1}>
-            <span>0{index + 1}</span>{section.label}<ArrowUpRight aria-hidden="true" />
+            <span>{section.label}</span><ArrowUpRight aria-hidden="true" />
           </a>
         ))}
         <button type="button" className="lx-editorial-mobile-theme" tabIndex={mobileOpen ? 0 : -1} onClick={onThemeToggle}>

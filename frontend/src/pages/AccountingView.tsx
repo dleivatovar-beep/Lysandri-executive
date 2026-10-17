@@ -46,6 +46,32 @@ import { getCustomUsers } from '../services/academicService';
 import companyLogo from '../assets/lysandri-logo.png';
 import animatedLogo from '../assets/logo-animado.gif';
 
+type AccountingGlyphName = 'flow' | 'receipt' | 'tax' | 'treasury';
+
+const AccountingGlyph: React.FC<{ name: AccountingGlyphName; className?: string }> = ({ name, className = '' }) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <g stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      {name === 'flow' && <>
+        <path d="M4 19.5h16M5.5 16V10m4.25 6V5m4.5 11v-3m4.25 3V7" />
+        <path className="lx-accounting-glyph-accent" d="M4 7.5 8.75 4l4 4 6-3" />
+      </>}
+      {name === 'receipt' && <>
+        <path d="M6 3.75h12v16.5l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5z" />
+        <path d="M9 8h6M9 11.5h6M9 15h3" />
+        <path className="lx-accounting-glyph-accent" d="M15 15h.01" />
+      </>}
+      {name === 'tax' && <>
+        <path d="M5 4.5h14v15H5zM8 8h8M8 11.5h4" />
+        <path className="lx-accounting-glyph-accent" d="m13.5 15.5 1.5 1.5 3-3" />
+      </>}
+      {name === 'treasury' && <>
+        <path d="M4 8.5 12 4l8 4.5M5.5 9v8m4.25-8v8m4.5-8v8m4.25-8v8M4 19.5h16" />
+        <path className="lx-accounting-glyph-accent" d="M8 6.25h8" />
+      </>}
+    </g>
+  </svg>
+);
+
 export const AccountingView: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
@@ -663,7 +689,7 @@ export const AccountingView: React.FC = () => {
 
     const fechaHoy = new Date().toISOString().slice(0, 10);
     link.href = url;
-    link.setAttribute('download', `Registro_Ventas_RVIE_SIRE_YUNIX_${fechaHoy}.csv`);
+    link.setAttribute('download', `Registro_Ventas_RVIE_SIRE_LYSANDRI_${fechaHoy}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -672,11 +698,11 @@ export const AccountingView: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 flex min-h-screen w-full overflow-y-auto bg-white dark:bg-[#0a0d14]">
+      <div className="lx-admin-account-gate flex min-h-[calc(100vh-4rem)] w-full overflow-y-auto bg-white dark:bg-[#0a0d14]">
         {/* Sección izquierda visual con el Logo animado de Lysandri */}
         <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden border-r border-slate-200 bg-slate-900 dark:border-slate-800 dark:bg-[#07090e] lg:flex">
           <div className="pointer-events-none absolute left-1/4 top-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-indigo-500/10 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
 
           <div className="relative z-10 flex w-full flex-col items-center justify-center px-12 transition-transform duration-700 hover:scale-105">
             <img
@@ -686,7 +712,7 @@ export const AccountingView: React.FC = () => {
             />
 
             <div className="flex h-12 items-center justify-center">
-              <h1 className="bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-center text-3xl font-bold leading-tight tracking-tight text-transparent xl:text-4xl">
+              <h1 className="text-center text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
                 {typedText}
               </h1>
 
@@ -839,9 +865,9 @@ export const AccountingView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 dark:bg-[#070b14] dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors duration-300">
+    <div className="lx-admin-accounting-content min-h-screen bg-slate-50 text-slate-800 dark:bg-[#070b14] dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors duration-300">
       {/* Executive Header Toolbar */}
-      <header className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl relative overflow-hidden transition-colors">
+      <header className="lx-accounting-masthead rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl relative overflow-hidden transition-colors">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -854,22 +880,22 @@ export const AccountingView: React.FC = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight">
-                    LYSANDRI EXECUTIVE
-                  </span>
-                  <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-cyan-700 dark:text-cyan-400">
-                    CONTABILIDAD & FACTURACIÓN
+                  <h1 className="lx-admin-accounting-title">
+                    Contabilidad y facturación
+                  </h1>
+                  <span className="lx-admin-accounting-tag">
+                    Portal SUNAT
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Portal de Gestión Contable, Facturación Electrónica SUNAT & Conciliación Financiera Multi-Canal
+                  Lysandri Executive · Gestión contable, facturación electrónica y conciliación financiera
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="lx-accounting-identity flex flex-wrap items-center gap-2 pt-1">
               <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 dark:text-slate-300 dark:bg-slate-900 dark:border-slate-800 px-2.5 py-0.5 rounded-md">
-                Yunix Ingenieros E.I.R.L. · RUC: 20609812451
+                RUC del contribuyente · 20609812451
               </span>
               <span className="font-mono text-[11px] font-semibold text-cyan-700 bg-cyan-50 border border-cyan-200 dark:text-cyan-400 dark:bg-cyan-950/60 dark:border-cyan-500/30 px-2.5 py-0.5 rounded-md">
                 Régimen MYPE Tributario (RMT)
@@ -882,7 +908,7 @@ export const AccountingView: React.FC = () => {
           </div>
 
           {/* Consistent Corporate Action Toolbar */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="lx-accounting-toolbar flex flex-wrap items-center gap-2">
             {/* Theme Toggle Button */}
             <button
               type="button"
@@ -921,7 +947,7 @@ export const AccountingView: React.FC = () => {
               title="Generar y descargar estructura oficial SIRE 14.1 para SUNAT"
               className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:hover:text-white transition-all shadow-sm active:scale-95"
             >
-              <Download className={`h-3.5 w-3.5 ${isExportingSire ? 'animate-bounce' : 'text-blue-600 dark:text-blue-400'}`} />
+              <Download className={`h-3.5 w-3.5 ${isExportingSire ? 'opacity-60' : 'text-blue-600 dark:text-blue-400'}`} />
               <span>Descargar SIRE 14.1 TXT</span>
             </button>
 
@@ -966,7 +992,7 @@ export const AccountingView: React.FC = () => {
       )}
 
       {/* 5 Financial & Fiscal KPIs */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="lx-admin-accounting-metrics grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-label="Resumen financiero">
         {/* KPI 1 */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between">
@@ -1029,7 +1055,7 @@ export const AccountingView: React.FC = () => {
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-indigo-600 dark:text-indigo-300 tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
               {formatSoles(metricasCalculadas.igv)}
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -1065,17 +1091,17 @@ export const AccountingView: React.FC = () => {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-violet-700 dark:text-violet-300 block">
+              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 block">
                 Pago a Cuenta Renta
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400">Renta MYPE 1.0% (Casilla 302)</span>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
               <Calculator className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-violet-600 dark:text-violet-300 tracking-tight font-mono">
+            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
               {formatSoles(metricasCalculadas.rentaMype)}
             </div>
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
@@ -1086,9 +1112,10 @@ export const AccountingView: React.FC = () => {
       </section>
 
       {/* Tabs Navigation */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+      <div className="lx-admin-accounting-tabs lx-accounting-tabs flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2" role="group" aria-label="Vistas contables">
         <button
           type="button"
+          aria-pressed={activeTab === 'graficos'}
           onClick={() => setActiveTab('graficos')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
             activeTab === 'graficos'
@@ -1096,8 +1123,8 @@ export const AccountingView: React.FC = () => {
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
           }`}
         >
-          <BarChart3 className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-          <span>Gráficos & Análisis Visual</span>
+          <AccountingGlyph name="flow" className="h-[1.1rem] w-[1.1rem] text-cyan-600 dark:text-cyan-400" />
+          <span>Flujo financiero</span>
           <span className="rounded-md bg-cyan-100 px-2 py-0.5 text-[10px] font-mono text-cyan-800 border border-cyan-200 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-500/30">
             En Vivo
           </span>
@@ -1105,6 +1132,7 @@ export const AccountingView: React.FC = () => {
 
         <button
           type="button"
+          aria-pressed={activeTab === 'comprobantes'}
           onClick={() => setActiveTab('comprobantes')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
             activeTab === 'comprobantes'
@@ -1112,8 +1140,8 @@ export const AccountingView: React.FC = () => {
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
           }`}
         >
-          <Receipt className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-          <span>Registro de Comprobantes (SIRE / RVIE)</span>
+          <AccountingGlyph name="receipt" className="h-[1.1rem] w-[1.1rem] text-cyan-600 dark:text-cyan-400" />
+          <span>Comprobantes</span>
           <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-700 border border-slate-200 dark:bg-slate-950 dark:text-cyan-300 dark:border-slate-800">
             {ventasFiltradas.length}
           </span>
@@ -1121,6 +1149,7 @@ export const AccountingView: React.FC = () => {
 
         <button
           type="button"
+          aria-pressed={activeTab === 'liquidacion'}
           onClick={() => setActiveTab('liquidacion')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
             activeTab === 'liquidacion'
@@ -1128,8 +1157,8 @@ export const AccountingView: React.FC = () => {
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
           }`}
         >
-          <Calculator className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          <span>Liquidación Tributaria SUNAT (FV 621)</span>
+          <AccountingGlyph name="tax" className="h-[1.1rem] w-[1.1rem] text-indigo-600 dark:text-indigo-400" />
+          <span>Liquidación 621</span>
           <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-mono text-indigo-700 border border-indigo-200 dark:bg-slate-950 dark:text-indigo-300 dark:border-slate-800">
             Régimen MYPE
           </span>
@@ -1137,6 +1166,7 @@ export const AccountingView: React.FC = () => {
 
         <button
           type="button"
+          aria-pressed={activeTab === 'medios_pago'}
           onClick={() => setActiveTab('medios_pago')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
             activeTab === 'medios_pago'
@@ -1144,8 +1174,8 @@ export const AccountingView: React.FC = () => {
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
           }`}
         >
-          <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          <span>Medios de Pago, Pasarelas y Tesorería B2B</span>
+          <AccountingGlyph name="treasury" className="h-[1.1rem] w-[1.1rem] text-emerald-600 dark:text-emerald-400" />
+          <span>Tesorería B2B</span>
           <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-mono text-emerald-700 border border-emerald-200 dark:bg-slate-950 dark:text-emerald-300 dark:border-slate-800">
             Conciliado
           </span>
@@ -1154,9 +1184,9 @@ export const AccountingView: React.FC = () => {
 
       {/* TAB: GRÁFICOS Y ANÁLISIS VISUAL */}
       {activeTab === 'graficos' && (
-        <section className="space-y-6 animate-fadeIn">
+        <section className="lx-accounting-analytics-view space-y-6">
           {/* Header de Análisis Gráfico */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
+          <div className="lx-accounting-report-head rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
@@ -1194,9 +1224,9 @@ export const AccountingView: React.FC = () => {
           </div>
 
           {/* Fila de Ratios Financieros Ejecutivos */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lx-accounting-ratio-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg space-y-1.5 transition-colors hover:border-emerald-500/40">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <div className="lx-accounting-ratio-label flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Margen Neto Operativo</span>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   <ArrowUpRight className="h-4 w-4" />
@@ -1211,7 +1241,7 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg space-y-1.5 transition-colors hover:border-amber-500/40">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <div className="lx-accounting-ratio-label flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Cobertura Fiscal SPOT</span>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                   <Percent className="h-4 w-4" />
@@ -1226,7 +1256,7 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg space-y-1.5 transition-colors hover:border-rose-500/40">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <div className="lx-accounting-ratio-label flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Comisión Global Pasarelas</span>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
                   <CreditCard className="h-4 w-4" />
@@ -1241,7 +1271,7 @@ export const AccountingView: React.FC = () => {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg space-y-1.5 transition-colors hover:border-cyan-500/40">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <div className="lx-accounting-ratio-label flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">Recaudación Diaria Promedio</span>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
                   <Activity className="h-4 w-4" />
@@ -1266,8 +1296,8 @@ export const AccountingView: React.FC = () => {
                 </h3>
               </div>
               <div className="flex items-center gap-3 text-[11px] font-mono">
-                <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300">
-                  <span className="h-2.5 w-2.5 rounded bg-indigo-500" />
+                <span className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                  <span className="h-2.5 w-2.5 rounded bg-amber-500" />
                   <span>Facturas (B2B)</span>
                 </span>
                 <span className="flex items-center gap-1.5 text-cyan-700 dark:text-cyan-300">
@@ -1280,7 +1310,7 @@ export const AccountingView: React.FC = () => {
             {/* Barras de ventas diarias con track de altura fija */}
             <div className="pt-2">
               <div className="flex items-end gap-3 sm:gap-4 overflow-x-auto pb-3 pt-6 px-3 min-h-[240px] bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80">
-                {metricasCalculadas.ventasPorDia.map((dia) => {
+                {metricasCalculadas.ventasPorDia.map((dia, index) => {
                   const alturaPct = Math.max(16, Math.min(100, Math.round((dia.total / metricasCalculadas.maxVentaDia) * 100)));
                   const pctFactura = dia.total > 0 ? (dia.facturas / dia.total) * 100 : 0;
                   const pctBoleta = dia.total > 0 ? (dia.boletas / dia.total) * 100 : 0;
@@ -1295,14 +1325,14 @@ export const AccountingView: React.FC = () => {
                       {/* Track de altura fija para que la altura en porcentaje sea 100% visible */}
                       <div className="h-36 w-full flex items-end justify-center">
                         <div
-                          style={{ height: `${alturaPct}%` }}
-                          className="w-9 sm:w-full sm:max-w-[40px] rounded-t-lg bg-slate-200 dark:bg-slate-800 flex flex-col justify-end overflow-hidden transition-all duration-700 group-hover/bar:brightness-110 shadow-md border border-slate-300 dark:border-slate-700/60"
+                          style={{ height: `${alturaPct}%`, animationDelay: `${Math.min(index * 24, 160)}ms` }}
+                          className="lx-accounting-daily-bar w-9 sm:w-full sm:max-w-[40px] rounded-t-lg bg-slate-200 dark:bg-slate-800 flex flex-col justify-end overflow-hidden transition-all duration-700 group-hover/bar:brightness-110 shadow-md border border-slate-300 dark:border-slate-700/60"
                         >
                           {/* Segmento Facturas */}
                           {dia.facturas > 0 && (
                             <div
                               style={{ height: `${pctFactura}%` }}
-                              className="w-full bg-gradient-to-t from-indigo-700 via-indigo-600 to-indigo-500 transition-all duration-500"
+                              className="w-full bg-[var(--admin-orange)] transition-[height] duration-500"
                               title={`Facturas: ${formatSoles(dia.facturas)}`}
                             />
                           )}
@@ -1505,7 +1535,7 @@ export const AccountingView: React.FC = () => {
                   />
                   <div
                     style={{ width: `${Math.round(((metricasCalculadas.igv) / (metricasCalculadas.total || 1)) * 100)}%` }}
-                    className="h-full rounded-r-lg bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-700 shadow-sm"
+                    className="h-full rounded-r-lg bg-amber-500 transition-[width] duration-500"
                     title={`IGV 18%: ${formatSoles(metricasCalculadas.igv)}`}
                   />
                 </div>
@@ -1590,7 +1620,7 @@ export const AccountingView: React.FC = () => {
                   <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div
                       style={{ width: `${metricasCalculadas.total > 0 ? Math.round((metricasCalculadas.montoFacturas / metricasCalculadas.total) * 100) : 0}%` }}
-                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700"
+                      className="h-full rounded-full bg-[var(--admin-orange)] transition-[width] duration-500"
                     />
                   </div>
                   <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400">
@@ -2105,7 +2135,7 @@ export const AccountingView: React.FC = () => {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1 dark:border-slate-800 dark:bg-slate-950">
                 <span className="text-[10px] font-mono uppercase font-bold text-slate-500 dark:text-slate-400">RUC Contribuyente</span>
                 <p className="text-base font-black text-slate-900 dark:text-white font-mono">20609812451</p>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">YUNIX INGENIEROS E.I.R.L.</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">Entidad registrada en SUNAT</span>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1 dark:border-slate-800 dark:bg-slate-950">
@@ -2388,7 +2418,7 @@ export const AccountingView: React.FC = () => {
                   B2B ({metricasCalculadas.pctBcp}%)
                 </span>
               </div>
-              <div className="text-2xl font-black text-indigo-600 dark:text-indigo-300 font-mono">
+              <div className="text-2xl font-black text-blue-700 dark:text-sky-300 font-mono">
                 {formatSoles(metricasCalculadas.bcpGross)}
               </div>
               <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
@@ -2481,7 +2511,7 @@ export const AccountingView: React.FC = () => {
           <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl transition-colors">
             <h3 className="font-bold text-sm text-slate-900 dark:text-white font-mono uppercase flex items-center gap-2">
               <Wallet className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              <span>Cuentas Bancarias de Tesorería — Yunix Ingenieros E.I.R.L.</span>
+              <span>Cuentas bancarias de tesorería</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
@@ -2710,7 +2740,7 @@ export const AccountingView: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-300">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <img src={companyLogo} alt="Yunix" className="h-9 w-9 object-contain" />
+                  <img src={companyLogo} alt="Lysandri Executive" className="h-9 w-9 object-contain" />
                   <div>
                     <h3 className="text-base font-black tracking-tight text-slate-900 leading-none">
                       YUNIX INGENIEROS E.I.R.L.
