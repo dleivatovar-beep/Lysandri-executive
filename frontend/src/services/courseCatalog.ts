@@ -65,6 +65,15 @@ const PRESENTATION_BY_TITLE: Record<
     tier: 'ADVANCED',
   },
 
+  'ciberseguridad & proteccion antifraude para empresas': {
+    coverUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80',
+    description:
+      'Protege a tu organización contra estafas digitales, ransomware, robo de información confidencial y fraudes bancarios. Diseñado para directivos y líderes de negocio.',
+    category: 'Seguridad y Riesgos',
+    tags: ['Ciberseguridad', 'Protección de Datos', 'Antifraude', 'Gestión de Riesgos'],
+    tier: 'ADVANCED',
+  },
+
   'ciberseguridad corporativa & estrategia zero-trust': {
     coverUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80',
     description:
@@ -75,6 +84,15 @@ const PRESENTATION_BY_TITLE: Record<
   },
 
   'finops empresarial': {
+    coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
+    description:
+      'Aprende a auditar y reducir hasta un 40% en gastos de tecnología, servicios en la nube y licencias operativas, maximizando el margen de rentabilidad y retorno de inversión (ROI).',
+    category: 'Finanzas y Gestión',
+    tags: ['Finanzas', 'Reducción de Costos', 'ROI', 'Presupuestos'],
+    tier: 'ENTERPRISE',
+  },
+
+  'gestion financiera estrategica & optimizacion de costos': {
     coverUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
     description:
       'Aprende a auditar y reducir hasta un 40% en gastos de tecnología, servicios en la nube y licencias operativas, maximizando el margen de rentabilidad y retorno de inversión (ROI).',
@@ -163,9 +181,10 @@ const resolveTier = (
 export const toCatalogCourse = (
   program: ProgramaResponse,
 ): Playbook => {
+  const title = program.titulo || program.tituloPrograma || 'Programa sin título';
   const presentation =
     PRESENTATION_BY_TITLE[
-      normalize(program.tituloPrograma)
+      normalize(title)
     ];
 
   const category =
@@ -186,13 +205,17 @@ export const toCatalogCourse = (
   return {
     id: String(program.idPrograma),
     programId: program.idPrograma,
-    title: program.tituloPrograma,
-    coverUrl: program.coverUrl || presentation?.coverUrl,
-    slug: slugify(program.tituloPrograma),
+    title,
+    price: program.precio,
+    currency: program.moneda,
+    coverUrl: program.imagenPortadaUrl || presentation?.coverUrl,
+    slug: program.slug || slugify(title),
 
     description:
       program.descripcion ||
       presentation?.description ||
+      program.descripcionCorta ||
+      program.descripcionDetallada ||
       program.metodologia ||
       program.requisitos ||
       'Consulta el contenido y los requisitos de este programa académico.',
@@ -201,14 +224,13 @@ export const toCatalogCourse = (
 
     tier:
       presentation?.tier ||
-      resolveTier(program.level),
+      resolveTier(program.nivel || program.level),
 
     tags,
-    duration: program.duracionPrograma,
-    instructor: program.nombreInstructor,
-    price: program.precio,
-    modalidad: program.modalidad,
-    syllabus: program.syllabus,
+    duration: program.duracionHoras
+      ? `${program.duracionHoras} horas`
+      : program.duracionPrograma,
+    instructor: program.instructorNombre || program.nombreInstructor,
   };
 };
 
@@ -250,7 +272,7 @@ export const getCourseCover = (
     normalize(title)
   ]?.coverUrl;
 
-export const FALLBACK_PLAYBOOKS: Playbook[] = [
+export const FALLBACK_PLAYBOOKS: Playbook[] = ([
   {
     id: '1',
     programId: 1,
@@ -329,4 +351,4 @@ export const FALLBACK_PLAYBOOKS: Playbook[] = [
     duration: '6 Semanas',
     instructor: 'Dr. Fernando Benavides (Consultor Senior en Gobierno Corporativo)',
   }
-];
+] as Playbook[]).map((playbook) => ({ ...playbook, isDemo: true }));

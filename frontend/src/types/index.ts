@@ -32,6 +32,9 @@ export interface ProgramaEjecutivo {
   id: string;
   programId: number;
   title: string;
+  isDemo?: boolean;
+  price?: number;
+  currency?: string;
   coverUrl?: string;
   slug: string;
   description: string;
@@ -40,7 +43,6 @@ export interface ProgramaEjecutivo {
   tags: string[];
   duration?: string;
   instructor?: string;
-  price?: number;
   modalidad?: string;
   syllabus?: CourseModule[];
 }
@@ -108,9 +110,19 @@ export interface UsuarioResponse {
 
 export interface ProgramaResponse {
   idPrograma: number;
-  idInstructorDni: string;
-  nombreInstructor: string;
-  tituloPrograma: string;
+  idInstructorDni?: string;
+  nombreInstructor?: string;
+  tituloPrograma?: string;
+  titulo?: string;
+  descripcionCorta?: string;
+  descripcionDetallada?: string;
+  imagenPortadaUrl?: string;
+  instructorNombre?: string;
+  nivel?: string;
+  duracionHoras?: number;
+  slug?: string;
+  precio?: number;
+  moneda?: string;
   duracionPrograma?: string;
   tipoPrograma?: string;
   level?: string;
@@ -118,7 +130,6 @@ export interface ProgramaResponse {
   fechaFinalGlobal?: string;
   requisitos?: string;
   metodologia?: string;
-  precio?: number;
   descripcion?: string;
   coverUrl?: string;
   modalidad?: string;

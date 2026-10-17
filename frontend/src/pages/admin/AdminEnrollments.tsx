@@ -15,7 +15,6 @@ import {
   Trash2,
   UserCheck,
   UserPlus,
-  Users,
 } from 'lucide-react';
 
 import { academicService } from '../../services/academicService';
@@ -141,17 +140,18 @@ export const AdminEnrollments: React.FC = () => {
     programs.forEach((prog) => {
       const rawTeacher = prog.nombreInstructor?.trim();
       if (!rawTeacher) return;
+      const programTitle = prog.tituloPrograma ?? prog.titulo ?? 'Programa sin título';
       const key = rawTeacher.toLowerCase();
       const existing = map.get(key);
       if (existing) {
-        if (!existing.cursos.includes(prog.tituloPrograma)) {
-          existing.cursos.push(prog.tituloPrograma);
+        if (!existing.cursos.includes(programTitle)) {
+          existing.cursos.push(programTitle);
         }
       } else {
         map.set(key, {
           id: rawTeacher,
           nombre: rawTeacher,
-          cursos: [prog.tituloPrograma],
+          cursos: [programTitle],
         });
       }
     });
@@ -253,7 +253,7 @@ export const AdminEnrollments: React.FC = () => {
           studentId: student.idUser,
           studentName: `${student.nombres} ${student.apellidos}`,
           programId: prog.idPrograma,
-          programTitle: prog.tituloPrograma,
+          programTitle: prog.tituloPrograma ?? prog.titulo ?? 'Programa sin título',
           teacherName: prog.nombreInstructor,
           assignedAt: new Date().toLocaleDateString('es-PE', {
             day: '2-digit',
@@ -341,7 +341,7 @@ export const AdminEnrollments: React.FC = () => {
       studentId: student.idUser,
       studentName: `${student.nombres} ${student.apellidos}`,
       programId: prog.idPrograma,
-      programTitle: prog.tituloPrograma,
+      programTitle: prog.tituloPrograma ?? prog.titulo ?? 'Programa sin título',
       teacherName: assignTeacherName,
       assignedAt: new Date().toLocaleDateString('es-PE', {
         day: '2-digit',
@@ -382,24 +382,18 @@ export const AdminEnrollments: React.FC = () => {
   );
 
   return (
-    <section className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
+    <section className="lx-admin-page lx-admin-enrollment-page">
+      <header className="lx-admin-pagehead">
+        <div className="lx-admin-pagehead-copy">
+          <div>
+          <h1>Inscripciones y asignaciones</h1>
 
-        <div className="relative">
-          <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan-600 dark:text-cyan-300">
-            Administración
-          </span>
-
-          <h1 className="mt-5 text-3xl font-black text-slate-950 dark:text-white">
-            Usuarios e inscripciones
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-            Registra nuevos ejecutivos, asígnalos a los programas académicos y vincula al profesor titular de acuerdo a los cursos que imparte.
+          <p>
+            Registra una cuenta ejecutiva, vincúlala a un programa y confirma quién acompañará su formación.
           </p>
+          </div>
         </div>
-      </div>
+      </header>
 
       {errorMessage && (
         <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-600 dark:text-rose-300">
@@ -424,21 +418,19 @@ export const AdminEnrollments: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-2">
+          <div className="lx-admin-enrollment-flow">
             {/* PANEL 1: CREAR ESTUDIANTE */}
-            <article className="rounded-2xl border border-cyan-500/10 bg-white p-6 dark:border-slate-800 dark:bg-[#0c111a]">
+            <article className="lx-admin-flow-step">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
-                  <UserPlus className="h-5 w-5" />
-                </span>
+                <span className="lx-workflow-icon lx-workflow-icon-cyan" aria-hidden="true"><UserPlus /></span>
 
                 <div>
                   <h2 className="font-black text-slate-950 dark:text-white">
-                    Crear estudiante
+                    Crear cuenta ejecutiva
                   </h2>
 
                   <p className="mt-1 text-xs text-slate-500">
-                    Registra una cuenta con rol Ejecutivo.
+                    Completa sus datos de acceso para dejarla lista para inscribirse.
                   </p>
                 </div>
               </div>
@@ -538,18 +530,16 @@ export const AdminEnrollments: React.FC = () => {
                     <UserPlus className="h-4 w-4" />
                   )}
 
-                  {isCreating ? 'Creando estudiante...' : 'Crear estudiante'}
+                  {isCreating ? 'Creando cuenta...' : 'Crear cuenta'}
                 </button>
               </form>
             </article>
 
             {/* PANEL 2: INSCRIBIR EN UN PROGRAMA */}
-            <article className="rounded-2xl border border-indigo-500/10 bg-white p-6 dark:border-slate-800 dark:bg-[#0c111a]">
+            <article className="lx-admin-flow-step">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-500">
-                    <GraduationCap className="h-5 w-5" />
-                  </span>
+                  <span className="lx-workflow-icon lx-workflow-icon-orange" aria-hidden="true"><GraduationCap /></span>
 
                   <div>
                     <h2 className="font-black text-slate-950 dark:text-white">
@@ -617,7 +607,6 @@ export const AdminEnrollments: React.FC = () => {
                   <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 text-xs text-indigo-700 dark:text-indigo-300">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <GraduationCap className="h-4 w-4 text-indigo-500 shrink-0" />
                         <span>
                           Docente del curso:{' '}
                           <strong>
@@ -633,18 +622,9 @@ export const AdminEnrollments: React.FC = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
-                  <InfoCard
-                    icon={<Users className="h-4 w-4" />}
-                    label="Estudiantes"
-                    value={String(students.length)}
-                  />
-
-                  <InfoCard
-                    icon={<GraduationCap className="h-4 w-4" />}
-                    label="Programas"
-                    value={String(programs.length)}
-                  />
+                <div className="lx-enrollment-counts" aria-label={`${students.length} estudiantes y ${programs.length} programas disponibles`}>
+                  <p><strong>{students.length}</strong><span>Ejecutivos disponibles</span></p>
+                  <p><strong>{programs.length}</strong><span>Programas disponibles</span></p>
                 </div>
 
                 {students.length === 0 && (
@@ -666,29 +646,25 @@ export const AdminEnrollments: React.FC = () => {
                     students.length === 0 ||
                     programs.length === 0
                   }
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-xs font-bold text-white transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="lx-admin-primary flex h-11 w-full items-center justify-center gap-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isEnrolling ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <GraduationCap className="h-4 w-4" />
-                  )}
+                  ) : null}
 
                   {isEnrolling
                     ? 'Procesando inscripción...'
-                    : 'Inscribir estudiante'}
+                    : 'Confirmar inscripción'}
                 </button>
               </form>
             </article>
           </div>
 
           {/* PANEL 3: SECCIÓN PARA ASIGNAR AL PROFESOR DE SU ALUMNO DE ACUERDO A QUÉ CURSOS ENSEÑA */}
-          <article className="rounded-2xl border border-cyan-500/15 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#0c111a]">
+          <article className="lx-admin-assignment-register">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/15 to-indigo-600/15 text-cyan-600 dark:text-cyan-400">
-                  <UserCheck className="h-5 w-5" />
-                </span>
+                <span className="lx-workflow-icon lx-workflow-icon-violet" aria-hidden="true"><BookOpen /></span>
 
                 <div>
                   <h2 className="text-base font-black text-slate-950 dark:text-white sm:text-lg">
@@ -896,23 +872,4 @@ const Field: React.FC<FieldProps> = ({ label, children }) => (
     <span className="mb-1.5 block">{label}</span>
     {children}
   </label>
-);
-
-interface InfoCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}
-
-const InfoCard: React.FC<InfoCardProps> = ({ icon, label, value }) => (
-  <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-900/60">
-    <div className="flex items-center gap-2 text-cyan-500">
-      {icon}
-      <span className="text-[10px] text-slate-500">{label}</span>
-    </div>
-
-    <p className="mt-2 font-mono text-xl font-black text-slate-950 dark:text-white">
-      {value}
-    </p>
-  </div>
 );
