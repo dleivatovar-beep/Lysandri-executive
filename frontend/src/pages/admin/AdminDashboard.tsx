@@ -7,11 +7,9 @@ import React, {
 
 import {
   BookOpen,
-  CalendarDays,
+  Building2,
   Check,
-  CheckCircle2,
   Copy,
-  DollarSign,
   Edit3,
   GraduationCap,
   Layers,
@@ -25,7 +23,9 @@ import {
   ShieldAlert,
   Sparkles,
   Trash2,
+  UserCheck,
   Users,
+  ShieldCheck,
   X,
 } from 'lucide-react';
 
@@ -56,19 +56,6 @@ const ROLE_LABELS: Record<UserRole | string, string> = {
   INSTRUCTOR: 'Profesor',
   DOCENTE: 'Profesor',
   ADMIN: 'Administrador',
-};
-
-const ROLE_STYLES: Record<UserRole | string, string> = {
-  ESTUDIANTE:
-    'border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300',
-  CLIENTE:
-    'border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300',
-  INSTRUCTOR:
-    'border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300',
-  DOCENTE:
-    'border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300',
-  ADMIN:
-    'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300',
 };
 
 const formatDate = (date?: string): string => {
@@ -284,138 +271,104 @@ export const AdminDashboard: React.FC<
   ).length;
 
   return (
-    <section className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-7 dark:border-slate-800 dark:bg-[#0c111a] md:p-9">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-
-        <div className="relative flex flex-col justify-between gap-4 md:flex-row md:items-end">
+    <section className={`lx-admin-page lx-admin-register-page lx-admin-${section}`}>
+      <header className="lx-admin-pagehead">
+        <div className="lx-admin-pagehead-copy">
           <div>
-            <span className="inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-              Administración Académica
-            </span>
-
-            <h1 className="mt-4 text-3xl font-black text-slate-950 dark:text-white">
+            <h1>
               {section === 'users'
-                ? 'Gestión de Usuarios & Accesos'
-                : 'Gestión de Programas'}
+                ? 'Usuarios y accesos'
+                : 'Programas académicos'}
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+            <p>
               {section === 'users'
-                ? 'Administra las cuentas y credenciales de ejecutivos, profesores y administradores de la plataforma.'
-                : 'Crea nuevos cursos ejecutivos, estructura mallas curriculares por módulos y sesiones, y administra los contenidos.'}
+                ? 'Administra las cuentas y los accesos de ejecutivos, profesores y administradores.'
+                : 'Organiza programas, docentes y mallas curriculares desde un solo registro.'}
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {section === 'users' ? (
-              <button
-                type="button"
-                onClick={handleOpenNewUser}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 px-5 py-3.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-[1.02] hover:shadow-cyan-500/40 active:scale-95"
-              >
-                <Plus className="h-4 w-4 stroke-[3]" />
-                <span>Nuevo Usuario</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleOpenNewProgram}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 px-5 py-3.5 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition-all hover:scale-[1.02] hover:shadow-cyan-500/40 active:scale-95"
-              >
-                <Plus className="h-4 w-4 stroke-[3]" />
-                <span>Nuevo Programa</span>
-              </button>
-            )}
-          </div>
         </div>
-      </div>
+
+        <button
+          type="button"
+          onClick={section === 'users' ? handleOpenNewUser : handleOpenNewProgram}
+          className="lx-admin-primary"
+        >
+          <Plus className="h-4 w-4" />
+          <span>{section === 'users' ? 'Nuevo usuario' : 'Nuevo programa'}</span>
+        </button>
+      </header>
 
       {section === 'programs' ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="lx-admin-metric-strip" aria-label="Resumen de programas">
           <MetricCard
             label="Programas en catálogo"
             value={String(programs.length)}
-            icon={<Layers className="h-5 w-5 text-indigo-500" />}
+            icon={<BookOpen />}
+            tone="cyan"
           />
 
           <MetricCard
             label="Mallas curriculares"
             value={String(programs.filter((p) => p.syllabus && p.syllabus.length > 0).length)}
-            icon={<BookOpen className="h-5 w-5 text-cyan-500" />}
+            icon={<Layers />}
+            tone="orange"
           />
 
           <MetricCard
             label="Docentes titulares"
             value={String(new Set(programs.map((p) => p.nombreInstructor).filter(Boolean)).size)}
-            icon={<GraduationCap className="h-5 w-5 text-purple-500" />}
+            icon={<GraduationCap />}
+            tone="violet"
           />
 
           <MetricCard
             label="Nivel Enterprise"
             value={String(programs.filter((p) => p.level === 'ENTERPRISE').length)}
-            icon={<Layers className="h-5 w-5 text-emerald-500" />}
+            icon={<Building2 />}
+            tone="green"
           />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="lx-admin-metric-strip" aria-label="Resumen de usuarios">
           <MetricCard
             label="Usuarios registrados"
             value={String(users.length)}
-            icon={<Users className="h-5 w-5" />}
+            icon={<Users />}
+            tone="cyan"
           />
 
           <MetricCard
             label="Ejecutivos inscritos"
             value={String(executiveCount)}
-            icon={<Users className="h-5 w-5" />}
+            icon={<UserCheck />}
+            tone="orange"
           />
 
           <MetricCard
             label="Profesores titulares"
             value={String(instructorCount)}
-            icon={<BookOpen className="h-5 w-5" />}
+            icon={<GraduationCap />}
+            tone="violet"
           />
 
           <MetricCard
             label="Administradores"
             value={String(users.filter((u) => u.rol === 'ADMIN').length)}
-            icon={<Layers className="h-5 w-5 text-indigo-500" />}
+            icon={<ShieldCheck />}
+            tone="green"
           />
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-cyan-500/10 bg-white dark:border-slate-800 dark:bg-[#0c111a]">
-        <div className="flex flex-col gap-4 border-b border-slate-200 p-4 dark:border-slate-800 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-cyan-500/20">
-              {section === 'programs'
-                ? `Programas (${programs.length})`
-                : `Usuarios (${users.length})`}
-            </span>
+      <section className="lx-admin-register">
+        <div className="lx-admin-register-toolbar">
+          <div className="lx-admin-register-title">
+            <h2>{section === 'programs' ? 'Registro de programas' : 'Directorio de usuarios'}</h2>
+            <span>{section === 'programs' ? programs.length : users.length} registros</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {section === 'programs' ? (
-              <button
-                type="button"
-                onClick={handleOpenNewProgram}
-                className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-3.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-110 active:scale-95"
-              >
-                <Plus className="h-3.5 w-3.5 stroke-[3]" />
-                <span className="hidden sm:inline">Nuevo Programa</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleOpenNewUser}
-                className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-3.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-110 active:scale-95"
-              >
-                <Plus className="h-3.5 w-3.5 stroke-[3]" />
-                <span className="hidden sm:inline">Nuevo Usuario</span>
-              </button>
-            )}
-
             <div className="relative flex-1 md:w-64">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
@@ -473,7 +426,7 @@ export const AdminDashboard: React.FC<
             onAddNewProgram={handleOpenNewProgram}
           />
         )}
-      </div>
+      </section>
 
       {/* Course & Syllabus Creator Modal */}
       <ProgramEditorModal
@@ -499,29 +452,21 @@ interface MetricCardProps {
   label: string;
   value: string;
   icon: React.ReactNode;
+  tone: 'cyan' | 'orange' | 'violet' | 'green';
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({
   label,
   value,
   icon,
+  tone,
 }) => {
   return (
-    <article className="rounded-2xl border border-cyan-500/10 bg-white p-5 dark:border-slate-800 dark:bg-[#0c111a]">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-slate-500">
-            {label}
-          </p>
-
-          <p className="mt-2 font-mono text-3xl font-black text-slate-950 dark:text-white">
-            {value}
-          </p>
-        </div>
-
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-500">
-          {icon}
-        </span>
+    <article className="lx-admin-metric">
+      <div className={`lx-admin-metric-mark lx-admin-metric-mark-${tone}`} aria-hidden="true">{icon}</div>
+      <div className="lx-admin-metric-copy">
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className="mt-2 font-mono text-3xl font-black text-slate-950 dark:text-white">{value}</p>
       </div>
     </article>
   );
@@ -538,8 +483,8 @@ const renderUserPhoneCell = (phone?: string) => {
         <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">
           {phone}
         </span>
-        <span className="inline-flex items-center gap-1 w-fit rounded-md bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-          ⚠️ Ingresado como DNI
+        <span className="lx-user-phone-warning">
+          <ShieldAlert aria-hidden="true" /> Ingresado como DNI
         </span>
       </div>
     );
@@ -569,76 +514,68 @@ const UsersTable: React.FC<UsersTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px]">
-        <thead className="bg-slate-50 dark:bg-slate-900/60">
-          <tr className="text-left text-[10px] uppercase tracking-wider text-slate-500">
-            <th className="px-5 py-3">Usuario</th>
-            <th className="px-5 py-3">Correo</th>
-            <th className="px-5 py-3">Celular</th>
-            <th className="px-5 py-3">Rol</th>
-            <th className="px-5 py-3 text-right">Acciones</th>
-          </tr>
-        </thead>
+    <div className="lx-user-directory" role="list" aria-label="Directorio de usuarios">
+      <div className="lx-user-directory-heading" aria-hidden="true">
+        <span>PERSONA / ROL</span>
+        <span>CORREO DE ACCESO</span>
+        <span>CONTACTO</span>
+        <span />
+      </div>
+      {users.map((user) => {
+        const displayName = `${user.nombres || ''} ${user.apellidos || ''}`.trim();
+        const initials = displayName
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0])
+          .join('')
+          .toUpperCase() || 'U';
+        const roleLabel = ROLE_LABELS[user.rol] || user.rol || 'Ejecutivo';
 
-        <tbody>
-          {users.map((user) => (
-            <tr
-              key={user.idUser}
-              className="border-t border-slate-100 text-xs dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors"
-            >
-              <td className="px-5 py-4">
-                <p className="font-bold text-slate-900 dark:text-white">
-                  {user.nombres} {user.apellidos}
-                </p>
-
-                <p className="mt-1 font-mono text-[9px] text-slate-400">
-                  ID #{user.idUser}
-                </p>
-              </td>
-
-              <td className="px-5 py-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                {user.email}
-              </td>
-
-              <td className="px-5 py-4">
-                {renderUserPhoneCell(user.telefono)}
-              </td>
-
-              <td className="px-5 py-4">
-                <span
-                  className={`inline-flex rounded-full border px-2.5 py-1 font-mono text-[9px] font-bold uppercase ${ROLE_STYLES[user.rol] || 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400'}`}
-                >
-                  {ROLE_LABELS[user.rol] || user.rol || 'Ejecutivo'}
-                </span>
-              </td>
-
-              <td className="px-5 py-4 text-right">
-                <div className="flex items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => onEditUser(user)}
-                    title="Editar usuario o corregir celular"
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1.5 text-xs font-bold text-cyan-600 transition-all hover:bg-cyan-500 hover:text-white dark:border-cyan-500/40 dark:text-cyan-400"
-                  >
-                    <Edit3 className="h-3.5 w-3.5" />
-                    <span>Editar</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onDeleteUser(user)}
-                    title="Eliminar usuario"
-                    className="inline-flex items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 p-1.5 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+        return (
+          <article className="lx-user-row" role="listitem" key={user.idUser}>
+            <div className="lx-user-record">
+              <span className={`lx-user-avatar lx-user-avatar-${String(user.rol).toLowerCase()}`} aria-hidden="true">{initials}</span>
+              <div className="lx-user-name-wrap">
+                <div className="lx-user-name-line">
+                  <h3>{displayName || 'Usuario sin nombre'}</h3>
+                  <span className={`lx-user-role lx-user-role-${String(user.rol).toLowerCase()}`}>{roleLabel}</span>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                <p className="lx-user-id" title={`ID #${user.idUser}`}>Cuenta #{user.idUser}</p>
+              </div>
+            </div>
+            <div className="lx-user-contact">
+              <span>Correo</span>
+              <strong title={user.email}>{user.email || 'Sin registrar'}</strong>
+            </div>
+            <div className="lx-user-contact lx-user-phone">
+              <span>Contacto</span>
+              <div className="lx-user-phone-value">{renderUserPhoneCell(user.telefono)}</div>
+            </div>
+            <div className="lx-user-row-actions">
+              <button
+                type="button"
+                onClick={() => onEditUser(user)}
+                title="Editar usuario o corregir celular"
+                aria-label={`Editar a ${displayName || 'este usuario'}`}
+                className="lx-user-edit"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Editar usuario</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteUser(user)}
+                title="Eliminar usuario"
+                aria-label={`Eliminar a ${displayName || 'este usuario'}`}
+                className="lx-user-delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 };
@@ -926,7 +863,7 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="lx-admin-modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg rounded-3xl border border-cyan-500/20 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-[#0c111a] sm:p-7 max-h-[92vh] overflow-y-auto">
         {/* Cabecera del Panel */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
@@ -1263,143 +1200,83 @@ const ProgramsTable: React.FC<ProgramsTableProps> = ({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px]">
-        <thead className="bg-slate-50 dark:bg-slate-900/60">
-          <tr className="text-left text-[10px] uppercase tracking-wider text-slate-500">
-            <th className="px-5 py-3">Programa Ejecutivo</th>
-            <th className="px-5 py-3">Instructor Titular</th>
-            <th className="px-5 py-3">Inversión & Nivel</th>
-            <th className="px-5 py-3">Malla Curricular</th>
-            <th className="px-5 py-3">Duración & Fechas</th>
-            <th className="px-5 py-3 text-right">Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {programs.map((program) => {
+    <div className="lx-program-grid" role="list" aria-label="Catálogo de programas">
+      {programs.map((program, index) => {
             const hasCustomSyllabus = Boolean(program.syllabus && program.syllabus.length > 0);
             const totalModules = program.syllabus?.length || 0;
             const totalSessions = program.syllabus?.reduce((acc, m) => acc + (m.temas?.length || 0), 0) || 0;
+            const level = program.level || 'Nivel no definido';
 
             return (
-              <tr
+              <article
                 key={program.idPrograma}
-                className="border-t border-slate-100 text-xs transition-colors hover:bg-slate-50/50 dark:border-slate-800 dark:hover:bg-slate-900/40"
+                className="lx-program-card"
+                role="listitem"
               >
-                {/* Programa con portada */}
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    {program.coverUrl ? (
-                      <img
-                        src={program.coverUrl}
-                        alt=""
-                        className="h-11 w-16 rounded-lg object-cover border border-slate-200 shadow-sm dark:border-slate-800 shrink-0"
-                      />
-                    ) : (
-                      <div className="flex h-11 w-16 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shrink-0">
-                        <BookOpen className="h-5 w-5" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white line-clamp-1">
-                        {program.tituloPrograma}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-slate-500">
-                        {program.tipoPrograma || 'Programa de Especialización'}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Instructor */}
-                <td className="px-5 py-4 text-slate-600 dark:text-slate-400">
-                  <span className="font-medium text-slate-800 dark:text-slate-200">
-                    {program.nombreInstructor || 'Sin asignar'}
-                  </span>
-                </td>
-
-                {/* Inversión & Nivel */}
-                <td className="px-5 py-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      <DollarSign className="h-3 w-3" />
-                      S/ {(program.precio !== undefined ? program.precio : 5).toLocaleString('es-PE')}
-                    </span>
-                    <span className="inline-block w-fit rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 font-mono text-[9px] uppercase font-bold text-indigo-500">
-                      {program.level || 'ENTERPRISE'}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Malla Curricular Status */}
-                <td className="px-5 py-4">
-                  {hasCustomSyllabus ? (
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex items-center gap-1 w-fit rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3 w-3" />
-                        {totalModules} Módulos ({totalSessions} Temas)
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Malla estructurada activa
-                      </span>
-                    </div>
+                <div className="lx-program-artwork">
+                  {program.coverUrl ? (
+                    <img src={program.coverUrl} alt="" loading={index > 3 ? 'lazy' : 'eager'} />
                   ) : (
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex items-center gap-1 w-fit rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-600 dark:text-amber-400">
-                        <Layers className="h-3 w-3" />
-                        Malla estándar
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        Sin personalizar
-                      </span>
+                    <div className="lx-program-placeholder">
+                      <BookOpen aria-hidden="true" />
+                      <span>Portada no disponible</span>
                     </div>
                   )}
-                </td>
+                </div>
 
-                {/* Duración & Fechas */}
-                <td className="px-5 py-4 text-slate-600 dark:text-slate-400">
-                  <div>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {program.duracionPrograma || '6 Semanas'}
+                <div className="lx-program-card-content">
+                  <div className="lx-program-meta">
+                    <span>{program.tipoPrograma || 'Programa de Especialización'}</span>
+                    <span>{level}</span>
+                  </div>
+                  <h3>{program.tituloPrograma}</h3>
+
+                  <div className="lx-program-faculty">
+                    <span className="lx-faculty-avatar" aria-hidden="true">
+                      {(program.nombreInstructor || 'S').split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}
                     </span>
-                    <span className="mt-1 flex items-center gap-1 text-[10px] text-slate-500">
-                      <CalendarDays className="h-3.5 w-3.5 text-cyan-500" />
-                      {formatDate(program.fechaInicioGlobal)}
+                    <div>
+                      <span>Docente titular</span>
+                      <strong>{program.nombreInstructor || 'Sin asignar'}</strong>
+                    </div>
+                  </div>
+
+                  <dl className="lx-program-facts">
+                    <div>
+                      <dt>Precio</dt>
+                      <dd>{typeof program.precio === 'number' ? `S/ ${program.precio.toLocaleString('es-PE')}` : 'Por definir'}</dd>
+                    </div>
+                    <div>
+                      <dt>Duración</dt>
+                      <dd>{program.duracionPrograma || 'Por definir'}</dd>
+                      <small>Inicio · {formatDate(program.fechaInicioGlobal)}</small>
+                    </div>
+                  </dl>
+
+                  <div className={`lx-program-syllabus ${hasCustomSyllabus ? 'is-structured' : 'is-standard'}`}>
+                    <span>
+                      <strong>{hasCustomSyllabus ? `${totalModules} módulos · ${totalSessions} temas` : 'Malla estándar'}</strong>
+                      <small>{hasCustomSyllabus ? 'Estructura curricular activa' : 'Sin personalizar'}</small>
                     </span>
                   </div>
-                </td>
 
-                {/* Acciones */}
-                <td className="px-5 py-4 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    {/* Botón Editar */}
-                    <button
-                      type="button"
-                      onClick={() => onEditProgram(program)}
-                      title="Editar programa"
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-white"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                      <span>Editar</span>
+                  <div className="lx-program-actions">
+                    <button type="button" onClick={() => onEditProgram(program)} title="Editar programa">
+                      <Edit3 aria-hidden="true" /> Editar programa
                     </button>
-
-                    {/* Botón Eliminar */}
                     <button
                       type="button"
                       onClick={() => onDeleteProgram(program)}
                       title="Eliminar programa del catálogo"
-                      className="inline-flex items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 p-1.5 text-rose-500 transition-all hover:bg-rose-500 hover:text-white"
+                      aria-label={`Eliminar ${program.tituloPrograma}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 aria-hidden="true" />
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+              </article>
             );
           })}
-        </tbody>
-      </table>
     </div>
   );
 };

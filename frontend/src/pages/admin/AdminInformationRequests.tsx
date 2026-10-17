@@ -7,10 +7,13 @@ import React, {
 
 import {
   CheckCircle2,
+  ChevronDown,
   Clock3,
+  CircleCheck,
   Inbox,
   LoaderCircle,
   Mail,
+  MailCheck,
   Phone,
   RefreshCw,
   Search,
@@ -54,29 +57,6 @@ const FILTERS: Array<{
     label: 'Cerradas',
   },
 ];
-
-const STATUS_LABELS: Record<
-  SolicitudInformacionEstado,
-  string
-> = {
-  PENDIENTE: 'Pendiente',
-  CONTACTADA: 'Contactada',
-  CERRADA: 'Cerrada',
-};
-
-const STATUS_CLASSES: Record<
-  SolicitudInformacionEstado,
-  string
-> = {
-  PENDIENTE:
-    'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-300',
-
-  CONTACTADA:
-    'border-cyan-500/20 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300',
-
-  CERRADA:
-    'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300',
-};
 
 const formatDate = (
   value: string,
@@ -349,28 +329,23 @@ export const AdminInformationRequests:
       };
 
     return (
-      <section className="space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-7 dark:border-slate-800 dark:bg-[#0c111a] sm:p-8">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <section className="lx-admin-page lx-admin-requests-page">
+        <header className="lx-admin-pagehead">
+          <div className="lx-admin-pagehead-copy">
             <div>
-              <span className="inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-cyan-600 dark:text-cyan-400">
-                Administración
-              </span>
-
-              <h1 className="mt-5 text-3xl font-black text-slate-950 dark:text-white">
+              <h1>
                 Solicitudes de información
               </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+              <p>
                 Revisa y administra las
                 solicitudes enviadas por
                 nuevos estudiantes.
               </p>
             </div>
+          </div>
 
-            <button
+          <button
               type="button"
               onClick={() =>
                 void loadRequests()
@@ -387,33 +362,36 @@ export const AdminInformationRequests:
               />
 
               Actualizar
-            </button>
-          </div>
-        </div>
+          </button>
+        </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="lx-admin-metric-strip lx-admin-request-summary" aria-label="Resumen de solicitudes">
           <SummaryCard
             label="Total"
             value={requests.length}
             tone="cyan"
+            icon={<Inbox />}
           />
 
           <SummaryCard
             label="Pendientes"
             value={pendingCount}
             tone="amber"
+            icon={<Clock3 />}
           />
 
           <SummaryCard
             label="Contactadas"
             value={contactedCount}
             tone="indigo"
+            icon={<MailCheck />}
           />
 
           <SummaryCard
             label="Cerradas"
             value={closedCount}
             tone="emerald"
+            icon={<CircleCheck />}
           />
         </div>
 
@@ -437,7 +415,7 @@ export const AdminInformationRequests:
           </div>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#0c111a]">
+        <div className="lx-admin-queue-toolbar">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -466,6 +444,7 @@ export const AdminInformationRequests:
                         filter.value,
                       )
                     }
+                    aria-pressed={selectedFilter === filter.value}
                     className={`rounded-xl border px-3 py-2 text-xs font-bold transition-colors ${
                       selectedFilter ===
                       filter.value
@@ -503,157 +482,66 @@ export const AdminInformationRequests:
             </p>
           </div>
         ) : (
-          <div className="grid gap-5 xl:grid-cols-2">
+          <div className="lx-admin-request-list">
             {filteredRequests.map(
               (request) => (
                 <article
                   key={
                     request.idSolicitud
                   }
-                  className="rounded-2xl border border-cyan-500/10 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0c111a]"
+                  className="lx-admin-request-row"
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-black text-slate-950 dark:text-white">
-                          {
-                            request.nombreCompleto
-                          }
-                        </h2>
-
-                        <span
-                          className={`rounded-full border px-2.5 py-1 font-mono text-[9px] uppercase ${
-                            STATUS_CLASSES[
-                              request.estado
-                            ]
-                          }`}
-                        >
-                          {
-                            STATUS_LABELS[
-                              request.estado
-                            ]
-                          }
-                        </span>
-                      </div>
-
-                      <p className="mt-1 font-mono text-[10px] text-slate-400">
-                        Solicitud #
-                        {
-                          request.idSolicitud
-                        }
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void handleDelete(
-                          request,
-                        )
-                      }
-                      disabled={
-                        deletingId ===
-                        request.idSolicitud
-                      }
-                      aria-label="Eliminar solicitud"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 text-rose-500 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {deletingId ===
-                      request.idSolicitud ? (
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="mt-5 space-y-3 text-sm text-slate-500 dark:text-slate-400">
-                    <a
-                      href={`mailto:${request.email}`}
-                      className="flex items-center gap-3 transition-colors hover:text-cyan-500"
-                    >
-                      <Mail className="h-4 w-4 shrink-0 text-cyan-500" />
-
-                      <span className="break-all">
-                        {request.email}
-                      </span>
-                    </a>
-
-                    {request.telefono ? (
-                      <a
-                        href={`tel:${request.telefono}`}
-                        className="flex items-center gap-3 transition-colors hover:text-cyan-500"
-                      >
-                        <Phone className="h-4 w-4 shrink-0 text-indigo-500" />
-                        <span>{request.telefono}</span>
+                  <div className="lx-admin-request-person">
+                    <span className="lx-request-avatar" aria-hidden="true">
+                      {request.nombreCompleto.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'S'}
+                    </span>
+                    <div className="lx-request-person-copy">
+                      <h2>{request.nombreCompleto}</h2>
+                      <span className="lx-request-id">Solicitud #{request.idSolicitud}</span>
+                      <a href={`mailto:${request.email}`} className="lx-request-email">
+                        <Mail aria-hidden="true" /> <span>{request.email}</span>
                       </a>
-                    ) : (
-                      <span className="flex items-center gap-3 text-slate-400">
-                        <Phone className="h-4 w-4 shrink-0 text-slate-400" />
-                        <span>Sin teléfono registrado</span>
-                      </span>
-                    )}
-
-                    <p className="flex items-center gap-3">
-                      <Clock3 className="h-4 w-4 shrink-0 text-amber-500" />
-
-                      <span>
-                        Recibida el{' '}
-                        {formatDate(
-                          request.fechaSolicitud,
-                        )}
-                      </span>
-                    </p>
+                    </div>
                   </div>
 
-                  <div className="mt-5 border-t border-slate-200 pt-4 dark:border-slate-800">
-                    <label
-                      htmlFor={`status-${request.idSolicitud}`}
-                      className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300"
-                    >
-                      Estado de la solicitud
-                    </label>
+                  <div className="lx-admin-request-details">
+                    {request.telefono ? (
+                      <a href={`tel:${request.telefono}`}><Phone aria-hidden="true" /> <span>{request.telefono}</span></a>
+                    ) : (
+                      <span className="is-muted"><Phone aria-hidden="true" /> Sin teléfono registrado</span>
+                    )}
+                    <p><Clock3 aria-hidden="true" /> Recibida {formatDate(request.fechaSolicitud)}</p>
+                  </div>
 
-                    <div className="relative">
+                  <div className="lx-admin-request-state">
+                    <label htmlFor={`status-${request.idSolicitud}`}>Seguimiento</label>
+                    <div className={`lx-request-state-control lx-request-state-${request.estado.toLowerCase()}`}>
+                      <span className="lx-request-status-mark" aria-hidden="true" />
                       <select
                         id={`status-${request.idSolicitud}`}
-                        value={
-                          request.estado
-                        }
-                        disabled={
-                          updatingId ===
-                          request.idSolicitud
-                        }
-                        onChange={(
-                          event,
-                        ) =>
-                          void handleStatusChange(
-                            request.idSolicitud,
-                            event.target
-                              .value as SolicitudInformacionEstado,
-                          )
-                        }
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-10 text-sm text-slate-900 outline-none focus:border-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        value={request.estado}
+                        disabled={updatingId === request.idSolicitud}
+                        aria-label={`Estado de seguimiento de ${request.nombreCompleto}`}
+                        onChange={(event) => void handleStatusChange(request.idSolicitud, event.target.value as SolicitudInformacionEstado)}
                       >
-                        <option value="PENDIENTE">
-                          Pendiente
-                        </option>
-
-                        <option value="CONTACTADA">
-                          Contactada
-                        </option>
-
-                        <option value="CERRADA">
-                          Cerrada
-                        </option>
+                        <option value="PENDIENTE">Pendiente</option>
+                        <option value="CONTACTADA">Contactada</option>
+                        <option value="CERRADA">Cerrada</option>
                       </select>
-
-                      {updatingId ===
-                        request.idSolicitud && (
-                        <LoaderCircle className="pointer-events-none absolute right-9 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-cyan-500" />
-                      )}
+                      {updatingId === request.idSolicitud ? <LoaderCircle className="lx-request-saving" aria-label="Guardando estado" /> : <ChevronDown className="lx-request-chevron" aria-hidden="true" />}
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(request)}
+                    disabled={deletingId === request.idSolicitud}
+                    aria-label={`Eliminar solicitud de ${request.nombreCompleto}`}
+                    title="Eliminar solicitud"
+                    className="lx-admin-request-delete"
+                  >
+                    {deletingId === request.idSolicitud ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <Trash2 aria-hidden="true" />}
+                  </button>
                 </article>
               ),
             )}
@@ -666,6 +554,7 @@ export const AdminInformationRequests:
 interface SummaryCardProps {
   label: string;
   value: number;
+  icon: React.ReactNode;
   tone:
     | 'cyan'
     | 'amber'
@@ -678,34 +567,15 @@ const SummaryCard:
     label,
     value,
     tone,
+    icon,
   }) => {
-    const tones = {
-      cyan: 'text-cyan-500 bg-cyan-500/10',
-      amber:
-        'text-amber-500 bg-amber-500/10',
-      indigo:
-        'text-indigo-500 bg-indigo-500/10',
-      emerald:
-        'text-emerald-500 bg-emerald-500/10',
-    };
-
     return (
-      <article className="flex items-center justify-between rounded-2xl border border-cyan-500/10 bg-white p-5 dark:border-slate-800 dark:bg-[#0c111a]">
-        <div>
-          <p className="text-xs text-slate-500">
-            {label}
-          </p>
-
-          <p className="mt-2 font-mono text-2xl font-black text-slate-950 dark:text-white">
-            {value}
-          </p>
+      <article className={`lx-admin-metric lx-admin-request-metric lx-admin-request-metric-${tone}`}>
+        <span className="lx-admin-metric-mark lx-admin-request-mark" aria-hidden="true">{icon}</span>
+        <div className="lx-admin-metric-copy">
+          <p>{label}</p>
+          <p>{value}</p>
         </div>
-
-        <span
-          className={`flex h-11 w-11 items-center justify-center rounded-xl ${tones[tone]}`}
-        >
-          <Inbox className="h-5 w-5" />
-        </span>
       </article>
     );
   };
