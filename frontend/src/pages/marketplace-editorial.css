@@ -133,7 +133,7 @@
 .lx-feature-content { margin: auto 0; padding: 3rem 0; }
 .lx-feature-category { color: #8fd6e6; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .lx-feature h2 { max-width: 17ch; margin-top: .8rem; font-family: 'Barlow Condensed', Bahnschrift, 'Arial Narrow', sans-serif; font-size: clamp(2.2rem, 3vw, 3.45rem); font-weight: 700; line-height: 1; letter-spacing: -.02em; }
-.lx-feature-content p { max-width: 32ch; margin-top: 1.4rem; color: #c1d0da; font-size: .93rem; line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.lx-feature-content p { max-width: 32ch; margin-top: 1.4rem; color: #c1d0da; font-size: .93rem; line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
 .lx-feature-duration { display: block; margin-top: 1.35rem; color: #a6bdcb; font-size: .8rem; }
 .lx-feature-cta { display: flex; align-items: center; justify-content: space-between; gap: 2rem; align-self: flex-start; min-width: 11rem; padding: .88rem 1rem; background: #f47d31; color: #071827; font-size: .84rem; font-weight: 800; transition: background 180ms ease, transform 180ms ease; }
 .lx-feature-cta:hover { background: #ffae70; transform: translateY(-2px); }
