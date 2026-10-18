@@ -344,8 +344,8 @@ export const InstructorCourses:
     }, [successMessage]);
 
     return (
-      <section className="space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-indigo-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
+      <section className="lx-learning-page lx-instructor-courses space-y-6">
+        <div className="lx-learning-hero relative overflow-hidden rounded-3xl border border-indigo-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl" />
 
           <div className="relative">

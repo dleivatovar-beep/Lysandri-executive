@@ -319,7 +319,7 @@ export const storeService = {
             {
               idDocumento: 2,
               pagina: 1,
-              extracto: 'Acreditación ejecutiva con código QR digital respaldada por Lysandri.',
+              extracto: 'Acreditación ejecutiva con código QR digital verificable respaldada por Lysandri.',
               similitud: 0.95,
             },
           ],

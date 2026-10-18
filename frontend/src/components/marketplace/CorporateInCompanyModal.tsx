@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import {
   X,
   Send,
@@ -11,6 +11,8 @@ import {
   CalendarCheck,
 } from 'lucide-react';
 import { informationRequestService } from '../../services/informationRequestService';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
+import './editorial-overlays.css';
 
 interface CorporateInCompanyModalProps {
   isOpen: boolean;
@@ -52,6 +54,12 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const formId = useId();
+  const dialogRef = useDialogAccessibility<HTMLDivElement>(isOpen, () => {
+    setIsSuccess(false);
+    setErrorMessage('');
+    onClose();
+  });
 
   if (!isOpen) return null;
 
@@ -104,14 +112,22 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="lx-overlay lx-corporate-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity"
+        className="lx-overlay-backdrop fixed inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity"
         onClick={handleClose}
+        aria-hidden="true"
       />
 
-      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl scrollbar-thin scrollbar-thumb-slate-700">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${formId}-title`}
+        tabIndex={-1}
+        className="lx-corporate-dialog relative z-10 w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl scrollbar-thin scrollbar-thumb-slate-700"
+      >
         {/* Header */}
         <div className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -120,7 +136,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                 <Users className="h-3 w-3" />
                 Formación para Equipos y Empresas
               </span>
-              <h2 className="text-lg font-bold text-white sm:text-xl">
+              <h2 id={`${formId}-title`} className="text-lg font-bold text-white sm:text-xl">
                 Capacitación a la medida de tu organización
               </h2>
               <p className="text-xs text-slate-400">
@@ -130,8 +146,9 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
             <button
               type="button"
               onClick={handleClose}
+              data-dialog-close
               className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
-              aria-label="Cerrar modal"
+              aria-label="Cerrar solicitud corporativa"
             >
               <X className="h-5 w-5" />
             </button>
@@ -176,7 +193,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {errorMessage && (
-                <div className="flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-950/50 p-3 text-xs text-rose-300">
+                <div role="alert" className="flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-950/50 p-3 text-xs text-rose-300">
                   <ShieldAlert className="h-4 w-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
@@ -259,29 +276,33 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
               {/* Datos de contacto */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300">
+                  <label htmlFor={`${formId}-name`} className="text-xs font-medium text-slate-300">
                     Nombre y apellido <span className="text-indigo-400">*</span>
                   </label>
                   <input
+                    id={`${formId}-name`}
                     type="text"
                     required
+                    autoComplete="name"
                     value={nombreCompleto}
                     onChange={(e) => setNombreCompleto(e.target.value)}
-                    placeholder="Tu nombre completo"
+                    placeholder="Ej. Ing. Carlos Mendoza"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300">
+                  <label htmlFor={`${formId}-email`} className="text-xs font-medium text-slate-300">
                     Correo corporativo <span className="text-indigo-400">*</span>
                   </label>
                   <input
+                    id={`${formId}-email`}
                     type="email"
                     required
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nombre@tuempresa.com"
+                    placeholder="carlos@empresa.com"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
@@ -289,12 +310,14 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300">
+                  <label htmlFor={`${formId}-company`} className="text-xs font-medium text-slate-300">
                     Empresa u organización <span className="text-indigo-400">*</span>
                   </label>
                   <input
+                    id={`${formId}-company`}
                     type="text"
                     required
+                    autoComplete="organization"
                     value={empresa}
                     onChange={(e) => setEmpresa(e.target.value)}
                     placeholder="Nombre de la empresa"
@@ -303,11 +326,13 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300">
+                  <label htmlFor={`${formId}-role`} className="text-xs font-medium text-slate-300">
                     Cargo o área
                   </label>
                   <input
+                    id={`${formId}-role`}
                     type="text"
+                    autoComplete="organization-title"
                     value={cargo}
                     onChange={(e) => setCargo(e.target.value)}
                     placeholder="Ej. Gerencia de TI o RRHH"
@@ -316,14 +341,16 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-300">
+                  <label htmlFor={`${formId}-phone`} className="text-xs font-medium text-slate-300">
                     Teléfono / WhatsApp
                   </label>
                   <input
+                    id={`${formId}-phone`}
                     type="tel"
+                    autoComplete="tel"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="Para coordinar llamada"
+                    placeholder="+51 984 567 123"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-colors"
                   />
                 </div>
@@ -331,10 +358,11 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
 
               {/* Mensaje opcional */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-300">
+                <label htmlFor={`${formId}-message`} className="text-xs font-medium text-slate-300">
                   ¿Qué desafío o proyecto específico busca resolver tu equipo? <span className="text-slate-500">(Opcional)</span>
                 </label>
                 <textarea
+                  id={`${formId}-message`}
                   rows={2}
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}

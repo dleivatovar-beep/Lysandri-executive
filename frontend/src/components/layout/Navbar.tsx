@@ -1,22 +1,14 @@
-import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import {
-  Moon,
-  Sun,
-  ShoppingCart,
-  Sparkles,
-  Phone,
-  Mail,
-  MessageCircle,
-  Bot,
-  GraduationCap,
-  Calculator,
-} from 'lucide-react';
-import companyLogo from '../../assets/lysandri-logo.png';
+import React, { useEffect, useState } from 'react';
+import { ArrowUpRight, LogIn, LogOut, Menu, Moon, ShoppingBag, Sun, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
+import companyLogo from '../../assets/mi-logo.png';
 import { useCart } from '../../context/CartContext';
+import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
+import { UserProfile } from '../../types';
 
 export interface NavbarProps {
-  user?: any;
+  user?: UserProfile | null;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
   onLoginClick?: () => void;
@@ -25,35 +17,60 @@ export interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
+  user,
   theme,
   onThemeToggle,
+  onLoginClick,
+  onLogoutClick,
   onOpenAiChat,
 }) => {
+  const navigate = useNavigate();
   const location = useLocation();
-  const isInsideAdminDashboard = location.pathname.startsWith('/admin');
-
-  const [isContactPopoverOpen, setIsContactPopoverOpen] = useState(false);
-
-  let cartCount = 0;
-  let openCartFn = () => {};
-  try {
-    const cart = useCart();
-    cartCount = cart.itemCount;
-    openCartFn = cart.openCart;
-  } catch {
-    // fallback
-  }
+  const { itemCount, openCart } = useCart();
+  const [activeNav, setActiveNav] = useState('catalogo-section');
+  const [isPublicMenuOpen, setIsPublicMenuOpen] = useState(false);
+  const isAdmin = user?.role === 'ADMIN';
+  const adminSection = location.pathname.includes('/admin/contabilidad') || location.pathname.includes('/admin/reportes')
+    ? 'Área contable'
+    : location.pathname.includes('/admin/inscripciones')
+      ? 'Inscripciones'
+      : location.pathname.includes('/admin/solicitudes-informacion')
+        ? 'Solicitudes'
+        : location.pathname.includes('/admin/usuarios')
+          ? 'Usuarios'
+          : 'Cursos';
 
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      window.location.href = `/#${id}`;
+    setActiveNav(id);
+    setIsPublicMenuOpen(false);
+    if (window.location.pathname !== '/') {
+      navigate(`/#${id}`);
+      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return;
     }
+
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleOpenChat = () => {
+  useEffect(() => {
+    if (isAdmin || location.pathname !== '/' || typeof IntersectionObserver === 'undefined') return;
+    const targets = ['catalogo-section', 'metodologia-section', 'in-company-section']
+      .map((id) => document.getElementById(id))
+      .filter((element): element is HTMLElement => Boolean(element));
+    if (!targets.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const current = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (current?.target.id) setActiveNav(current.target.id);
+    }, { rootMargin: '-18% 0px -58% 0px', threshold: [0, 0.15, 0.35] });
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, [isAdmin, location.pathname]);
+
+  const openAssistant = () => {
+    setIsPublicMenuOpen(false);
     if (onOpenAiChat) {
       onOpenAiChat();
     } else {
@@ -62,180 +79,88 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <>
-      <header className="sticky top-0 z-40 h-16 border-b border-cyan-500/10 bg-white/95 shadow-[0_1px_25px_rgba(6,182,212,0.06)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-[#070a10]/95">
-        <div className="flex h-full w-full items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <a href="/" className="group flex items-center gap-3">
-              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                <div className="absolute inset-0 rounded-xl bg-cyan-400/20 opacity-70 blur-lg group-hover:opacity-100 transition-opacity" />
-                <img
-                  src={companyLogo}
-                  alt="Logo"
-                  className="relative h-10 w-10 object-contain drop-shadow-[0_0_8px_rgba(34,211,238,0.35)]"
-                />
-              </div>
+    <header className={`sticky top-0 z-40${isAdmin ? ' lx-admin-navbar' : ' lx-public-navbar'}`}>
+      <div className="mx-auto flex h-[72px] w-full max-w-[1920px] items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:px-8">
+        <Link to="/" className="group flex min-w-0 shrink-0 items-center gap-2 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-500 sm:gap-3" aria-label="Lysandri Executive, ir al inicio">
+          <img src={companyLogo} alt="" className="h-8 w-8 object-contain sm:h-10 sm:w-10" />
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className="text-[13px] font-extrabold tracking-[0.05em] sm:text-[15px] sm:tracking-[0.08em]">LYSANDRI</span>
+            <span className="mt-1 hidden text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-500 dark:text-slate-400 sm:block">Executive</span>
+          </span>
+        </Link>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-base font-black tracking-wide text-slate-900 dark:text-white">
-                    LYSANDRI
-                  </span>
-                  <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wider text-cyan-600 dark:text-cyan-400">
-                    EXECUTIVE
-                  </span>
-                </div>
-                <span className="hidden font-mono text-[9px] tracking-tight text-slate-500 dark:text-slate-400 sm:block">
-                  Lysandri
-                </span>
-              </div>
-            </a>
+        {user?.role === 'ADMIN' && (
+          <div className="lx-admin-top-context" aria-label={`Administración, ${adminSection}`}>
+            <span>ESPACIO OPERATIVO</span>
+            <strong>{adminSection}</strong>
           </div>
+        )}
 
-          {!isInsideAdminDashboard ? (
-            <nav className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => scrollToSection('catalogo-section')}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-100/70 px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-cyan-400 hover:text-cyan-600 hover:bg-white dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-cyan-500/40 dark:hover:text-cyan-400 transition-all shadow-sm"
-              >
-                <GraduationCap className="h-4 w-4 text-cyan-500" />
-                <span>Programas</span>
-              </button>
+        {!isAdmin && <nav aria-label="Navegación principal" className="lx-public-nav ml-auto hidden items-center gap-1 lg:flex">
+          <button type="button" onClick={() => scrollToSection('catalogo-section')} className={`lx-public-nav-link${activeNav === 'catalogo-section' ? ' is-active' : ''}`} aria-current={activeNav === 'catalogo-section' ? 'location' : undefined}>Programas</button>
+          <button type="button" onClick={() => scrollToSection('metodologia-section')} className={`lx-public-nav-link${activeNav === 'metodologia-section' ? ' is-active' : ''}`} aria-current={activeNav === 'metodologia-section' ? 'location' : undefined}>Metodología</button>
+          <button type="button" onClick={() => scrollToSection('in-company-section')} className={`lx-public-nav-link${activeNav === 'in-company-section' ? ' is-active' : ''}`} aria-current={activeNav === 'in-company-section' ? 'location' : undefined}>Para empresas</button>
+          <button type="button" onClick={openAssistant} className="lx-public-nav-link">Asistente</button>
+        </nav>}
 
-              <button
-                type="button"
-                onClick={handleOpenChat}
-                className="flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 hover:border-cyan-400 hover:bg-cyan-500/20 dark:text-cyan-300 dark:hover:bg-cyan-950/60 transition-all shadow-sm"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-                <span className="hidden sm:inline">Asistente IA</span>
-                <span className="sm:hidden">IA</span>
-              </button>
-
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsContactPopoverOpen((prev) => !prev)}
-                  className="flex items-center gap-1.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-white dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200 dark:hover:border-indigo-500/40 dark:hover:text-indigo-300 transition-all shadow-sm"
-                >
-                  <Phone className="h-3.5 w-3.5 text-indigo-400" />
-                  <span>Contacto</span>
-                </button>
-
-                {isContactPopoverOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-40"
-                      onClick={() => setIsContactPopoverOpen(false)}
-                    />
-                    <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
-                      <p className="text-xs font-bold text-white mb-2">
-                        Atención y admisiones
-                      </p>
-                      <div className="space-y-2 text-xs">
-                        <a
-                          href="https://wa.me/51941238905?text=Hola,%20solicito%20asesor%C3%ADa%20acad%C3%A9mica%20sobre%20los%20programas%20de%20Lysandri%20Executive"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/30 p-2.5 text-emerald-300 hover:bg-emerald-900/60 transition-colors"
-                        >
-                          <MessageCircle className="h-4 w-4 text-emerald-400 shrink-0" />
-                          <div>
-                            <div className="font-semibold text-white">WhatsApp Admisiones</div>
-                            <div className="text-[10px] text-emerald-400/90 font-mono">+51 941 238 905</div>
-                          </div>
-                        </a>
-
-                        <a
-                          href="mailto:admisiones@lysandri.com"
-                          className="flex items-center gap-2.5 rounded-xl bg-slate-800/80 border border-slate-700 p-2.5 text-slate-300 hover:bg-slate-800 transition-colors"
-                        >
-                          <Mail className="h-4 w-4 text-cyan-400 shrink-0" />
-                          <div>
-                            <div className="font-semibold text-white">Correo Institucional</div>
-                            <div className="text-[10px] text-slate-400 font-mono">admisiones@lysandri.com</div>
-                          </div>
-                        </a>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-            </nav>
-          ) : (
-            <nav className="flex items-center gap-2">
-              <a
-                href="/admin/contabilidad"
-                className="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-500 hover:bg-amber-500/20 transition-all shadow-sm"
-              >
-                <Calculator className="h-4 w-4 text-amber-500" />
-                <span>Área Contable</span>
-              </a>
-
-              <a
-                href="/"
-                className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-cyan-400 hover:border-cyan-500/30 transition-all"
-              >
-                <GraduationCap className="h-4 w-4 text-cyan-400" />
-                <span>Ver Catálogo Web</span>
-              </a>
-            </nav>
-          )}
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            {!isInsideAdminDashboard && (
-              <button
-                type="button"
-                onClick={openCartFn}
-                aria-label="Carrito de compras"
-                className="relative flex items-center gap-2 rounded-xl border border-cyan-500/20 bg-slate-100/80 px-3 py-2 text-xs font-semibold text-slate-700 transition-all duration-200 hover:border-cyan-400 hover:bg-cyan-500/10 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-cyan-500/40"
-              >
-                <ShoppingCart className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                <span className="hidden font-mono text-[11px] font-bold sm:inline">
-                  Carrito
-                </span>
-                {cartCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-indigo-600 px-1 text-[10px] font-black text-white shadow-md shadow-cyan-500/30">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-            )}
-
+        <div className={`ml-auto flex shrink-0 items-center gap-1 sm:gap-2${user?.role === 'ADMIN' ? ' lg:ml-auto' : ' lg:ml-4'}`}>
+          {!isAdmin && (
             <button
               type="button"
-              onClick={onThemeToggle}
-              aria-label={
-                theme === 'dark' ? 'Modo claro' : 'Modo oscuro'
-              }
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/10 bg-slate-50 text-slate-500 transition-all duration-300 hover:border-cyan-500/30 hover:bg-cyan-500/5 hover:text-cyan-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-400 dark:hover:border-cyan-500/30 dark:hover:text-cyan-400"
+              className="lx-public-menu-toggle lg:hidden"
+              onClick={() => setIsPublicMenuOpen((open) => !open)}
+              aria-label={isPublicMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={isPublicMenuOpen}
+              aria-controls="lx-public-mobile-nav"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              {isPublicMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
             </button>
-          </div>
+          )}
+          {user?.role !== 'ADMIN' && <button type="button" onClick={openCart} aria-label={`Abrir carrito, ${itemCount} productos`} className="relative flex h-10 items-center gap-2 rounded-md px-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white sm:px-3">
+            <ShoppingBag className="h-[19px] w-[19px]" aria-hidden="true" />
+            <span className="hidden text-sm font-medium sm:inline">Carrito</span>
+            {itemCount > 0 && <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-cyan-600 px-1 text-[11px] font-bold text-white">{itemCount}</span>}
+          </button>}
+          <button type="button" onClick={onThemeToggle} aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">
+            {theme === 'dark' ? <Sun className="h-[19px] w-[19px]" /> : <Moon className="h-[19px] w-[19px]" />}
+          </button>
+          {user ? (
+            <>
+              {user.role === 'ADMIN' ? (
+                <div className="lx-admin-user-label">
+                  <span>{user.name}</span>
+                  <small>Administrador</small>
+                </div>
+              ) : (
+                <button type="button" onClick={() => navigate(getRoleHomePath(user.role))} className="lysandri-nav-primary flex h-10 items-center gap-2 rounded-md bg-[#112b45] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#174266] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:bg-cyan-400 dark:text-[#071725] dark:hover:bg-cyan-300">
+                  <span className="max-w-28 truncate sm:max-w-40">{user.name}</span>
+                  <ArrowUpRight className="hidden h-4 w-4 sm:block" aria-hidden="true" />
+                </button>
+              )}
+              <button type="button" onClick={onLogoutClick} aria-label="Cerrar sesión" title="Cerrar sesión" className={`flex h-10 items-center justify-center gap-2 rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white${user.role === 'ADMIN' ? ' lx-admin-logout-button' : ' w-10'}`}>
+                {user.role === 'ADMIN' ? (
+                  <span>Salir</span>
+                ) : (
+                  <LogOut className="h-[19px] w-[19px]" aria-hidden="true" />
+                )}
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={onLoginClick} className="lysandri-nav-primary flex h-10 items-center gap-2 rounded-md bg-[#112b45] px-2.5 text-xs font-semibold text-white transition-colors hover:bg-[#174266] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:bg-cyan-400 dark:text-[#071725] dark:hover:bg-cyan-300 sm:px-4 sm:text-sm">
+              <LogIn className="hidden h-4 w-4 sm:block" aria-hidden="true" />
+              <span>Iniciar sesión</span>
+            </button>
+          )}
         </div>
-      </header>
-
-      {!isInsideAdminDashboard && (
-        <button
-          type="button"
-          onClick={handleOpenChat}
-          aria-label="Asistente"
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-600 text-white shadow-[0_10px_30px_rgba(6,182,212,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95 group"
-        >
-          <Bot className="h-7 w-7 transition-transform group-hover:scale-110" />
-          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500" />
-          </span>
-        </button>
+      </div>
+      {!isAdmin && isPublicMenuOpen && (
+        <nav id="lx-public-mobile-nav" className="lx-public-mobile-nav lg:hidden" aria-label="Navegación móvil">
+          <button type="button" className={activeNav === 'catalogo-section' ? 'is-active' : ''} onClick={() => scrollToSection('catalogo-section')}>Programas</button>
+          <button type="button" className={activeNav === 'metodologia-section' ? 'is-active' : ''} onClick={() => scrollToSection('metodologia-section')}>Metodología</button>
+          <button type="button" className={activeNav === 'in-company-section' ? 'is-active' : ''} onClick={() => scrollToSection('in-company-section')}>Para empresas</button>
+          <button type="button" onClick={openAssistant}>Asistente</button>
+        </nav>
       )}
-    </>
+    </header>
   );
 };

@@ -23,6 +23,7 @@ import companyLogo from './assets/lysandri-logo.png';
 import { LoginView } from './components/auth/LoginView';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { Footer } from './components/layout/Footer';
+import { EditorialNavbar } from './components/layout/EditorialNavbar';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 
@@ -41,6 +42,7 @@ import { StudentCourses } from './pages/student/StudentCourses';
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 import { PaymentSuccessView } from './pages/PaymentSuccessView';
 import { AccountingView } from './pages/AccountingView';
+import './admin-workspace.css';
 
 import { academicService } from './services/academicService';
 import { enviarMensajeChat } from './services/api';
@@ -252,7 +254,7 @@ const PATH_VIEWS: Record<
     'IN_COMPANY',
 
   '/admin/reportes':
-    'REPORTS',
+    'ACCOUNTING',
 
   '/admin/contabilidad':
     'ACCOUNTING',
@@ -515,6 +517,12 @@ const ProtectedLayout:
       logout,
     } = useAuth();
 
+    useEffect(() => {
+      if (user?.rol === 'ADMIN') {
+        window.scrollTo(0, 0);
+      }
+    }, [location.pathname, user?.rol]);
+
     const activeView =
       useMemo<ActiveView>(
         () =>
@@ -557,7 +565,7 @@ const ProtectedLayout:
       };
 
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
+      <div className={`min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100${user.rol === 'ADMIN' ? ' lx-admin-workspace' : ` lx-learning-workspace lx-${user.rol === 'INSTRUCTOR' ? 'instructor' : 'student'}-workspace`}`}>
         <Navbar
           user={
             toNavbarUser(user)
@@ -587,14 +595,14 @@ const ProtectedLayout:
           }
         />
 
-        <div className="transition-[padding] duration-300 lg:pl-64">
+        <div className={`transition-[padding] duration-300 lg:pl-64${user.rol === 'ADMIN' ? ' lx-admin-main' : ''}`}>
           <main className="min-h-[calc(100vh-4rem)]">
             <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
               <Outlet />
             </div>
           </main>
 
-          <Footer />
+          {user.rol !== 'ADMIN' && <Footer />}
         </div>
 
         {user.rol ===
@@ -626,6 +634,9 @@ const PublicLayout:
     const navigate =
       useNavigate();
 
+    const location =
+      useLocation();
+
     const {
       user,
       logout,
@@ -642,7 +653,7 @@ const PublicLayout:
 
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100">
-        <Navbar
+        <EditorialNavbar
           user={
             user
               ? toNavbarUser(
@@ -654,18 +665,19 @@ const PublicLayout:
           onThemeToggle={
             onThemeToggle
           }
-          onLoginClick={() =>
-            navigate('/intranet')
-          }
           onLogoutClick={
             handleLogout
           }
         />
 
         <main className="min-h-[calc(100vh-4rem)]">
-          <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
+          {location.pathname === '/' ? (
             <Outlet />
-          </div>
+          ) : (
+            <div className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8">
+              <Outlet />
+            </div>
+          )}
         </main>
 
         <Footer />

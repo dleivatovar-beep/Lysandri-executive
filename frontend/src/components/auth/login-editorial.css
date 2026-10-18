@@ -1,0 +1,83 @@
+.lx-login-page {
+  --auth-paper: #f5f8fa;
+  --auth-panel: #fff;
+  --auth-ink: #0b1d2d;
+  --auth-muted: #536779;
+  --auth-line: #d9e2e8;
+  --auth-accent: #087fa4;
+  background: var(--auth-panel);
+  color: var(--auth-ink);
+  font-family: Inter, system-ui, sans-serif;
+}
+.dark .lx-login-page {
+  --auth-paper: #0a1320;
+  --auth-panel: #101f30;
+  --auth-ink: #f2f7fa;
+  --auth-muted: #b4c6d2;
+  --auth-line: #284054;
+  --auth-accent: #49c9e8;
+}
+.lx-login-visual { min-height: 100dvh; border-right: 1px solid var(--auth-line); background: var(--auth-paper); }
+.lx-login-visual .lx-login-animated-logo { display: block; width: min(100%, 34rem, 58vh); max-width: min(34rem, 58vh) !important; margin: 0 auto 1.6rem; filter: drop-shadow(0 14px 24px rgba(7, 55, 79, .1)); }
+.lx-login-logo-wrap { display: block; width: 100%; text-align: center; }
+.lx-login-motto-wrap { min-height: 3.5rem; margin-top: 1.3rem; }
+.lx-login-motto { max-width: 100%; color: var(--auth-ink); font-family: Inter, system-ui, sans-serif; font-size: clamp(1.65rem, 2.1vw, 2.3rem); font-weight: 700; line-height: 1.12; letter-spacing: -.025em; white-space: nowrap; }
+.lx-login-caret { width: .23rem; height: 2.6rem; background: var(--auth-accent); animation: lx-auth-caret 850ms step-end infinite; }
+.lx-login-credit { max-width: 24rem; color: var(--auth-muted); font-size: .63rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.lx-login-back { border: 0; border-bottom: 1px solid var(--auth-line); background: transparent; color: var(--auth-ink); transition: border-color 180ms ease, color 180ms ease; }
+.lx-login-back:hover { border-color: var(--auth-accent); color: var(--auth-accent); }
+.lx-login-panel { min-height: 100dvh; background: var(--auth-panel); }
+.lx-login-form-wrap { max-width: 30rem; }
+.lx-login-intro { margin-bottom: 2.1rem; }
+.lx-login-heading { max-width: 12ch; margin: 0 0 1rem; color: var(--auth-ink); font-family: 'Barlow Condensed', Bahnschrift, 'Arial Narrow', sans-serif; font-size: clamp(3.5rem, 4.6vw, 5.2rem); font-weight: 750; line-height: .92; letter-spacing: -.025em; text-wrap: balance; }
+.lx-login-intro p { max-width: 36ch; margin: 0; color: var(--auth-muted); font-size: .9rem; line-height: 1.65; }
+.lx-login-tabs { gap: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--auth-line); }
+.lx-login-tab { position: relative; min-height: 3rem; padding: .7rem .15rem; color: var(--auth-muted); font-size: .8rem; font-weight: 700; text-align: left; transition: color 180ms ease; }
+.lx-login-tab:hover, .lx-login-tab.is-active { color: var(--auth-ink); }
+.lx-login-tab::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--auth-accent); transform: scaleX(0); transform-origin: left center; transition: transform 220ms cubic-bezier(.16, 1, .3, 1); }
+.lx-login-tab.is-active::after { transform: scaleX(1); }
+.lx-login-form { animation: lx-auth-form-in 240ms cubic-bezier(.16, 1, .3, 1) both; }
+.lx-login-field label { color: var(--auth-ink); }
+.lx-login-field input { border: 1px solid var(--auth-line); border-radius: 0; background: var(--auth-paper); color: var(--auth-ink); caret-color: var(--auth-accent); transition: border-color 160ms ease, background 160ms ease; }
+.lx-login-field input::placeholder { color: var(--auth-muted); opacity: 1; }
+.lx-login-field input:hover { border-color: var(--auth-accent); }
+.lx-login-field input:focus { border-color: var(--auth-accent); outline: none; }
+html:not(.dark) .lx-login-field input { border-color: var(--auth-line) !important; background: var(--auth-paper) !important; color: var(--auth-ink) !important; box-shadow: none !important; }
+html:not(.dark) .lx-login-field input:hover, html:not(.dark) .lx-login-field input:focus { border-color: var(--auth-accent) !important; }
+.lx-login-subtle, .lx-login-consent { color: var(--auth-muted); }
+.lx-login-consent { max-width: 53ch; }
+.lx-login-remember { border: 1px solid var(--auth-line); border-radius: 0; accent-color: var(--auth-accent); }
+.lx-login-link { padding: .35rem 0; border-bottom: 1px solid var(--auth-line); color: var(--auth-accent); transition: border-color 160ms ease; }
+.lx-login-link:hover { border-color: currentColor; }
+.lx-login-submit { border: 0; border-radius: 0; background: #0b1d2d; color: #fff; transition: background 180ms ease, color 180ms ease; }
+.lx-login-submit:hover { background: #087fa4; }
+.dark .lx-login-submit { background: #49c9e8; color: #071827; }
+.dark .lx-login-submit:hover { background: #83deef; }
+.lx-login-submit:disabled { opacity: .55; cursor: not-allowed; }
+.lx-login-alert { border: 1px solid; line-height: 1.5; }
+.lx-login-alert.is-error { border-color: #bd7279; background: #fff2f2; color: #812b36; }
+.lx-login-alert.is-success { border-color: #70a58a; background: #f1faf4; color: #205d3c; }
+.dark .lx-login-alert.is-error { background: #3a1f28; color: #ffd9dc; }
+.dark .lx-login-alert.is-success { background: #173e32; color: #d5f5df; }
+.lx-login-mobile-brand { display: none; }
+.lx-login-page :is(button, input):focus-visible { outline: 3px solid var(--auth-accent); outline-offset: 3px; }
+.lx-login-page ::selection { background: #b9ecf5; color: #071827; }
+@keyframes lx-auth-caret { 50% { opacity: 0; } }
+@keyframes lx-auth-form-in { from { opacity: .65; transform: translateY(.4rem); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1023px) {
+  .lx-login-panel { align-items: flex-start; padding-top: 8.5rem; }
+  .lx-login-form-wrap { margin-inline: auto; }
+  .lx-login-mobile-brand { display: flex; align-items: center; gap: .7rem; margin-bottom: 2.75rem; color: var(--auth-ink); font-size: 1rem; font-weight: 850; letter-spacing: .04em; }
+  .lx-login-mobile-brand img { width: 2.8rem; height: 2.8rem; object-fit: contain; }
+  .lx-login-mobile-brand small { display: block; margin-top: .13rem; color: var(--auth-accent); font-size: .55rem; letter-spacing: .22em; }
+}
+@media (max-width: 520px) {
+  .lx-login-back { left: 1.25rem; top: 1.1rem; padding: .6rem 0; }
+  .lx-login-panel { padding: 7.2rem 1.25rem 3rem; }
+  .lx-login-mobile-brand { margin-bottom: 2.4rem; }
+  .lx-login-heading { font-size: clamp(3.2rem, 15vw, 4.4rem); }
+  .lx-login-tabs { gap: 1rem; }
+  .lx-login-tab { font-size: .76rem; }
+  .lx-login-form .flex.items-center.justify-between { flex-wrap: wrap; gap: .5rem 1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .lx-login-page *, .lx-login-page *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

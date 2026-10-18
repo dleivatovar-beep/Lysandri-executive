@@ -226,7 +226,7 @@ export const SyllabusModal: React.FC<SyllabusModalProps> = ({
             <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-center">
               <Award className="h-4 w-4 text-indigo-400 mx-auto mb-1" />
               <div className="text-[10px] text-slate-400">Certificación</div>
-              <div className="text-xs font-bold text-slate-200">Ejecutiva Lysandri</div>
+              <div className="text-xs font-bold text-slate-200">Lysandri Executive</div>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-center">
               <BookOpen className="h-4 w-4 text-emerald-400 mx-auto mb-1" />

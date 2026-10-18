@@ -272,8 +272,8 @@ export const StudentCourses:
       }, [courses, mode]);
 
     return (
-      <section className="space-y-6">
-        <div className="relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
+      <section className="lx-learning-page lx-student-page space-y-6">
+        <div className="lx-learning-hero relative overflow-hidden rounded-3xl border border-cyan-500/15 bg-white p-8 dark:border-slate-800 dark:bg-[#0c111a]">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
 
           <div className="relative">
