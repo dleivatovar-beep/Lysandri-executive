@@ -317,3 +317,364 @@ html:not(.dark) main > div > .lx-marketplace:first-child { border: 0 !important;
   .lx-marketplace *, .lx-marketplace *::before, .lx-marketplace *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
   .lx-feature-slide-next, .lx-feature-slide-previous { animation: none; }
 }
+
+/* ==========================================================================
+   Editorial Extensions: Concierge, Mentors, Testimonials, Guarantee & FAQ
+   ========================================================================== */
+
+.lx-concierge-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem clamp(1.5rem, 4vw, 4.5rem);
+  background: var(--lx-panel);
+  border-bottom: 1px solid var(--lx-line);
+}
+.lx-concierge-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.lx-concierge-avatar {
+  position: relative;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--lx-cyan);
+  flex-shrink: 0;
+}
+.lx-concierge-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lx-concierge-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid var(--lx-panel);
+}
+.lx-concierge-text h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--lx-ink);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.lx-concierge-text p {
+  font-size: 0.8rem;
+  color: var(--lx-muted);
+  margin-top: 0.15rem;
+}
+.lx-concierge-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+.lx-concierge-btn-wa {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  background: #25d366;
+  color: #071827;
+  font-size: 0.8rem;
+  font-weight: 750;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+.lx-concierge-btn-wa:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+.lx-concierge-btn-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--lx-line);
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+  text-decoration: none;
+  border-radius: 2px;
+  transition: all 150ms ease;
+}
+.lx-concierge-btn-phone:hover {
+  border-color: var(--lx-cyan);
+  color: var(--lx-ink);
+}
+
+/* Mentors */
+.lx-mentors {
+  padding: 4.5rem clamp(1.5rem, 4vw, 4.5rem);
+  background: var(--lx-paper);
+}
+.lx-mentors-heading {
+  margin-bottom: 2.5rem;
+}
+.lx-mentors-heading h2 {
+  font-family: 'Barlow Condensed', Bahnschrift, 'Arial Narrow', sans-serif;
+  font-size: clamp(2.4rem, 3.8vw, 3.8rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.lx-mentors-heading p {
+  margin-top: 0.6rem;
+  color: var(--lx-muted);
+  font-size: 0.95rem;
+}
+.lx-mentors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+.lx-mentor-card {
+  background: var(--lx-panel);
+  border: 1px solid var(--lx-line);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+.lx-mentor-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--lx-cyan);
+}
+.lx-mentor-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.lx-mentor-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--lx-line);
+}
+.lx-mentor-name {
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: var(--lx-ink);
+}
+.lx-mentor-role {
+  font-size: 0.78rem;
+  color: var(--lx-cyan);
+  font-weight: 650;
+}
+.lx-mentor-bio {
+  font-size: 0.83rem;
+  color: var(--lx-muted);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  flex: 1;
+}
+.lx-mentor-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--lx-orange);
+  background: color-mix(in srgb, var(--lx-orange) 10%, transparent);
+  padding: 0.3rem 0.55rem;
+  border-radius: 2px;
+  align-self: flex-start;
+}
+
+/* Testimonials */
+.lx-testimonials {
+  padding: 4.5rem clamp(1.5rem, 4vw, 4.5rem);
+  background: var(--lx-panel);
+  border-top: 1px solid var(--lx-line);
+  border-bottom: 1px solid var(--lx-line);
+}
+.lx-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.8rem;
+  margin-top: 2.2rem;
+}
+.lx-testimonial-card {
+  background: var(--lx-paper);
+  border: 1px solid var(--lx-line);
+  padding: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.lx-testimonial-stars {
+  display: flex;
+  gap: 0.25rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+.lx-testimonial-quote {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--lx-ink);
+  font-style: italic;
+  margin-bottom: 1.5rem;
+}
+.lx-testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.lx-testimonial-avatar {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.lx-testimonial-author-name {
+  font-size: 0.86rem;
+  font-weight: 750;
+  color: var(--lx-ink);
+}
+.lx-testimonial-author-company {
+  font-size: 0.75rem;
+  color: var(--lx-muted);
+}
+
+/* Guarantee & FAQ */
+.lx-guarantee-section {
+  padding: 4.5rem clamp(1.5rem, 4vw, 4.5rem);
+  background: var(--lx-paper);
+}
+.lx-guarantee-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  background: #081c2d;
+  color: #ffffff;
+  padding: 2.2rem clamp(1.5rem, 3vw, 3rem);
+  margin-bottom: 3.5rem;
+}
+.lx-guarantee-seal {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 50%;
+  background: #ff9856;
+  color: #081c2d;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0.3rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.lx-guarantee-info h3 {
+  font-family: 'Barlow Condensed', Bahnschrift, 'Arial Narrow', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.lx-guarantee-info p {
+  color: #c1d0da;
+  font-size: 0.88rem;
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+.lx-faq-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.lx-faq-item {
+  border-bottom: 1px solid var(--lx-line);
+}
+.lx-faq-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lx-ink);
+  cursor: pointer;
+}
+.lx-faq-trigger svg {
+  color: var(--lx-cyan);
+  transition: transform 200ms ease;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.lx-faq-trigger[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.lx-faq-content {
+  padding: 0 0 1.2rem 0;
+  color: var(--lx-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* WhatsApp floating widget */
+.lx-whatsapp-floating {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.1rem;
+  background: #25d366;
+  color: #071827;
+  font-size: 0.78rem;
+  font-weight: 750;
+  border-radius: 9999px;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  text-decoration: none;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.lx-whatsapp-floating:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+}
+.lx-whatsapp-floating svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+@media (max-width: 720px) {
+  .lx-concierge-strip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lx-guarantee-banner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+  .lx-whatsapp-floating span {
+    display: none;
+  }
+  .lx-whatsapp-floating {
+    padding: 0.75rem;
+    border-radius: 50%;
+  }
+}
+
