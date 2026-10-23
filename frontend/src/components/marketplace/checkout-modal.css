@@ -1,0 +1,264 @@
+.lx-checkout-shell {
+  --checkout-bg: #0b1420;
+  --checkout-panel: #101d2a;
+  --checkout-raised: #142536;
+  --checkout-line: #2b4352;
+  --checkout-text: #f1f6f8;
+  --checkout-muted: #9eb0bc;
+  --checkout-accent: #53cbe5;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vh, 28px) 18px;
+  color: var(--checkout-text);
+  font-family: Inter, system-ui, sans-serif;
+  isolation: isolate;
+}
+
+.lx-checkout-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgb(3 10 18 / 76%);
+
+  cursor: default;
+  animation: lx-backdrop-in 180ms ease-out both;
+}
+
+.lx-checkout-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 800px);
+  max-height: min(90dvh, 880px);
+  overflow: hidden;
+  border: 1px solid var(--checkout-line);
+  border-radius: 16px;
+  background: var(--checkout-bg);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 45%); /* taste-skill-ignore: modal overlay shadow */
+  animation: lx-dialog-in 240ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.lx-checkout-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 32px);
+  padding: 22px 62px 20px 28px;
+
+  background: #122130;
+}
+
+.lx-checkout-course { min-width: 0; flex: 1; }
+.lx-checkout-kicker {
+  margin: 0 0 5px;
+  color: var(--checkout-accent);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.lx-checkout-dialog h2,
+.lx-checkout-dialog h3,
+.lx-checkout-dialog h4 {
+  margin: 0;
+  font-family: "Barlow Condensed", "Arial Narrow", Inter, sans-serif;
+  text-transform: none;
+}
+.lx-checkout-dialog h2 {
+  max-width: 35ch;
+  color: var(--checkout-text);
+  font-size: clamp(21px, 2.4vw, 29px);
+  font-weight: 700;
+  letter-spacing: -.025em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+.lx-checkout-price { display: grid; justify-items: end; flex: 0 0 auto; }
+.lx-checkout-price strong { color: var(--checkout-accent); font-size: clamp(23px, 3vw, 31px); line-height: 1; letter-spacing: -.04em; }
+.lx-checkout-price span { margin-top: 5px; color: var(--checkout-muted); font-size: 11px; }
+.lx-checkout-close {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #9db0bc;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+.lx-checkout-close:hover { border-color: var(--checkout-line); background: var(--checkout-raised); color: white; }
+
+.lx-checkout-body { overflow: auto; padding: 22px 28px 18px; }
+.lx-checkout-section + .lx-checkout-section { margin-top: 23px; padding-top: 20px; }
+.lx-section-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.lx-section-heading h3 { color: var(--checkout-text); font-size: 19px; font-weight: 700; line-height: 1.1; }
+.lx-section-heading p { margin: 3px 0 0; color: var(--checkout-muted); font-size: 11px; line-height: 1.4; }
+
+.lx-fields-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
+.lx-field { display: grid; gap: 6px; min-width: 0; color: #d5e0e6; font-size: 11px; font-weight: 650; }
+.lx-field-wide { grid-column: 1 / -1; }
+.lx-field small { margin-left: 4px; color: #8396a3; font-size: 10px; font-weight: 450; }
+.lx-field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #344b5c;
+  border-radius: 8px;
+  outline: 0;
+  background: #0d1824;
+  color: var(--checkout-text);
+  font: 500 12px/1.4 Inter, system-ui, sans-serif;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+.lx-field input::placeholder { color: #708392; }
+.lx-field input:focus { border-color: var(--checkout-accent); background: #101e2b; outline: 2px solid rgb(83 203 229 / 30%); outline-offset: 1px; }
+.lx-invoice-picker { min-width: 0; margin: 14px 0 0; padding: 0; border: 0; }
+.lx-invoice-picker legend { margin-bottom: 7px; color: #d5e0e6; font-size: 11px; font-weight: 650; }
+.lx-invoice-options { display: flex; gap: 8px; }
+.lx-invoice-options button {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--checkout-line);
+  border-radius: 7px;
+  background: transparent;
+  color: #bac8d0;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+.lx-invoice-options button span { font-size: 11px; font-weight: 700; }
+.lx-invoice-options button small { color: var(--checkout-muted); font-size: 10px; }
+.lx-invoice-options button.is-selected { border-color: var(--checkout-accent); background: rgb(83 203 229 / 8%); color: white; }
+.lx-document-fields { margin-top: 11px; }
+
+.lx-payment-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.lx-payment-options button {
+  display: grid;
+  grid-template-columns: 19px 1fr;
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  gap: 2px 8px;
+  min-height: 58px;
+  padding: 9px 11px;
+  border: 1px solid var(--checkout-line);
+  border-radius: 9px;
+  background: #0e1925;
+  color: #b5c4cd;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+.lx-payment-options button:hover { border-color: #628294; background: #132231; }
+.lx-payment-options button:active { transform: scale(.985); }
+.lx-payment-options button > svg { grid-row: 1 / span 2; color: #91a8b8; }
+.lx-payment-options button span { color: #e3ebef; font-size: 11px; font-weight: 720; }
+.lx-payment-options button small { color: #8fa2af; font-size: 9px; }
+.lx-payment-options button.is-selected { border-color: var(--checkout-accent); background: rgb(42 117 139 / 16%); }
+.lx-payment-options button.is-selected > svg { color: var(--checkout-accent); }
+
+.lx-method-panel {
+  margin-top: 12px;
+  padding: 14px 15px;
+  border: 1px solid var(--checkout-line);
+  border-radius: 10px;
+  background: #0e1924;
+  animation: lx-panel-in 180ms cubic-bezier(.2,.8,.2,1) both;
+}
+.lx-method-intro { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: 14px; }
+.lx-method-intro h4 { color: #eff5f7; font-size: 16px; font-weight: 700; }
+.lx-method-intro p { margin: 3px 0 0; color: var(--checkout-muted); font-size: 10px; line-height: 1.4; }
+.lx-secure-mark { flex: 0 0 auto; color: #8da2af; font-size: 9px; letter-spacing: .04em; }
+.lx-brand-row { display: flex; align-items: center; gap: 7px; margin: 12px 0 13px; }
+.lx-brand-row img { display: block; width: auto; height: 24px; max-width: 58px; padding: 3px 6px; border: 1px solid #d4dbe0; border-radius: 4px; background: #f8fafb; object-fit: contain; }
+.lx-brand-row img:nth-child(2) { max-width: 43px; }
+.lx-yape-logo { width: 72px; height: 43px; border-radius: 6px; object-fit: contain; }
+.lx-checkout-primary-action,
+.lx-checkout-whatsapp-action {
+  display: flex;
+  width: 100%;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--checkout-accent);
+  border-radius: 8px;
+  background: var(--checkout-accent);
+  color: #071924;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease, filter 150ms ease, background 150ms ease;
+}
+.lx-checkout-primary-action > span { margin-left: auto; padding-right: 13px; font-variant-numeric: tabular-nums; }
+.lx-checkout-primary-action > svg:first-child:not(.lx-spinner) { margin-left: auto; }
+.lx-checkout-primary-action:hover:not(:disabled), .lx-checkout-whatsapp-action:hover { filter: brightness(1.08); }
+.lx-checkout-primary-action:active:not(:disabled), .lx-checkout-whatsapp-action:active { transform: scale(.99); }
+.lx-checkout-primary-action:disabled { cursor: wait; opacity: .8; }
+.lx-checkout-whatsapp-action { margin-top: 11px; border-color: #287c68; background: #123d36; color: #e7fff6; }
+.lx-checkout-whatsapp-action:hover { background: #174d42; filter: none; }
+.lx-spinner { animation: lx-spin 900ms linear infinite; }
+.lx-account-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 11px 12px; border: 1px solid #304858; border-radius: 8px; background: #101f2c; }
+.lx-account-row > div { display: grid; gap: 3px; }
+.lx-account-row small, .lx-bank-details small { color: var(--checkout-muted); font-size: 9px; }
+.lx-account-row strong, .lx-bank-details strong { color: var(--checkout-text); font-size: 15px; font-variant-numeric: tabular-nums; letter-spacing: .025em; }
+.lx-account-row button, .lx-bank-card > button { display: inline-flex; min-height: 32px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 1px solid #3b586a; border-radius: 6px; background: #152736; color: #d7e4e9; font-size: 10px; font-weight: 650; cursor: pointer; }
+.lx-account-row button:hover, .lx-bank-card > button:hover { border-color: var(--checkout-accent); color: var(--checkout-accent); }
+.lx-payment-note { margin: 10px 0 0; color: var(--checkout-muted); font-size: 10px; }
+.lx-payment-note strong { color: var(--checkout-text); }
+.lx-bank-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.lx-bank-card { display: grid; grid-template-columns: 63px minmax(0,1fr) 34px; align-items: center; gap: 9px; min-width: 0; padding: 10px; border: 1px solid #304858; border-radius: 8px; background: #101f2c; }
+.lx-bank-card > img { width: 60px; max-height: 32px; padding: 4px; border-radius: 4px; background: white; object-fit: contain; }
+.lx-bank-details { display: grid; min-width: 0; gap: 3px; }
+.lx-bank-details strong { overflow-wrap: anywhere; font-size: 11px; }
+.lx-bank-details small:last-child { font-size: 8px; }
+.lx-bank-card > button { width: 32px; padding: 0; }
+.lx-checkout-error { display: flex; align-items: flex-start; gap: 9px; margin-top: 14px; padding: 10px 12px; border: 1px solid #863c4b; border-radius: 8px; background: #321c27; color: #ffd1d7; font-size: 11px; line-height: 1.45; }
+.lx-checkout-error svg { flex: 0 0 auto; margin-top: 1px; }
+.lx-checkout-footnote { margin: 13px 0 0; color: #8396a3; font-size: 9px; text-align: center; }
+.lx-checkout-dialog :focus-visible { outline: 2px solid var(--checkout-accent); outline-offset: 2px; }
+
+@keyframes lx-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lx-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes lx-panel-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lx-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 620px) {
+  .lx-checkout-shell { align-items: end; padding: 8px; }
+  .lx-checkout-dialog { width: 100%; max-height: 94dvh; border-radius: 14px 14px 10px 10px; }
+  .lx-checkout-header { gap: 10px; padding: 18px 47px 16px 17px; }
+  .lx-checkout-dialog h2 { font-size: 22px; }
+  .lx-checkout-price strong { font-size: 22px; }
+  .lx-checkout-price span { font-size: 9px; }
+  .lx-checkout-close { top: 9px; right: 8px; }
+  .lx-checkout-body { padding: 17px 16px 15px; }
+  .lx-fields-grid { gap: 10px; }
+  .lx-payment-options { gap: 6px; }
+  .lx-payment-options button { grid-template-columns: 1fr; justify-items: start; gap: 2px; min-height: 67px; padding: 8px; }
+  .lx-payment-options button > svg { display: none; }
+  .lx-payment-options button span { font-size: 10px; }
+  .lx-payment-options button small { font-size: 8px; }
+  .lx-bank-list { grid-template-columns: 1fr; }
+}
+@media (max-width: 390px) {
+  .lx-checkout-price { display: none; }
+  .lx-fields-grid { grid-template-columns: 1fr; }
+  .lx-field-wide { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-checkout-backdrop, .lx-checkout-dialog, .lx-method-panel { animation: none; }
+  .lx-checkout-dialog *, .lx-checkout-dialog *::before, .lx-checkout-dialog *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .lx-spinner { animation: none; }
+}
