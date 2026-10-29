@@ -21,7 +21,7 @@ public class SolicitudInformacionService implements SolicitudInformacionUseCase 
     @Override
     @Transactional
     public SolicitudInformacion registrarSolicitud(CreateSolicitudCommand command) {
-        log.info("Registrando solicitud de información corporativa para: {} ({})", command.nombreCompleto(), command.email());
+        log.info("Registrando solicitud de información corporativa para programa ID: {}", command.idPrograma());
 
         SolicitudInformacion solicitud = SolicitudInformacion.builder()
                 .idPrograma(command.idPrograma())

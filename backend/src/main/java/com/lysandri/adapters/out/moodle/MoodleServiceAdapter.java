@@ -93,8 +93,7 @@ public class MoodleServiceAdapter implements LmsClientPort {
             throw new IllegalStateException("Respuesta inesperada al crear usuario en Moodle: " + rawResponse);
         } catch (Exception e) {
             log.error("Error creando usuario en Moodle: {}", e.getMessage());
-            // En caso de error o entorno offline de dev, retornar ID temporal basado en hash
-            return (long) Math.abs(email.hashCode());
+            throw new RuntimeException("Error al crear usuario en Moodle LMS: " + e.getMessage(), e);
         }
     }
 
@@ -119,24 +118,59 @@ public class MoodleServiceAdapter implements LmsClientPort {
 
             log.info("Matrícula confirmada en Moodle para usuario {} en curso {}", moodleUserId, moodleCourseId);
         } catch (Exception e) {
-            log.error("Fallo durante la matrícula en Moodle: {}", e.getMessage());
+            log.warn("Fallo o timeout durante la matrícula en Moodle: {}. Verificando estado remoto para confirmar si ya se procesó...", e.getMessage());
+            if (estaUsuarioMatriculado(moodleUserId, moodleCourseId)) {
+                log.info("Verificación remota exitosa: El usuario {} ya se encuentra matriculado en curso Moodle {}. Operación idempotente.", moodleUserId, moodleCourseId);
+                return;
+            }
+            log.error("Fallo definitivo durante la matrícula en Moodle: {}", e.getMessage());
+            throw new RuntimeException("Fallo durante la matrícula en Moodle: " + e.getMessage(), e);
         }
     }
 
-    private String executeMoodlePost(MultiValueMap<String, String> formData) {
-        try {
-            return this.webClient.post()
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
-                    .block();
-        } catch (Exception e) {
-            log.warn("Llamada HTTP a Moodle falló: {}", e.getMessage());
-            return null;
+    @Override
+    public boolean estaUsuarioMatriculado(Long moodleUserId, Long moodleCourseId) {
+        if (moodleUserId == null || moodleCourseId == null) {
+            return false;
         }
+        log.info("Consultando cursos activos en Moodle para usuario ID: {} (Curso buscado: {})", moodleUserId, moodleCourseId);
+        try {
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("wstoken", this.wsToken);
+            formData.add("wsfunction", "core_enrol_get_users_courses");
+            formData.add("moodlewsrestformat", "json");
+            formData.add("userid", String.valueOf(moodleUserId));
+
+            String rawResponse = executeMoodlePost(formData);
+            if (rawResponse == null || rawResponse.isBlank()) {
+                return false;
+            }
+
+            JsonNode rootNode = objectMapper.readTree(rawResponse);
+            if (rootNode.isArray()) {
+                for (JsonNode courseNode : rootNode) {
+                    if (courseNode.path("id").asLong() == moodleCourseId) {
+                        log.info("Usuario {} ya se encuentra matriculado en curso Moodle {}", moodleUserId, moodleCourseId);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("No se pudo verificar matrícula previa en Moodle: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public String executeMoodlePost(MultiValueMap<String, String> formData) {
+        return this.webClient.post()
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(10))
+                .block();
     }
 
     private void validarRespuestaMoodle(JsonNode rootNode) {

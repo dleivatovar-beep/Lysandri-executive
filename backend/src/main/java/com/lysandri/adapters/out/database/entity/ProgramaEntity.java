@@ -67,6 +67,14 @@ public class ProgramaEntity {
     @Builder.Default
     private boolean activo = true;
 
+    @Column(name = "precio_aprobado", nullable = false)
+    @Builder.Default
+    private boolean precioAprobado = false;
+
+    @Column(name = "es_gratuito", nullable = false)
+    @Builder.Default
+    private boolean esGratuito = false;
+
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     @Builder.Default
     private OffsetDateTime fechaCreacion = OffsetDateTime.now();

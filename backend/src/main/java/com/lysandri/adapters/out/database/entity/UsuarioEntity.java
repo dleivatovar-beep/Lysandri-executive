@@ -37,6 +37,7 @@ public class UsuarioEntity implements UserDetails {
     @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "passw", nullable = false)
     private String passw;
 
@@ -44,13 +45,21 @@ public class UsuarioEntity implements UserDetails {
     private String telefono;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "rol", nullable = false, length = 20)
+    @Column(name = "rol", nullable = false, length = 30)
     @Builder.Default
     private RolUsuario rol = RolUsuario.CLIENTE;
 
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+
+    @Column(name = "bloqueado_admin", nullable = false)
+    @Builder.Default
+    private boolean bloqueadoAdmin = false;
+
+    @Column(name = "pendiente_activacion", nullable = false)
+    @Builder.Default
+    private boolean pendienteActivacion = false;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     @Builder.Default
@@ -82,7 +91,7 @@ public class UsuarioEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !this.bloqueadoAdmin;
     }
 
     @Override
@@ -92,6 +101,6 @@ public class UsuarioEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.activo;
+        return this.activo && !this.bloqueadoAdmin && !this.pendienteActivacion;
     }
 }

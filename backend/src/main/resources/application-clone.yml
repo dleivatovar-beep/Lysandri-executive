@@ -1,0 +1,92 @@
+# Configuracion exclusiva para pruebas y ejecucion contra el clon real
+# Contenedor: lysandri-postgres-clone
+# Puerto fijo: 5434 (estrictamente aislado, no parametrizable por URL para evitar apuntar a 5432)
+# Base fija: lysandri_clone_db (no parametrizable para evitar apuntar a lysandri_db)
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db}
+    username: lysandri_app
+    password: ${CLONE_APP_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    url: ${SPRING_FLYWAY_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db}}
+    user: lysandri_admin
+    password: ${CLONE_ADMIN_PASSWORD}
+
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: no-reply@lysandri.com
+    password: 
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 5000
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+
+moodle:
+  url: ${MOODLE_URL:http://localhost:8081}
+  token: ${MOODLE_TOKEN:dev_moodle_wstoken_lysandri}
+
+izipay:
+  shop-id: test_shop_lysandri
+  api-key: test_password_lysandri_key
+  public-key: test_public_key_lysandri
+  sha256-key: test_hmac_sha256_key
+  endpoint: https://api.micuentaweb.pe
+  success-url: http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: http://localhost:3000/checkout/cancel
+
+stripe:
+  api-key: sk_test_mock_lysandri_key
+  webhook-secret: whsec_mock_lysandri_secret
+  success-url: http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: http://localhost:3000/checkout/cancel
+
+llm:
+  provider: openai
+  api-key: mock-key
+  model: gpt-4o-mini
+  embedding-model: text-embedding-3-small
+
+accounting:
+  audit-pin: test-accounting-audit-pin
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173
+
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  security:
+    activation-encryption-key: ${ACTIVATION_ENCRYPTION_KEY}
+    activation-encryption-key-previous: ${ACTIVATION_ENCRYPTION_KEY_PREVIOUS:}
+  scheduling:
+    enabled: ${APP_SCHEDULING_ENABLED:true}
+  outbox:
+    activation:
+      enabled: ${APP_OUTBOX_ACTIVATION_ENABLED:true}
+      fixed-delay-ms: ${APP_OUTBOX_ACTIVATION_FIXED_DELAY_MS:5000}

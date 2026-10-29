@@ -3,6 +3,7 @@ package com.lysandri.adapters.in.web;
 import com.lysandri.adapters.in.web.dto.ReporteVentasResponse;
 import com.lysandri.domain.model.*;
 import com.lysandri.domain.ports.out.BillingPort;
+import com.lysandri.domain.ports.out.AccountingAuditPort;
 import com.lysandri.domain.ports.out.OrderRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -21,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +38,9 @@ class InternalAccountingControllerTest {
 
     @Mock
     private OrderRepositoryPort orderRepository;
+
+    @Mock
+    private AccountingAuditPort accountingAuditPort;
 
     @InjectMocks
     private InternalAccountingController accountingController;
@@ -135,6 +145,16 @@ class InternalAccountingControllerTest {
         assertEquals(new BigDecimal("54.00"), reporte.getLiquidacionTributaria().getDebitoFiscalIgv());
     }
 
+        @Test
+        void reporteVentas_pinNoConfigurado_deniegaAcceso() {
+            ReflectionTestUtils.setField(accountingController, "auditPin", " ");
+
+            ResponseEntity<?> response = accountingController.obtenerReporteVentas(VALID_PIN);
+
+            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+            verifyNoInteractions(billingPort, orderRepository);
+        }
+
     @Test
     void exportarTxtSire_pinValido_debeGenerarFormatoSunatPipe() {
         ComprobantePago factura = ComprobantePago.builder()
@@ -180,12 +200,19 @@ class InternalAccountingControllerTest {
 
         when(billingPort.anularComprobante(5L, "Error en RUC")).thenReturn(anulado);
 
-        ResponseEntity<?> response = accountingController.anularComprobante(VALID_PIN, 5L, Map.of("motivo", "Error en RUC"));
+        Authentication accountant = new UsernamePasswordAuthenticationToken(
+            "accountant@lysandri.com", null, List.of(new SimpleGrantedAuthority("ROLE_CONTABILIDAD")));
+        ResponseEntity<?> response = accountingController.anularComprobante(
+            VALID_PIN, 5L, Map.of("motivo", "Error en RUC"), accountant);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody() instanceof Map);
         Map<?, ?> body = (Map<?, ?>) response.getBody();
         assertEquals("ANULADO", body.get("estado"));
         assertEquals("Error en RUC", body.get("motivoAnulacion"));
+        verify(accountingAuditPort).registrar(argThat(audit ->
+            audit.getAccion().equals("COMPROBANTE_ANULADO")
+                && audit.getActor().equals("accountant@lysandri.com")
+                && audit.getEntidadId().equals(5L)));
     }
 }

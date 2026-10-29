@@ -65,6 +65,8 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
                 .nivel(d.getNivel())
                 .duracionHoras(d.getDuracionHoras())
                 .activo(d.isActivo())
+                .precioAprobado(d.isPrecioAprobado())
+                .esGratuito(d.isEsGratuito())
                 .fechaCreacion(d.getFechaCreacion())
                 .build();
     }
@@ -87,6 +89,8 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
                 .nivel(e.getNivel())
                 .duracionHoras(e.getDuracionHoras())
                 .activo(e.isActivo())
+                .precioAprobado(e.isPrecioAprobado())
+                .esGratuito(e.isEsGratuito())
                 .fechaCreacion(e.getFechaCreacion())
                 .build();
     }

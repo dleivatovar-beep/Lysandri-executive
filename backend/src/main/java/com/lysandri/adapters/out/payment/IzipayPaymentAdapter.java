@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lysandri.domain.model.Orden;
 import com.lysandri.domain.ports.out.PaymentPort;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -16,13 +18,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Adaptador de salida para la pasarela de pagos izipay Online (Lyra Network).
+ * Adaptador de producción para la pasarela de pagos izipay Online (Lyra Network).
  * Implementa PaymentPort bajo Arquitectura Hexagonal.
- * Soporta modo Sandbox (pruebas locales/dev) y modo Producción con API REST oficial.
+ * Activo exclusivamente en perfiles no-test (@Profile("!test & !clone")).
+ * Prohíbe terminantemente confirmaciones simuladas automáticas.
  */
 @Slf4j
-@Primary
-@Component
+@Component("izipayPaymentAdapter")
+@Profile("!test & !clone")
 public class IzipayPaymentAdapter implements PaymentPort {
 
     private final String shopId;
@@ -32,6 +35,7 @@ public class IzipayPaymentAdapter implements PaymentPort {
     private final String endpoint;
     private final String successUrl;
     private final String cancelUrl;
+    private final Environment environment;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
@@ -42,7 +46,8 @@ public class IzipayPaymentAdapter implements PaymentPort {
             @Value("${izipay.sha256-key:test_hmac_sha256_key}") String sha256Key,
             @Value("${izipay.endpoint:https://api.micuentaweb.pe}") String endpoint,
             @Value("${izipay.success-url:http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}}") String successUrl,
-            @Value("${izipay.cancel-url:http://localhost:3000/checkout/cancel}") String cancelUrl) {
+            @Value("${izipay.cancel-url:http://localhost:3000/checkout/cancel}") String cancelUrl,
+            Environment environment) {
         this.shopId = shopId;
         this.apiKey = apiKey;
         this.publicKey = publicKey;
@@ -50,8 +55,31 @@ public class IzipayPaymentAdapter implements PaymentPort {
         this.endpoint = endpoint;
         this.successUrl = successUrl;
         this.cancelUrl = cancelUrl;
+        this.environment = environment;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+    }
+
+    @PostConstruct
+    public void validarConfiguracionSegura() {
+        if (isProductionEnvironment()) {
+            if (isMockCredentials()) {
+                log.error("CONFIGURACIÓN INSEGURA CRÍTICA: Intento de iniciar en entorno de producción sin credenciales reales de izipay.");
+                throw new IllegalStateException("CRÍTICO: No se permite operar en entorno de PRODUCCIÓN sin credenciales válidas de izipay.");
+            }
+        }
+    }
+
+    private boolean isProductionEnvironment() {
+        if (environment == null) return false;
+        return Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(p -> "prod".equalsIgnoreCase(p) || "production".equalsIgnoreCase(p));
+    }
+
+    private boolean isMockCredentials() {
+        return shopId == null || shopId.isBlank() || shopId.startsWith("test_shop")
+                || apiKey == null || apiKey.isBlank() || apiKey.startsWith("test_password")
+                || sha256Key == null || sha256Key.isBlank() || sha256Key.startsWith("test_hmac");
     }
 
     @Override
@@ -59,20 +87,11 @@ public class IzipayPaymentAdapter implements PaymentPort {
         log.info("Creando sesión de pago en izipay Online para orden {} - Cliente: {} ({})",
                 orden.getCodigoOrden(), customerName, customerEmail);
 
-        boolean isMockOrDev = shopId == null || shopId.startsWith("test_shop") || apiKey == null || apiKey.startsWith("test_password");
-
-        // Modo Entorno Local / Sandbox Simulado
-        if (isMockOrDev) {
-            String sessionId = "izisess_" + UUID.randomUUID().toString().replace("-", "");
-            String redirectUrl = successUrl.replace("{CHECKOUT_SESSION_ID}", sessionId);
-            String mockTxId = "izitx_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-            String mockFormToken = "DEMO_IZIPAY_FORM_TOKEN_" + UUID.randomUUID();
-
-            log.info("Sesión izipay Online generada en entorno Sandbox local: {} (Tx: {})", sessionId, mockTxId);
-            return new PaymentSessionResult(sessionId, redirectUrl, mockTxId, mockFormToken, publicKey);
+        if (isMockCredentials()) {
+            log.error("Fallo de configuración: IzipayPaymentAdapter requiere credenciales válidas. Para pruebas use MockIzipayPaymentAdapter con @Profile('test').");
+            throw new IllegalStateException("Credenciales de izipay no configuradas o inválidas para el adaptador real.");
         }
 
-        // Modo Producción / Sandbox Oficial izipay REST API
         try {
             String createPaymentUrl = endpoint + "/api-payment/V4/Charge/CreatePayment";
 
@@ -139,9 +158,9 @@ public class IzipayPaymentAdapter implements PaymentPort {
     public boolean verificarPagoCompletado(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) return false;
 
-        boolean isMockOrDev = shopId == null || shopId.startsWith("test_shop") || apiKey == null || apiKey.startsWith("test_password");
-        if (isMockOrDev) {
-            return true; // En modo pruebas local se aprueba automáticamente
+        if (isMockCredentials()) {
+            log.error("Fallo de configuración: No se pueden verificar pagos con credenciales mock en el adaptador real de izipay.");
+            throw new IllegalStateException("Credenciales de izipay no configuradas o inválidas para verificación.");
         }
 
         try {

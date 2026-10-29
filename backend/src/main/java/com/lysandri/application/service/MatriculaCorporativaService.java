@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
+import com.lysandri.adapters.out.database.entity.LoteMatriculaCorporativaEntity;
+import com.lysandri.adapters.out.database.repository.SpringDataLoteMatriculaRepository;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +34,7 @@ public class MatriculaCorporativaService implements MatriculaCorporativaUseCase 
     private final NotificationPort notificationPort;
     private final SolicitudInformacionUseCase solicitudInformacionUseCase;
     private final PasswordEncoder passwordEncoder;
+    private final SpringDataLoteMatriculaRepository loteMatriculaRepository;
 
     @Override
     @Transactional
@@ -112,14 +115,14 @@ public class MatriculaCorporativaService implements MatriculaCorporativaUseCase 
                     );
                     usuarioLocal.setMoodleUserId(moodleUserId);
                     userRepository.guardar(usuarioLocal);
-                    log.info("Usuario creado en Moodle para nómina corporativa: {} (ID {})", email, moodleUserId);
+                    log.info("Usuario creado en Moodle para nómina corporativa ID: {}", moodleUserId);
                 } else {
-                    log.info("Usuario ya existente en Moodle para nómina: {} (ID {})", email, moodleUserId);
+                    log.info("Usuario existente en Moodle para nómina corporativa ID: {}", moodleUserId);
                 }
 
                 // 3. Matricular en el curso Moodle
                 lmsClientPort.matricularUsuarioEnCurso(moodleUserId, programa.getMoodleCourseId(), 5);
-                log.info("Colaborador {} matriculado con éxito en curso Moodle ID {}", email, programa.getMoodleCourseId());
+                log.info("Usuario Moodle ID {} matriculado con éxito en curso {}", moodleUserId, programa.getMoodleCourseId());
 
                 // 4. Notificar por correo si está habilitado
                 if (command.enviarCredencialesEmail()) {
@@ -133,7 +136,7 @@ public class MatriculaCorporativaService implements MatriculaCorporativaUseCase 
                                 passwordGenerada
                         );
                     } catch (Exception ex) {
-                        log.warn("No se pudo enviar correo a {}: {}", email, ex.getMessage());
+                        log.warn("No se pudo enviar correo corporativo para usuario Moodle ID {}: {}", moodleUserId, com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage()));
                     }
                 }
 
@@ -150,7 +153,7 @@ public class MatriculaCorporativaService implements MatriculaCorporativaUseCase 
                 ));
             } catch (Exception e) {
                 fallidos++;
-                log.error("Error al procesar colaborador {}: {}", email, e.getMessage());
+                log.error("Error al procesar colaborador en nómina: {}", com.lysandri.security.SanitizerUtils.sanitizeMessage(e.getMessage()));
                 resultados.add(new MatriculaColaboradorResultado(
                         nombres,
                         apellidos,
@@ -172,6 +175,24 @@ public class MatriculaCorporativaService implements MatriculaCorporativaUseCase 
             } catch (Exception e) {
                 log.warn("No se pudo actualizar estado de solicitud ID {}: {}", command.idSolicitud(), e.getMessage());
             }
+        }
+
+        // Persistir auditoría del lote en base de datos
+        try {
+            LoteMatriculaCorporativaEntity lote = LoteMatriculaCorporativaEntity.builder()
+                    .idPrograma(programa.getIdPrograma())
+                    .idSolicitud(command.idSolicitud())
+                    .empresaNombre(command.empresaNombre())
+                    .totalColaboradores(command.colaboradores().size())
+                    .totalExitosos(exitosos)
+                    .totalFallidos(fallidos)
+                    .fechaRegistro(OffsetDateTime.now())
+                    .notasAdmin("Lote procesado: " + exitosos + " exitosos, " + fallidos + " fallidos.")
+                    .build();
+            loteMatriculaRepository.save(lote);
+            log.info("Lote corporativo registrado en auditoría para empresa '{}'", command.empresaNombre());
+        } catch (Exception ex) {
+            log.error("Error al persistir auditoría del lote corporativo: {}", ex.getMessage());
         }
 
         return new MatriculaNominaResponse(

@@ -25,22 +25,32 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.lysandri.domain.model.EstadoComprobante;
+import com.lysandri.domain.model.AuditoriaContable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import com.lysandri.domain.ports.out.AccountingAuditPort;
+import org.springframework.transaction.annotation.Transactional;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/internal/accounting")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'CONTABILIDAD', 'FINANZAS', 'AUDITOR')")
 @Tag(name = "Contabilidad Interna y Auditoría", description = "Endpoints de auditoría contable y reporte tributario protegidos por PIN interno")
 public class InternalAccountingController {
 
     private final BillingPort billingPort;
     private final OrderRepositoryPort orderRepository;
+    private final AccountingAuditPort accountingAuditPort;
 
-    @Value("${accounting.audit-pin:LYS-AUDIT-2026-SECURE}")
+    @Value("${accounting.audit-pin:}")
     private String auditPin;
 
     private static final String RUC_EMISOR = "20609812451";
@@ -65,7 +75,7 @@ public class InternalAccountingController {
 
         log.info("Acceso solicitado a reporte de contabilidad interna");
 
-        if (pinHeader == null || !pinHeader.trim().equals(auditPin.trim())) {
+        if (!validarPin(pinHeader)) {
             log.warn("Intento de acceso contable no autorizado. PIN recibido: {}", pinHeader != null ? "****" : "NULO");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of(
@@ -201,7 +211,7 @@ public class InternalAccountingController {
     public ResponseEntity<?> exportarTxtSire(
             @RequestHeader(value = "X-Audit-PIN", required = false) String pinHeader) {
 
-        if (pinHeader == null || !pinHeader.trim().equals(auditPin.trim())) {
+        if (!validarPin(pinHeader)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Acceso denegado: PIN de auditoría inválido");
         }
@@ -263,13 +273,16 @@ public class InternalAccountingController {
     }
 
     @PostMapping("/comprobantes/{idComprobante}/anular")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONTABILIDAD')")
+    @Transactional
     @Operation(summary = "Anular un comprobante de pago emitido por causa tributaria o nota de crédito")
     public ResponseEntity<?> anularComprobante(
             @RequestHeader(value = "X-Audit-PIN", required = false) String pinHeader,
             @PathVariable Long idComprobante,
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication authentication) {
 
-        if (pinHeader == null || !pinHeader.trim().equals(auditPin.trim())) {
+        if (!validarPin(pinHeader)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Acceso denegado: PIN de auditoría no válido"));
         }
@@ -277,6 +290,14 @@ public class InternalAccountingController {
         String motivo = (body != null && body.containsKey("motivo")) ? body.get("motivo") : "Anulación solicitada por administración contable";
         try {
             ComprobantePago comprobante = billingPort.anularComprobante(idComprobante, motivo);
+                accountingAuditPort.registrar(AuditoriaContable.builder()
+                    .accion("COMPROBANTE_ANULADO")
+                    .entidad("COMPROBANTE_PAGO")
+                    .entidadId(idComprobante)
+                    .actor(authentication != null ? authentication.getName() : "desconocido")
+                    .motivo(motivo)
+                    .fechaHora(java.time.OffsetDateTime.now())
+                    .build());
             return ResponseEntity.ok(Map.of(
                     "mensaje", "Comprobante anulado exitosamente",
                     "idComprobante", comprobante.getIdComprobante(),
@@ -288,5 +309,15 @@ public class InternalAccountingController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
+    }
+
+    private boolean validarPin(String pinHeader) {
+        if (pinHeader == null || pinHeader.isBlank() || auditPin == null || auditPin.isBlank()) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                pinHeader.trim().getBytes(StandardCharsets.UTF_8),
+                auditPin.trim().getBytes(StandardCharsets.UTF_8)
+        );
     }
 }

@@ -46,6 +46,9 @@ class MatriculaCorporativaServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private com.lysandri.adapters.out.database.repository.SpringDataLoteMatriculaRepository loteMatriculaRepository;
+
     @InjectMocks
     private MatriculaCorporativaService matriculaCorporativaService;
 
@@ -115,6 +118,9 @@ class MatriculaCorporativaServiceTest {
 
         // Verificar actualización de solicitud In-Company
         verify(solicitudInformacionUseCase).actualizarEstado(eq(55L), eq("CERRADA"));
+
+        // Verificar persistencia de auditoría del lote
+        verify(loteMatriculaRepository).save(any());
     }
 
     @Test

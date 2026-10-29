@@ -2,7 +2,9 @@ package com.lysandri.application.service;
 
 import com.lysandri.domain.model.RolUsuario;
 import com.lysandri.domain.model.Usuario;
+import com.lysandri.domain.model.UsuarioCambioAudit;
 import com.lysandri.domain.ports.in.UserManagementUseCase;
+import com.lysandri.domain.ports.out.UserAuditRepositoryPort;
 import com.lysandri.domain.ports.out.UserRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +19,9 @@ import java.util.List;
 public class UserManagementService implements UserManagementUseCase {
 
     private final UserRepositoryPort userRepositoryPort;
+    private final UserAuditRepositoryPort userAuditRepositoryPort;
     private final PasswordEncoder passwordEncoder;
+    private final com.lysandri.domain.ports.out.UserActivationPort userActivationPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -37,6 +41,14 @@ public class UserManagementService implements UserManagementUseCase {
         }
 
         return userRepositoryPort.listarTodos();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Usuario> listarTrabajadores() {
+        return userRepositoryPort.listarTodos().stream()
+                .filter(u -> u.getRol() != null && u.getRol().esRolInterno())
+                .toList();
     }
 
     @Override
@@ -133,10 +145,6 @@ public class UserManagementService implements UserManagementUseCase {
             existente.setTelefono(datos.getTelefono().trim());
         }
 
-        if (datos.getRol() != null) {
-            existente.setRol(datos.getRol());
-        }
-
         if (datos.getPassw() != null && !datos.getPassw().isBlank()) {
             existente.setPassw(passwordEncoder.encode(datos.getPassw()));
         }
@@ -148,8 +156,74 @@ public class UserManagementService implements UserManagementUseCase {
 
     @Override
     @Transactional
+    public Usuario actualizarRol(Long id, RolUsuario nuevoRol, String motivo, String ejecutadoPor) {
+        Usuario existente = obtenerPorId(id);
+        if (nuevoRol == null) {
+            throw new IllegalArgumentException("El rol nuevo es obligatorio.");
+        }
+        if (nuevoRol == RolUsuario.CLIENTE || nuevoRol == RolUsuario.ESTUDIANTE || nuevoRol == RolUsuario.INSTRUCTOR) {
+            throw new IllegalStateException("No se permiten roles públicos para cuentas internas de personal.");
+        }
+
+        RolUsuario anterior = existente.getRol() != null ? existente.getRol() : RolUsuario.CLIENTE;
+        existente.setRol(nuevoRol);
+        existente.setFechaActualizacion(OffsetDateTime.now());
+        Usuario actualizado = userRepositoryPort.guardar(existente);
+
+        userAuditRepositoryPort.registrar(UsuarioCambioAudit.builder()
+                .idUsuario(actualizado.getIdUser())
+                .email(actualizado.getEmail())
+                .accion("ROL_ACTUALIZADO")
+                .rolAnterior(anterior)
+                .rolNuevo(nuevoRol)
+                .motivo(motivo != null ? motivo : "Actualización de permisos")
+                .ejecutadoPor(ejecutadoPor != null ? ejecutadoPor : "system")
+                .fechaHora(OffsetDateTime.now())
+                .build());
+
+        return actualizado;
+    }
+
+    @Override
+    @Transactional
+    public Usuario desactivarUsuario(Long id, String motivo, String ejecutadoPor) {
+        Usuario existente = obtenerPorId(id);
+        if (existente.isBloqueadoAdmin() && !existente.isActivo()) {
+            return existente;
+        }
+
+        existente.setActivo(false);
+        existente.setBloqueadoAdmin(true);
+        existente.setPendienteActivacion(false);
+        existente.setFechaActualizacion(OffsetDateTime.now());
+        Usuario actualizado = userRepositoryPort.guardar(existente);
+
+        // Invalidar tokens previos que pudieran reactivar la cuenta
+        userActivationPort.revocarTokensUsuario(id);
+
+        userAuditRepositoryPort.registrar(UsuarioCambioAudit.builder()
+                .idUsuario(actualizado.getIdUser())
+                .email(actualizado.getEmail())
+                .accion("CUENTA_DESACTIVADA")
+                .rolAnterior(actualizado.getRol())
+                .rolNuevo(actualizado.getRol())
+                .motivo(motivo != null ? motivo : "Desactivación por administración")
+                .ejecutadoPor(ejecutadoPor != null ? ejecutadoPor : "system")
+                .fechaHora(OffsetDateTime.now())
+                .build());
+
+        return actualizado;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioCambioAudit> obtenerHistorialCambios(Long id) {
+        return userAuditRepositoryPort.listarPorUsuario(id);
+    }
+
+    @Override
+    @Transactional
     public void eliminarUsuario(Long id) {
-        // Verificar que exista
         obtenerPorId(id);
         userRepositoryPort.eliminar(id);
     }

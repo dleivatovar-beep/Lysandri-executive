@@ -19,17 +19,14 @@ public class DetalleOrdenEntity {
     @Column(name = "id_detalle")
     private Long idDetalle;
 
-    @Column(name = "id_orden", nullable = false)
-    private Long idOrden;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_orden", insertable = false, updatable = false)
+    @JoinColumn(name = "id_orden", nullable = false)
     private OrdenEntity orden;
 
     @Column(name = "id_programa", nullable = false)
     private Long idPrograma;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_programa", insertable = false, updatable = false)
     private ProgramaEntity programa;
 
@@ -46,4 +43,8 @@ public class DetalleOrdenEntity {
     @Column(name = "moodle_matriculado", nullable = false)
     @Builder.Default
     private boolean moodleMatriculado = false;
+
+    public Long getIdOrden() {
+        return orden != null ? orden.getIdOrden() : null;
+    }
 }

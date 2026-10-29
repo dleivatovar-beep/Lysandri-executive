@@ -41,6 +41,7 @@ import { StudentCourses } from './pages/student/StudentCourses';
 
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 import { PaymentSuccessView } from './pages/PaymentSuccessView';
+import { ActivarCuentaView } from './pages/ActivarCuentaView';
 import { AccountingView } from './pages/AccountingView';
 import './admin-workspace.css';
 
@@ -805,6 +806,12 @@ const App: React.FC =
             path="checkout/success"
             element={
               <PaymentSuccessView />
+            }
+          />
+          <Route
+            path="activar-cuenta"
+            element={
+              <ActivarCuentaView />
             }
           />
         </Route>

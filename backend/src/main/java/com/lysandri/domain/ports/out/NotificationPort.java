@@ -36,4 +36,44 @@ public interface NotificationPort {
             String username,
             String moodlePassword
     );
+
+    /**
+     * Envía un correo electrónico con el enlace de activación seguro para clientes invitados o cuentas pendientes.
+     *
+     * @param email Dirección de correo electrónico del usuario.
+     * @param nombre Nombre del usuario.
+     * @param enlaceActivacion URL absoluta autorizada con el token para activar la cuenta.
+     */
+    void enviarEnlaceActivacion(
+            String email,
+            String nombre,
+            String enlaceActivacion
+    );
+
+    /**
+     * Sobrecarga de envío de activación que incluye el identificador único e inmutable del intento.
+     *
+     * @param email Dirección de correo electrónico del usuario.
+     * @param nombre Nombre del usuario.
+     * @param enlaceActivacion URL absoluta autorizada con el token para activar la cuenta.
+     * @param idIntento Identificador técnico único e inmutable de este intento de envío.
+     */
+    default void enviarEnlaceActivacion(
+            String email,
+            String nombre,
+            String enlaceActivacion,
+            String idIntento
+    ) {
+        enviarEnlaceActivacion(email, nombre, enlaceActivacion);
+    }
+
+    /**
+     * Aborta activamente los recursos de red (transporte/socket) asociados exclusivamente al intento indicado,
+     * permitiendo una cancelación efectiva e inmediata sin afectar otros envíos al mismo u otros destinatarios.
+     *
+     * @param idIntento Identificador técnico único del intento a abortar.
+     */
+    default void abortarEnvio(String idIntento) {
+        // Implementación por defecto no-op para adaptadores o pruebas que no gestionen sockets reales
+    }
 }

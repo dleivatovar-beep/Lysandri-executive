@@ -1,0 +1,126 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/lysandri_test_db}
+    username: ${SPRING_DATASOURCE_USERNAME:lysandri_test_runner}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    out-of-order: false
+    validate-on-migrate: true
+    locations: classpath:db/migration
+    url: ${SPRING_FLYWAY_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/lysandri_test_db}}
+    user: ${SPRING_FLYWAY_USER:${SPRING_DATASOURCE_USERNAME:lysandri_test_runner}}
+    password: ${SPRING_FLYWAY_PASSWORD:${SPRING_DATASOURCE_PASSWORD:}}
+
+  mail:
+    host: localhost
+    port: 1025
+    username: no-reply@lysandri.com
+    password: 
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 5000
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A
+  expiration: 86400000
+
+moodle:
+  url: http://localhost:8080
+  token: dev_moodle_wstoken_lysandri
+
+izipay:
+  shop-id: test_shop_lysandri
+  api-key: test_password_lysandri_key
+  public-key: test_public_key_lysandri
+  sha256-key: test_hmac_sha256_key
+  endpoint: https://api.micuentaweb.pe
+  success-url: http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: http://localhost:3000/checkout/cancel
+
+stripe:
+  api-key: sk_test_mock_lysandri_key
+  webhook-secret: whsec_mock_lysandri_secret
+  success-url: http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+  cancel-url: http://localhost:3000/checkout/cancel
+
+llm:
+  provider: openai
+  api-key: mock-key
+  model: gpt-4o-mini
+  embedding-model: text-embedding-3-small
+
+accounting:
+  audit-pin: test-accounting-audit-pin
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173
+
+app:
+  frontend:
+    url: http://localhost:5173
+  security:
+    activation-encryption-key: "test-activation-encryption-key-32chars-strictly-for-testing"
+  scheduling:
+    enabled: false
+  outbox:
+    activation:
+      enabled: false
+      fixed-delay-ms: 5000
+  bancos:
+    bcp:
+      banco: BCP
+      titular: LYSANDRI S.A.C.
+      moneda: USD
+      tipo-cuenta: CORRIENTE
+      numero-cuenta: "193-98218491-0-28"
+      cci: "002-193-009821849102-18"
+      activo: true
+    interbank:
+      banco: INTERBANK
+      titular: LYSANDRI S.A.C.
+      moneda: USD
+      tipo-cuenta: CORRIENTE
+      numero-cuenta: "200-3001849128"
+      cci: "003-200-003001849128-33"
+      activo: true
+    yape:
+      nombre: YAPE
+      titular: LYSANDRI S.A.C.
+      moneda: PEN
+      telefono: "987654321"
+      activo: true
+    plin:
+      nombre: PLIN
+      titular: LYSANDRI S.A.C.
+      moneda: PEN
+      telefono: "987654322"
+      activo: true
+
+whatsapp:
+  enabled: false
+  api-url: https://graph.facebook.com/v21.0
+  phone-number-id: "123456789012345"
+  access-token: test_mock_whatsapp_access_token
+  verify-token: test_mock_whatsapp_verify_token
+  app-secret: test_mock_whatsapp_app_secret
+  connect-timeout-ms: 5000
+  read-timeout-ms: 10000

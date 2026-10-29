@@ -52,6 +52,34 @@ export const authService = {
 
     return toAuthResponse(response.data);
   },
+
+  async activarCuenta(
+    token: string,
+    password: string,
+  ): Promise<AuthResponse> {
+    const response = await apiClient.post<BackendAuthResponse>(
+      '/auth/activar-cuenta',
+      {
+        token,
+        password,
+      },
+    );
+
+    return toAuthResponse(response.data);
+  },
+
+  async solicitarActivacion(
+    email: string,
+  ): Promise<{ mensaje: string }> {
+    const response = await apiClient.post<{ mensaje: string }>(
+      '/auth/solicitar-activacion',
+      {
+        email,
+      },
+    );
+
+    return response.data;
+  },
 };
 
 export const getApiErrorMessage = (

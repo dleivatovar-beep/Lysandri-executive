@@ -39,6 +39,28 @@ public class Orden {
     private String numeroOperacion;
     private String notasAdmin;
 
+    // Clave de idempotencia para compras y reintentos atómicos
+    private String claveIdempotencia;
+    // Hash criptográfico de la sesión de compra para invitados
+    private String guestSessionHash;
+
+    // Campos de auditoría y verificación para transferencias bancarias y pagos manuales
+    private String bancoDestino;
+    private String cuentaDestino;
+    private BigDecimal montoVerificado;
+    private String monedaVerificada;
+    private OffsetDateTime fechaAbono;
+    private String aprobadoPor;
+    private OffsetDateTime fechaAprobacion;
+    private String observacionVerificacion;
+
+    @Builder.Default
+    private EstadoAprovisionamiento estadoAprovisionamiento = EstadoAprovisionamiento.PENDIENTE;
+    private String aprovisionamientoLeaseToken;
+    private OffsetDateTime aprovisionamientoLeaseExpiresAt;
+    private int aprovisionamientoIntentos;
+    private String aprovisionamientoUltimoError;
+
     @Builder.Default
     private List<DetalleOrden> items = new ArrayList<>();
 }

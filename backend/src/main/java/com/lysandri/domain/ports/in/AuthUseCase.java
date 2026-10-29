@@ -26,9 +26,26 @@ public interface AuthUseCase {
             Long moodleUserId
     ) {}
 
+    record ActivarCuentaCommand(
+            String token,
+            String nuevaPassword
+    ) {}
+
+    record SolicitarActivacionCommand(
+            String email
+    ) {}
+
+    record MensajePublicoResponse(
+            String mensaje
+    ) {}
+
     AuthResponse register(RegisterCommand command);
 
     AuthResponse login(LoginCommand command);
+
+    AuthResponse activarCuenta(ActivarCuentaCommand command);
+
+    MensajePublicoResponse solicitarNuevoEnlaceActivacion(SolicitarActivacionCommand command);
 
     Usuario obtenerUsuarioAutenticado(String email);
 }

@@ -13,14 +13,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Component
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
     private final SpringDataOrderRepository repository;
     private final ProgramRepositoryAdapter programAdapter;
 
     @Override
+    @Transactional
     public Orden guardar(Orden orden) {
         OrdenEntity entity = toEntity(orden);
         OrdenEntity saved = repository.save(entity);
@@ -38,13 +42,36 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     }
 
     @Override
+    @Transactional
+    public Optional<Orden> buscarPorCodigoConBloqueo(String codigoOrden) {
+        return repository.findByCodigoOrdenWithLock(codigoOrden).map(this::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Orden> buscarPorIdConBloqueo(Long idOrden) {
+        return repository.findByIdWithLock(idOrden).map(this::toDomain);
+    }
+
+    @Override
     public Optional<Orden> buscarPorStripeSessionId(String stripeSessionId) {
         return repository.findByStripeSessionId(stripeSessionId).map(this::toDomain);
     }
 
     @Override
+    public Optional<Orden> buscarPorStripePaymentIntentId(String stripePaymentIntentId) {
+        return repository.findByStripePaymentIntentId(stripePaymentIntentId).map(this::toDomain);
+    }
+
+    @Override
     public Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId) {
         return repository.findByIzipayTransactionId(izipayTransactionId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorClaveIdempotencia(String claveIdempotencia) {
+        if (claveIdempotencia == null || claveIdempotencia.isBlank()) return Optional.empty();
+        return repository.findByClaveIdempotencia(claveIdempotencia.trim()).map(this::toDomain);
     }
 
     @Override
@@ -63,7 +90,31 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         if (orden.isPresent()) return orden;
 
         // 4. Buscar por stripeSessionId
-        return repository.findByStripeSessionId(id).map(this::toDomain);
+        orden = repository.findByStripeSessionId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 5. Buscar por stripePaymentIntentId
+        return repository.findByStripePaymentIntentId(id).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorAbonoBancario(String bancoDestino, String cuentaDestino, String numeroOperacion) {
+        if (bancoDestino == null || cuentaDestino == null || numeroOperacion == null) return Optional.empty();
+        List<OrdenEntity> matches = repository.findAbonosBancariosPagados(
+                bancoDestino.trim(),
+                cuentaDestino.trim(),
+                numeroOperacion.trim()
+        );
+        return matches.isEmpty() ? Optional.empty() : Optional.of(toDomain(matches.get(0)));
+    }
+
+    @Override
+    public List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado) {
+        if (numeroOperacionNormalizado == null || numeroOperacionNormalizado.isBlank()) {
+            return List.of();
+        }
+        return repository.findAbonosHistoricosCandidatos(numeroOperacionNormalizado.trim().toUpperCase())
+                .stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -103,6 +154,21 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .nombreFacturacion(d.getNombreFacturacion())
                 .numeroOperacion(d.getNumeroOperacion())
                 .notasAdmin(d.getNotasAdmin())
+                .claveIdempotencia(d.getClaveIdempotencia())
+                .guestSessionHash(d.getGuestSessionHash())
+                .bancoDestino(d.getBancoDestino())
+                .cuentaDestino(d.getCuentaDestino())
+                .montoVerificado(d.getMontoVerificado())
+                .monedaVerificada(d.getMonedaVerificada())
+                .fechaAbono(d.getFechaAbono())
+                .aprobadoPor(d.getAprobadoPor())
+                .fechaAprobacion(d.getFechaAprobacion())
+                .observacionVerificacion(d.getObservacionVerificacion())
+                .estadoAprovisionamiento(d.getEstadoAprovisionamiento())
+                .aprovisionamientoLeaseToken(d.getAprovisionamientoLeaseToken())
+                .aprovisionamientoLeaseExpiresAt(d.getAprovisionamientoLeaseExpiresAt())
+                .aprovisionamientoIntentos(d.getAprovisionamientoIntentos())
+                .aprovisionamientoUltimoError(d.getAprovisionamientoUltimoError())
                 .build();
 
         if (d.getItems() != null) {
@@ -110,7 +176,6 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
             for (DetalleOrden item : d.getItems()) {
                 itemEntities.add(DetalleOrdenEntity.builder()
                         .idDetalle(item.getIdDetalle())
-                        .idOrden(d.getIdOrden())
                         .orden(entity)
                         .idPrograma(item.getIdPrograma())
                         .precioUnitario(item.getPrecioUnitario())
@@ -163,6 +228,21 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .nombreFacturacion(e.getNombreFacturacion())
                 .numeroOperacion(e.getNumeroOperacion())
                 .notasAdmin(e.getNotasAdmin())
+                .claveIdempotencia(e.getClaveIdempotencia())
+                .guestSessionHash(e.getGuestSessionHash())
+                .bancoDestino(e.getBancoDestino())
+                .cuentaDestino(e.getCuentaDestino())
+                .montoVerificado(e.getMontoVerificado())
+                .monedaVerificada(e.getMonedaVerificada())
+                .fechaAbono(e.getFechaAbono())
+                .aprobadoPor(e.getAprobadoPor())
+                .fechaAprobacion(e.getFechaAprobacion())
+                .observacionVerificacion(e.getObservacionVerificacion())
+                .estadoAprovisionamiento(e.getEstadoAprovisionamiento())
+                .aprovisionamientoLeaseToken(e.getAprovisionamientoLeaseToken())
+                .aprovisionamientoLeaseExpiresAt(e.getAprovisionamientoLeaseExpiresAt())
+                .aprovisionamientoIntentos(e.getAprovisionamientoIntentos())
+                .aprovisionamientoUltimoError(e.getAprovisionamientoUltimoError())
                 .items(items)
                 .build();
     }

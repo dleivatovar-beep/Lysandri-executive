@@ -1,4 +1,4 @@
-import { apiClient, API_BASE_URL, API_V1_URL, isJwtExpired } from './api';
+import { apiClient, API_BASE_URL, API_V1_URL, isJwtExpired } from './api.ts';
 import axios from 'axios';
 
 export interface CheckoutResponse {
@@ -10,6 +10,7 @@ export interface CheckoutResponse {
   izipayTransactionId?: string;
   stripeCheckoutUrl?: string;
   stripeSessionId?: string;
+  guestSessionToken?: string;
 }
 
 export interface DirectCheckoutPayload {
@@ -23,6 +24,8 @@ export interface DirectCheckoutPayload {
   nombreFacturacion?: string;
   metodoPago?: 'IZIPAY' | 'TARJETA' | 'STRIPE' | 'YAPE' | 'PLIN' | 'TRANSFERENCIA' | string;
   numeroOperacion?: string;
+  claveIdempotencia?: string;
+  guestSessionToken?: string;
 }
 
 export interface RagCitation {
@@ -68,6 +71,15 @@ export interface OrdenResponse {
   nombreFacturacion?: string;
   numeroOperacion?: string;
   notasAdmin?: string;
+  // Campos de verificación bancaria y auditoría
+  bancoDestino?: string;
+  cuentaDestino?: string;
+  montoVerificado?: number;
+  monedaVerificada?: string;
+  fechaAbono?: string;
+  aprobadoPor?: string;
+  fechaAprobacion?: string;
+  observacionVerificacion?: string;
   usuario?: {
     idUser?: number;
     email?: string;
@@ -76,6 +88,31 @@ export interface OrdenResponse {
     moodleUserId?: number;
   };
   items?: OrdenDetalleItem[];
+}
+
+export interface CuentaBancariaAprobada {
+  id: string;
+  banco: string;
+  titular: string;
+  moneda: string;
+  tipoCuenta: string;
+  numeroCuenta?: string;
+  cci?: string;
+  activo: boolean;
+  estado: string;
+  instrucciones?: string;
+}
+
+export interface ConfirmarPagoManualPayload {
+  numeroOperacion: string;
+  bancoDestino: string;
+  cuentaDestino: string;
+  montoVerificado: number;
+  monedaVerificada: string;
+  fechaAbono: string; // Formato ISO 8601 ej. 2026-10-28T00:00:00Z o YYYY-MM-DDTHH:mm:ssZ
+  metodoPago?: string;
+  notasAdmin?: string;
+  observacionVerificacion?: string;
 }
 
 export interface ColaboradorNominaItem {
@@ -143,74 +180,200 @@ export interface OrderConfirmation {
   tipoComprobanteSolicitado?: string;
 }
 
+export interface CheckoutIntent {
+  claveIdempotencia: string;
+  programId: number;
+  buyerScope: string;
+  email: string;
+  nombreCompleto: string;
+  tipoComprobante: 'BOLETA' | 'FACTURA';
+  numeroDocumento: string;
+  nombreFacturacion?: string;
+  metodoPago: string;
+  codigoOrden?: string;
+  guestSessionToken?: string;
+  status: 'PENDIENTE' | 'REGISTRADA';
+  createdAt: number;
+}
+
 export const storeService = {
+  /**
+   * Obtiene el ámbito del comprador para aislar la clave de idempotencia
+   * evitando colisiones entre distintos usuarios en navegadores compartidos.
+   */
+  getBuyerScope(user: any, email?: string): string {
+    const userId = user?.id ?? user?.idUser;
+    if (userId) {
+      return `user_${userId}`;
+    }
+    const clean = (email || user?.email || '').trim().toLowerCase();
+    if (clean) {
+      return `guest_${clean}`;
+    }
+    return 'guest_anonymous';
+  },
+
+  /**
+   * Recupera el estado de un intento de checkout desde sessionStorage.
+   */
+  getCheckoutIntent(buyerScope: string, programId: number): CheckoutIntent | null {
+    if (typeof window === 'undefined' || !window.sessionStorage) return null;
+    try {
+      const key = `lysandri_checkout_intent_${buyerScope}_${programId}`;
+      const raw = window.sessionStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw) as CheckoutIntent;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Persiste el estado de un intento de checkout en sessionStorage.
+   */
+  saveCheckoutIntent(intent: CheckoutIntent): void {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    try {
+      const key = `lysandri_checkout_intent_${intent.buyerScope}_${intent.programId}`;
+      window.sessionStorage.setItem(key, JSON.stringify(intent));
+    } catch (e) {
+      console.warn('No se pudo guardar el intento de checkout en sessionStorage', e);
+    }
+  },
+
+  /**
+   * Limpia el estado de un intento de checkout en sessionStorage.
+   */
+  clearCheckoutIntent(buyerScope: string, programId: number): void {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    try {
+      const key = `lysandri_checkout_intent_${buyerScope}_${programId}`;
+      window.sessionStorage.removeItem(key);
+    } catch (e) {
+      console.warn('No se pudo limpiar el intento de checkout en sessionStorage', e);
+    }
+  },
+
+  /**
+   * Obtiene o genera una clave de idempotencia vinculada al comprador y programa.
+   */
+  getOrCreateIdempotencyKey(buyerScope: string, programId: number): string {
+    const existing = this.getCheckoutIntent(buyerScope, programId);
+    if (existing && existing.claveIdempotencia) {
+      return existing.claveIdempotencia;
+    }
+    const newKey = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `ord-${buyerScope}-${programId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    return newKey;
+  },
+
+  /**
+   * Obtiene o establece un token seguro de sesión de compra para invitados antes de enviar la compra al backend.
+   * No silencia errores ni devuelve cadenas vacías; arroja un error descriptivo si no es posible autenticar la sesión.
+   */
+  async getOrCreateGuestSession(email: string, buyerScope: string, programId: number): Promise<string> {
+    const existing = this.getCheckoutIntent(buyerScope, programId);
+    if (existing && existing.guestSessionToken) {
+      return existing.guestSessionToken;
+    }
+    const cleanEmail = email ? email.trim() : '';
+    if (!cleanEmail) {
+      throw new Error('Debe proporcionar un correo electrónico válido para iniciar la sesión de compra.');
+    }
+    try {
+      const res = await axios.post<{ guestSessionToken: string }>(
+        `${API_BASE_URL}/api/v1/orders/guest-session`,
+        { email: cleanEmail },
+        { timeout: 5000 }
+      );
+      if (res.data?.guestSessionToken && res.data.guestSessionToken.trim().length > 0) {
+        return res.data.guestSessionToken.trim();
+      }
+      throw new Error('El servidor no retornó una credencial de sesión válida.');
+    } catch (err: any) {
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error('Tiempo de espera agotado al conectar con el servidor para iniciar la sesión de compra. Intente nuevamente.');
+      }
+      const mensajeServidor = err.response?.data?.message || err.response?.data?.error;
+      throw new Error(mensajeServidor || err.message || 'No se pudo obtener una sesión segura de compra. Verifique su conexión e intente nuevamente.');
+    }
+  },
+
+  /**
+   * Registra una orden de compra en el backend y obtiene la sesión de checkout
+   * o el código de orden registrado para pagos manuales.
+   * No fabrica respuestas ficticias ante errores de red.
+   */
   async createCheckoutSession(payload: DirectCheckoutPayload): Promise<CheckoutResponse> {
     try {
+      const headers: Record<string, string> = {};
+      if (payload.claveIdempotencia) {
+        headers['X-Idempotency-Key'] = payload.claveIdempotencia;
+      }
+      if (payload.guestSessionToken) {
+        headers['X-Guest-Session-Token'] = payload.guestSessionToken;
+      }
       const res = await axios.post<CheckoutResponse>(
         `${API_BASE_URL}/api/v1/orders/create-checkout-session`,
         payload,
-        { timeout: 5000 }
+        { headers, timeout: 10000 }
       );
       return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        const testSessionId = `izisess_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        const testOrderCode = `ORD-${Date.now().toString().slice(-6)}`;
-
-        try {
-          sessionStorage.setItem(
-            `order_session_${testSessionId}`,
-            JSON.stringify({
-              codigoOrden: testOrderCode,
-              programaTitulo: payload.programaTitulo || 'Director de Operaciones & Transformación Digital con IA',
-              email: payload.email,
-              nombreCompleto: payload.nombreCompleto,
-              telefono: payload.telefono,
-              tipoComprobante: payload.tipoComprobante,
-              numeroDocumento: payload.numeroDocumento,
-              nombreFacturacion: payload.nombreFacturacion || payload.nombreCompleto,
-              metodoPago: payload.metodoPago || 'IZIPAY',
-              fechaPago: new Date().toISOString(),
-            })
-          );
-        } catch (e) {
-          console.warn('No se pudo guardar la sesión de compra en storage', e);
-        }
-
-        return {
-          codigoOrden: testOrderCode,
-          sessionId: testSessionId,
-          izipayTransactionId: `izitx_${Date.now()}`,
-          checkoutUrl: `/checkout/success?session_id=${testSessionId}&email=${encodeURIComponent(payload.email)}`,
-          stripeSessionId: testSessionId,
-          stripeCheckoutUrl: `/checkout/success?session_id=${testSessionId}&email=${encodeURIComponent(payload.email)}`,
-        };
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error(
+          'Tiempo de espera agotado al conectar con el servidor. No se pudo confirmar la creación de la orden. Por favor verifica antes de reintentar.'
+        );
+      }
+      if (!err.response) {
+        throw new Error(
+          'No se pudo conectar con el servidor para registrar la orden. Por favor verifica tu conexión a internet.'
+        );
+      }
+      if (err.response.status === 409) {
+        const serverMsg = err.response.data?.message || err.response.data?.error || '';
+        throw new Error(
+          serverMsg ||
+            'Conflicto de idempotencia: Los datos de la compra difieren de un intento anterior registrado con esta misma clave. Inicia una nueva orden para actualizar los datos.'
+        );
+      }
+      if (err.response.status === 403) {
+        const serverMsg = err.response.data?.message || err.response.data?.error || '';
+        throw new Error(
+          serverMsg || 'Acceso denegado: La clave de compra pertenece a otro comprador o usuario.'
+        );
       }
       throw err;
     }
   },
 
+  /**
+   * Inicia el checkout desde el carrito de compras.
+   */
   async checkout(programaIds: number[]): Promise<CheckoutResponse> {
     try {
-      const res = await apiClient.post<CheckoutResponse>('/orders/checkout', { programaIds }, { timeout: 5000 });
+      const res = await apiClient.post<CheckoutResponse>(
+        '/orders/checkout',
+        { programaIds },
+        { timeout: 10000 }
+      );
       return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        const testSessionId = `izisess_cart_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-        const testOrderCode = `ORD-${Date.now().toString().slice(-6)}`;
-        return {
-          codigoOrden: testOrderCode,
-          sessionId: testSessionId,
-          izipayTransactionId: `izitx_${Date.now()}`,
-          checkoutUrl: `/checkout/success?session_id=${testSessionId}`,
-          stripeSessionId: testSessionId,
-          stripeCheckoutUrl: `/checkout/success?session_id=${testSessionId}`,
-        };
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error('Tiempo de espera agotado al procesar el checkout en el servidor.');
+      }
+      if (!err.response) {
+        throw new Error('No se pudo conectar con el servidor para iniciar el checkout.');
       }
       throw err;
     }
   },
 
+  /**
+   * Confirma el pago de una orden online mediante el identificador de sesión.
+   * Refleja el estado real devuelto por el backend sin simular matrículas exitosas.
+   */
   async confirmarPago(sessionId: string): Promise<OrderConfirmation> {
     const token = localStorage.getItem('lysandri_token');
     const headers: Record<string, string> = {};
@@ -218,59 +381,85 @@ export const storeService = {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    let storedData: any = null;
-    try {
-      const raw = sessionStorage.getItem(`order_session_${sessionId}`);
-      if (raw) storedData = JSON.parse(raw);
-    } catch {}
-
-    const userEmail = storedData?.email || 'ejecutivo@empresa.com';
-    const cleanUsername = userEmail.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'estudiante.lysandri';
-
     try {
       const res = await axios.post<OrderConfirmation>(
         `${API_V1_URL}/orders/confirm/${sessionId}`,
         {},
-        { headers, timeout: 5000 }
+        { headers, timeout: 15000 }
       );
-      const data = res.data;
-      return {
-        ...data,
-        moodleMatriculaSincronizada: true,
-        moodleUsername: data.moodleUsername || cleanUsername,
-        moodlePassword: data.moodlePassword || 'Lysandri2026!',
-        moodleCourseTitle: data.moodleCourseTitle || storedData?.programaTitulo || 'Director de Operaciones & Transformación Digital con IA',
-        moodleCampusUrl: 'https://campus.yunixingenieros.com',
-      };
+      return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        return {
-          idOrden: Date.now(),
-          codigoOrden: storedData?.codigoOrden || `ORD-${sessionId.slice(-6).toUpperCase()}`,
-          estadoOrden: 'PAGADO',
-          total: 899.0,
-          moneda: 'USD',
-          moodleMatriculaSincronizada: true,
-          moodleUsername: cleanUsername,
-          moodlePassword: 'Lysandri2026!',
-          moodleCourseTitle: storedData?.programaTitulo || 'Director de Operaciones & Transformación Digital con IA',
-          moodleCampusUrl: 'https://campus.yunixingenieros.com',
-          fechaPago: new Date().toISOString(),
-          usuario: {
-            email: userEmail,
-            nombreCompleto: storedData?.nombreCompleto || 'Danny Ronaldo Leiva Tovar',
-            nombres: storedData?.nombreCompleto?.split(' ')[0] || 'Danny',
-            apellidos: storedData?.nombreCompleto?.split(' ').slice(1).join(' ') || 'Leiva Tovar',
-          },
-          numeroDocumentoCliente: storedData?.numeroDocumento || '72283339',
-          nombreFacturacion: storedData?.nombreFacturacion || 'Danny Ronaldo Leiva Tovar',
-          tipoComprobanteSolicitado: storedData?.tipoComprobante || 'BOLETA',
-        };
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error(
+          'Tiempo de espera agotado al confirmar el pago en el servidor. Por favor verifica el estado de tu orden antes de realizar un nuevo intento.'
+        );
+      }
+      if (!err.response) {
+        throw new Error(
+          'No se pudo conectar con el servidor para verificar el estado de la orden. Si el cargo fue realizado en tu banco, consulta a soporte con tu identificador de sesión.'
+        );
       }
       throw err;
     }
   },
 
+  /**
+   * Consulta las cuentas bancarias oficiales configuradas en el backend.
+   */
+  async obtenerCuentasBancarias(): Promise<CuentaBancariaAprobada[]> {
+    const token = localStorage.getItem('lysandri_token');
+    const headers: Record<string, string> = {};
+    if (token && !isJwtExpired(token)) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const res = await axios.get<CuentaBancariaAprobada[]>(
+        `${API_V1_URL}/orders/cuentas-bancarias`,
+        { headers, timeout: 8000 }
+      );
+      return res.data;
+    } catch (err: any) {
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error('Tiempo de espera agotado al consultar cuentas bancarias oficiales.');
+      }
+      if (!err.response) {
+        throw new Error('No se pudo conectar con el servidor para obtener las cuentas bancarias.');
+      }
+      throw err;
+    }
+  },
+
+  /**
+   * Obtiene los detalles de una orden por su código oficial (ej. ORD-123456).
+   */
+  async obtenerOrdenPorCodigo(codigo: string): Promise<OrdenResponse> {
+    const token = localStorage.getItem('lysandri_token');
+    const headers: Record<string, string> = {};
+    if (token && !isJwtExpired(token)) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const res = await axios.get<OrdenResponse>(
+        `${API_V1_URL}/orders/${codigo}`,
+        { headers, timeout: 8000 }
+      );
+      return res.data;
+    } catch (err: any) {
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error(`Tiempo de espera agotado al consultar la orden ${codigo}.`);
+      }
+      if (!err.response) {
+        throw new Error('No se pudo conectar con el servidor para consultar la orden.');
+      }
+      throw err;
+    }
+  },
+
+  /**
+   * Consulta el asistente RAG ejecutivo (FAQ y orientación).
+   */
   consultarAsistenteRag(
     pregunta: string,
     idPrograma?: number,
@@ -329,6 +518,10 @@ export const storeService = {
       });
   },
 
+  /**
+   * Lista las órdenes registradas en el backend con filtros opcionales.
+   * No devuelve órdenes falsas si falla la conexión.
+   */
   async listarOrdenes(estado?: string, search?: string): Promise<OrdenResponse[]> {
     const token = localStorage.getItem('lysandri_token');
     const headers: Record<string, string> = {};
@@ -344,91 +537,28 @@ export const storeService = {
       const res = await axios.get<OrdenResponse[]>(`${API_V1_URL}/orders`, {
         headers,
         params,
-        timeout: 7000,
+        timeout: 10000,
       });
       return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        return [
-          {
-            idOrden: 1,
-            codigoOrden: 'ORD-YAPE-9482',
-            fechaOrden: new Date(Date.now() - 3600000).toISOString(),
-            estadoOrden: 'PENDIENTE_PAGO',
-            total: 899.0,
-            moneda: 'USD',
-            metodoPago: 'YAPE',
-            moodleMatriculaSincronizada: false,
-            tipoComprobanteSolicitado: 'FACTURA',
-            numeroDocumentoCliente: '20608912345',
-            nombreFacturacion: 'Inversiones & Consultoría Andina SAC',
-            numeroOperacion: 'OP-983172',
-            notasAdmin: 'Constancia enviada por WhatsApp al área comercial',
-            usuario: {
-              idUser: 12,
-              nombres: 'Eduardo',
-              apellidos: 'Vásquez',
-              email: 'evasquez@inversionesandina.pe',
-            },
-            items: [
-              {
-                idDetalle: 1,
-                idPrograma: 1,
-                precioUnitario: 899.0,
-                subtotal: 899.0,
-                programa: {
-                  idPrograma: 1,
-                  titulo: 'Director de Operaciones & Transformación Digital con IA',
-                  precio: 899.0,
-                  moodleCourseId: 101,
-                },
-              },
-            ],
-          },
-          {
-            idOrden: 2,
-            codigoOrden: 'ORD-TRF-5120',
-            fechaOrden: new Date(Date.now() - 7200000).toISOString(),
-            estadoOrden: 'PENDIENTE_PAGO',
-            total: 1200.0,
-            moneda: 'USD',
-            metodoPago: 'TRANSFERENCIA',
-            moodleMatriculaSincronizada: false,
-            tipoComprobanteSolicitado: 'BOLETA',
-            numeroDocumentoCliente: '45892134',
-            nombreFacturacion: 'Carla Mendoza Pinedo',
-            numeroOperacion: 'BCP-002847192',
-            notasAdmin: 'Transferencia interbancaria BCP Telecrédito',
-            usuario: {
-              idUser: 14,
-              nombres: 'Carla',
-              apellidos: 'Mendoza Pinedo',
-              email: 'cmendoza@corporativo.com',
-            },
-            items: [
-              {
-                idDetalle: 2,
-                idPrograma: 2,
-                precioUnitario: 1200.0,
-                subtotal: 1200.0,
-                programa: {
-                  idPrograma: 2,
-                  titulo: 'Ciberseguridad Práctica & Gestión de Riesgos Tecnológicos',
-                  precio: 1200.0,
-                  moodleCourseId: 102,
-                },
-              },
-            ],
-          },
-        ];
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error('Tiempo de espera agotado al listar las órdenes desde el servidor.');
+      }
+      if (!err.response) {
+        throw new Error('No se pudo conectar con el servidor para obtener el listado de órdenes.');
       }
       throw err;
     }
   },
 
+  /**
+   * Aprobación administrativa de transferencias manuales (BCP, Interbank, etc.).
+   * Requiere rol interno autorizado y datos completos de verificación bancaria.
+   * No inventa aprobaciones ni estados PAGADO en caso de fallo.
+   */
   async confirmarPagoManual(
     idOrden: number,
-    payload?: { numeroOperacion?: string; metodoPago?: string; notasAdmin?: string }
+    payload: ConfirmarPagoManualPayload
   ): Promise<OrdenResponse> {
     const token = localStorage.getItem('lysandri_token');
     const headers: Record<string, string> = {};
@@ -439,31 +569,32 @@ export const storeService = {
     try {
       const res = await axios.post<OrdenResponse>(
         `${API_V1_URL}/orders/${idOrden}/confirmar-pago-manual`,
-        payload || {},
-        { headers, timeout: 10000 }
+        payload,
+        { headers, timeout: 15000 }
       );
       return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        return {
-          idOrden,
-          codigoOrden: `ORD-APROBADA-${idOrden}`,
-          fechaOrden: new Date().toISOString(),
-          estadoOrden: 'PAGADO',
-          total: 899.0,
-          moneda: 'USD',
-          metodoPago: payload?.metodoPago || 'YAPE',
-          moodleMatriculaSincronizada: true,
-          fechaPago: new Date().toISOString(),
-          tipoComprobanteSolicitado: 'BOLETA',
-          numeroOperacion: payload?.numeroOperacion || 'OP-VERIFICADA',
-          notasAdmin: payload?.notasAdmin || 'Pago verificado manualmente por administración',
-        };
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error(
+          'Tiempo de espera agotado al confirmar el pago en el servidor. La transacción pudo haber quedado en proceso. Por favor verifica el estado de la orden antes de reintentar.'
+        );
+      }
+      if (!err.response) {
+        throw new Error(
+          'No se pudo conectar con el servidor para confirmar el abono. Verifica la conectividad de red.'
+        );
+      }
+      if (err.response?.data?.message) {
+        throw new Error(err.response.data.message);
       }
       throw err;
     }
   },
 
+  /**
+   * Matrícula masiva corporativa para nóminas empresariales.
+   * No devuelve estados ficticios de éxito cuando el backend falla.
+   */
   async matricularNominaCorporativa(payload: MatricularNominaRequest): Promise<MatriculaNominaResponse> {
     const token = localStorage.getItem('lysandri_token');
     const headers: Record<string, string> = {};
@@ -475,37 +606,19 @@ export const storeService = {
       const res = await axios.post<MatriculaNominaResponse>(
         `${API_V1_URL}/corporativo/matricular-nomina`,
         payload,
-        { headers, timeout: 20000 }
+        { headers, timeout: 25000 }
       );
       return res.data;
     } catch (err: any) {
-      if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        const resultados: MatriculaColaboradorResultado[] = payload.colaboradores.map((c, i) => {
-          const usr = c.email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '') || `colab_${i + 1}`;
-          return {
-            email: c.email,
-            nombres: c.nombres,
-            apellidos: c.apellidos,
-            cargo: c.cargo,
-            exitoso: true,
-            moodleUserId: 800 + i,
-            moodleUsername: usr,
-            contrasenaGenerada: `Lysandri${Math.floor(1000 + Math.random() * 9000)}!`,
-            matriculadoEnCurso: true,
-          };
-        });
-
-        return {
-          idLote: Date.now(),
-          empresaNombre: payload.empresaNombre,
-          idPrograma: payload.idPrograma,
-          programaTitulo: 'Programa Ejecutivo In-Company',
-          totalProcesados: payload.colaboradores.length,
-          totalExitosos: payload.colaboradores.length,
-          totalFallidos: 0,
-          resultados,
-          mensaje: `Matrícula masiva completada con éxito para la empresa ${payload.empresaNombre}. Se sincronizaron ${payload.colaboradores.length} accesos con el Campus Moodle.`,
-        };
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error(
+          'Tiempo de espera agotado al procesar la nómina corporativa. Por favor verifica el estado del lote en el panel administrativo antes de reintentar.'
+        );
+      }
+      if (!err.response) {
+        throw new Error(
+          'No se pudo conectar con el servidor para matricular la nómina corporativa.'
+        );
       }
       throw err;
     }

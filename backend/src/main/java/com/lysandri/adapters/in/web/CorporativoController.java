@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +23,8 @@ public class CorporativoController {
     private final MatriculaCorporativaUseCase matriculaCorporativaUseCase;
 
     @PostMapping("/matricular-nomina")
-    @Operation(summary = "Matricula en lote a la nómina de colaboradores de una empresa en el Campus Moodle")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Matricula en lote a la nómina de colaboradores de una empresa en el Campus Moodle (solo administradores)")
     public ResponseEntity<MatriculaCorporativaUseCase.MatriculaNominaResponse> matricularNomina(
             @Valid @RequestBody MatricularNominaRequest request) {
 

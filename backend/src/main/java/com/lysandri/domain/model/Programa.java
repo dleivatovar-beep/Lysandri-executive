@@ -29,5 +29,7 @@ public class Programa {
     private String nivel;
     private Integer duracionHoras;
     private boolean activo;
+    private boolean precioAprobado;
+    private boolean esGratuito;
     private OffsetDateTime fechaCreacion;
 }

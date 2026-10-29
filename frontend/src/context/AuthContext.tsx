@@ -29,6 +29,10 @@ interface AuthContextValue {
   register: (
     data: RegisterRequest,
   ) => Promise<AuthUser>;
+  activarCuenta: (
+    token: string,
+    password: string,
+  ) => Promise<AuthUser>;
   logout: () => void;
   setSessionUser: (user: AuthUser, token?: string) => void;
 }
@@ -152,6 +156,15 @@ export const AuthProvider: React.FC<
     return saveSession(response);
   };
 
+  const activarCuenta = async (
+    token: string,
+    password: string,
+  ): Promise<AuthUser> => {
+    const response = await authService.activarCuenta(token, password);
+
+    return saveSession(response);
+  };
+
   const logout = () => {
     clearSession();
   };
@@ -174,6 +187,7 @@ export const AuthProvider: React.FC<
       isLoading,
       login,
       register,
+      activarCuenta,
       logout,
       setSessionUser,
     }),
