@@ -271,40 +271,57 @@ public class OrderFinancialTransactionService {
             throw new IllegalArgumentException("No se puede resolver con certeza el destino del abono bancario. " + iae.getMessage(), iae);
         }
 
-        // 7. Búsqueda y protección contra reutilización de abonos históricos con variantes
-        // Busca todas las órdenes PAGADAS cuyo número de operación normalizado coincida
-        List<Orden> candidatosHistoricos = orderRepository.buscarAbonosHistoricosPorOperacion(nroOp);
+        // Serializa aprobaciones distintas que comparten número de operación; el lock vive
+        // hasta que termina esta transacción y permite que la segunda vea el commit de la primera.
+        orderRepository.bloquearAbonoBancario(nroOp);
 
-        List<Orden> abonosCoincidentes = candidatosHistoricos.stream().filter(candidato -> {
-            boolean bancoMatch = com.lysandri.config.CuentasBancariasProperties.esAliasDeEntidad(candidato.getBancoDestino(), destino.entidadCanonica())
-                    || com.lysandri.config.CuentasBancariasProperties.esAliasDeEntidad(candidato.getBancoDestino(), command.bancoDestino());
-            boolean cuentaMatch = com.lysandri.config.CuentasBancariasProperties.coincideConCuentaOCI(candidato.getCuentaDestino(), destino.cuentaCanonica(), destino.cciCanonico())
-                    || com.lysandri.config.CuentasBancariasProperties.coincideConCuentaOCI(candidato.getCuentaDestino(), command.cuentaDestino(), null);
-            return bancoMatch && cuentaMatch;
-        }).toList();
+        // 7. Clasificar todos los registros históricos candidatos sin asumir que una cuenta
+        // desconocida es distinta ni reinterpretarla mediante la configuración bancaria actual.
+        List<Orden> candidatosHistoricos = orderRepository.buscarAbonosHistoricosPorOperacion(nroOp);
+        List<CandidatoHistorico> clasificados = candidatosHistoricos.stream()
+                .map(candidato -> new CandidatoHistorico(
+                        candidato,
+                        clasificarDestinoHistorico(candidato, destino)
+                ))
+                .toList();
+        List<Orden> abonosCoincidentes = clasificados.stream()
+                .filter(candidato -> candidato.clasificacion() == ClasificacionDestino.MISMO_DESTINO)
+                .map(CandidatoHistorico::orden)
+                .toList();
+        List<Orden> abonosInciertos = clasificados.stream()
+                .filter(candidato -> candidato.clasificacion() == ClasificacionDestino.DESTINO_INCIERTO)
+                .map(CandidatoHistorico::orden)
+                .toList();
+
+        if (!abonosInciertos.isEmpty()) {
+            List<Long> ids = abonosInciertos.stream().map(Orden::getIdOrden).distinct().toList();
+            log.error("ABONO HISTÓRICO REQUIERE REVISIÓN ADMINISTRATIVA: operación normalizada={}, orden nueva={}, órdenes candidatas inciertas={}",
+                    nroOp, ordenBloqueada.getIdOrden(), ids);
+            throw new IllegalStateException("Conflicto por abono histórico ambiguo. La aprobación automática está bloqueada y requiere revisión administrativa. Referencias internas: "
+                    + ids);
+        }
 
         // 7.1 Caso de colisión / ambigüedad entre registros históricos:
         // Si dos o más registros históricos pagados distintos convergen al mismo identificador normalizado, bloquear y auditar
         long distinctOrdersCount = abonosCoincidentes.stream().map(Orden::getIdOrden).distinct().count();
         if (distinctOrdersCount > 1) {
-            String codigos = abonosCoincidentes.stream().map(Orden::getCodigoOrden).distinct().collect(java.util.stream.Collectors.joining(", "));
-            log.error("ANOMALÍA CONTABLE AUDITADA: Se detectaron múltiples órdenes históricas pagadas convergentes ({}) con la misma operación bancaria {} en entidad {}. Operación bloqueada para revisión manual.",
-                    codigos, nroOp, destino.entidadCanonica());
-            throw new IllegalStateException("Conflicto por ambigüedad contable: existen múltiples registros históricos pagados ("
-                    + codigos + ") que convergen a la misma operación bancaria " + nroOp + " en " + destino.entidadCanonica()
-                    + ". Se requiere intervención manual y auditoría administrativa.");
+            List<Long> ids = abonosCoincidentes.stream().map(Orden::getIdOrden).distinct().toList();
+            log.error("COLISIÓN HISTÓRICA DE ABONOS: operación normalizada={}, órdenes pagadas convergentes={}",
+                    nroOp, ids);
+            throw new IllegalStateException("Conflicto por colisión de abono histórico. La aprobación está bloqueada y requiere revisión administrativa. Referencias internas: "
+                    + ids);
         }
 
         // 7.2 Si existe exactamente un registro coincidente y pertenece a otra orden: rechazar por reutilización de abono
         if (!abonosCoincidentes.isEmpty()) {
             Orden existente = abonosCoincidentes.get(0);
             if (!existente.getIdOrden().equals(ordenBloqueada.getIdOrden())) {
-                log.warn("Rechazo por abono duplicado con variantes históricas: El abono [banco: {}, cuenta: {}, op: {}] ya fue aplicado a la orden {} (registrado como banco: '{}', cuenta: '{}')",
-                        destino.entidadCanonica(), destino.cuentaCanonica(), nroOp, existente.getCodigoOrden(), existente.getBancoDestino(), existente.getCuentaDestino());
-                throw new IllegalStateException("El abono bancario [banco: " + destino.entidadCanonica() + ", cuenta: " + destino.cuentaCanonica()
-                        + ", operación: " + nroOp + "] ya fue utilizado para pagar la orden " + existente.getCodigoOrden()
-                        + " (registrado con variante banco: '" + existente.getBancoDestino() + "', cuenta: '" + existente.getCuentaDestino() + "')");
+                log.warn("Rechazo por abono ya aplicado: orden nueva={}, orden pagada existente={}, operación normalizada={}",
+                        ordenBloqueada.getIdOrden(), existente.getIdOrden(), nroOp);
+                throw new IllegalStateException("El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: "
+                        + existente.getIdOrden());
             }
+
         }
 
         // 7.3 Verificación tradicional por abono canónico exacto como salvaguarda adicional
@@ -372,6 +389,48 @@ public class OrderFinancialTransactionService {
             throw new IllegalStateException("Conflicto de concurrencia: el abono bancario ya fue registrado por otra transacción simultánea.");
         }
     }
+
+    private ClasificacionDestino clasificarDestinoHistorico(
+            Orden candidato,
+            com.lysandri.config.CuentasBancariasProperties.DestinoCanonico destinoActual
+    ) {
+        String bancoHistorico = com.lysandri.config.CuentasBancariasProperties.normalizarIdentificador(candidato.getBancoDestino());
+        String cuentaHistorica = com.lysandri.config.CuentasBancariasProperties.normalizarIdentificador(candidato.getCuentaDestino());
+        String entidadHistorica = entidadCanonicaConocida(bancoHistorico);
+        if (entidadHistorica == null || cuentaHistorica.isBlank()) {
+            return ClasificacionDestino.DESTINO_INCIERTO;
+        }
+        if (!entidadHistorica.equals(destinoActual.entidadCanonica())) {
+            return ClasificacionDestino.DESTINO_DIFERENTE;
+        }
+
+        String cuentaActual = com.lysandri.config.CuentasBancariasProperties.normalizarIdentificador(destinoActual.cuentaCanonica());
+        String cciActual = com.lysandri.config.CuentasBancariasProperties.normalizarIdentificador(destinoActual.cciCanonico());
+        if (cuentaHistorica.equals(cuentaActual)
+                || (!cciActual.isBlank() && cuentaHistorica.equals(cciActual))) {
+            return ClasificacionDestino.MISMO_DESTINO;
+        }
+
+        return cuentaHistorica.matches("[0-9]{12,20}")
+                ? ClasificacionDestino.DESTINO_DIFERENTE
+                : ClasificacionDestino.DESTINO_INCIERTO;
+    }
+
+    private String entidadCanonicaConocida(String bancoNormalizado) {
+        if (com.lysandri.config.CuentasBancariasProperties.ALIASES_BCP.contains(bancoNormalizado)) return "BCP";
+        if (com.lysandri.config.CuentasBancariasProperties.ALIASES_INTERBANK.contains(bancoNormalizado)) return "INTERBANK";
+        if (com.lysandri.config.CuentasBancariasProperties.ALIASES_YAPE.contains(bancoNormalizado)) return "YAPE";
+        if (com.lysandri.config.CuentasBancariasProperties.ALIASES_PLIN.contains(bancoNormalizado)) return "PLIN";
+        return null;
+    }
+
+    private enum ClasificacionDestino {
+        MISMO_DESTINO,
+        DESTINO_DIFERENTE,
+        DESTINO_INCIERTO
+    }
+
+    private record CandidatoHistorico(Orden orden, ClasificacionDestino clasificacion) {}
 
     /**
      * Reserva de forma atómica y exclusiva el derecho de aprovisionar la orden.

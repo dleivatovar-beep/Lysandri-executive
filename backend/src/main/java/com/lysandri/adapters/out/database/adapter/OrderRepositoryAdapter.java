@@ -109,6 +109,12 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     }
 
     @Override
+    @Transactional
+    public void bloquearAbonoBancario(String numeroOperacionNormalizado) {
+        repository.lockManualPaymentOperation(numeroOperacionNormalizado);
+    }
+
+    @Override
     public List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado) {
         if (numeroOperacionNormalizado == null || numeroOperacionNormalizado.isBlank()) {
             return List.of();

@@ -1,0 +1,135 @@
+{
+  "fecha": "2026-10-26T07:13:51.315742+00:00",
+  "execution_id": "1792998831_339a93",
+  "jar_path": "target/lysandri-backend-1.0.0-SNAPSHOT.jar",
+  "jar_sha256": "b12822d62f97bc847ac824ec4d01685a3e50352cb824ede9ce4012ce5f48bae7",
+  "disposable_database": "lysandri_clone_disposable_1792998831_339a93",
+  "resources_created": {
+    "disposable_database": "lysandri_clone_disposable_1792998831_339a93",
+    "mock_moodle_port": 62089,
+    "mock_smtp_port": 62090,
+    "java_process_pid": 14988
+  },
+  "cleanup_status": {
+    "java_process_terminated": true,
+    "mock_moodle_stopped": true,
+    "mock_smtp_stopped": true,
+    "disposable_database_dropped": true,
+    "all_cleaned_successfully": true,
+    "pending_resources": []
+  },
+  "jwt_security": {
+    "jwt_secret_source": "Variable de entorno exclusiva (JWT_SECRET) sin fallback",
+    "jvm_arguments_sanitized": true,
+    "no_secret_in_command_line": true,
+    "fallback_absence_verified": true
+  },
+  "clone_integrity": {
+    "verified_directly": {
+      "database": "lysandri_clone_db",
+      "container": "lysandri-postgres-clone",
+      "port": 5434,
+      "snapshot_before": {
+        "mig_count": 28,
+        "tables_count": 29,
+        "cnt_usuario": 14,
+        "cnt_programa": 11,
+        "cnt_ordenes": 60,
+        "cnt_detalles": 0,
+        "cnt_comprobantes": 39,
+        "cnt_notificaciones": 0,
+        "cnt_audit_contable": 9,
+        "cnt_audit_usuario": 21
+      },
+      "snapshot_after": {
+        "mig_count": 28,
+        "tables_count": 29,
+        "cnt_usuario": 14,
+        "cnt_programa": 11,
+        "cnt_ordenes": 60,
+        "cnt_detalles": 0,
+        "cnt_comprobantes": 39,
+        "cnt_notificaciones": 0,
+        "cnt_audit_contable": 9,
+        "cnt_audit_usuario": 21
+      },
+      "identical": true
+    },
+    "inferred": "No se realizaron escrituras directas sobre el volumen físico fuera de las conexiones a la base desechable."
+  },
+  "checks": [
+    {
+      "id": "CHECK-01",
+      "name": "Arranque correcto del JAR",
+      "status": "PASS",
+      "details": "JAR inicializado en puerto 8080 en 9.26s respondiendo HTTP 200 a peticiones públicas."
+    },
+    {
+      "id": "CHECK-02",
+      "name": "Login válido e inválido",
+      "status": "PASS",
+      "details": "Autenticación exitosa (HTTP 200) para credenciales legítimas con emisión de token; rechazo (HTTP 401) para credenciales inválidas."
+    },
+    {
+      "id": "CHECK-03",
+      "name": "Rechazo sin token y por rol insuficiente",
+      "status": "PASS",
+      "details": "Petición anónima a recurso protegido rechazada con HTTP 401; petición con rol ESTUDIANTE a endpoint administrativo denegada con HTTP 403."
+    },
+    {
+      "id": "CHECK-04",
+      "name": "Acceso autorizado",
+      "status": "PASS",
+      "details": "Petición con rol ADMIN concedida con HTTP 200 retornando 18 usuarios."
+    },
+    {
+      "id": "CHECK-05",
+      "name": "Rechazo de usuario deshabilitado y de su token previo",
+      "status": "PASS",
+      "details": "Usuario con activo=false no puede iniciar sesión (HTTP 401) y su token previamente emitido queda invalidado de inmediato en peticiones subsecuentes (HTTP 401)."
+    },
+    {
+      "id": "CHECK-06",
+      "name": "Compra mediante HTTP",
+      "status": "PASS",
+      "details": "Orden de compra creada exitosamente mediante checkout HTTP con código 3347ea8b-a479-44fb-bbaf-c8a98757813c (id_orden: 61) en estado PENDIENTE."
+    },
+    {
+      "id": "CHECK-07",
+      "name": "Fallo Moodle 504 y persistencia de FALLIDO",
+      "status": "PASS",
+      "details": "Fallo upstream simulado HTTP 504 capturado: orden persiste irrevocablemente como PAGADO y aprovisionamiento como FALLIDO (error: Fallo en aprovisionamiento Moodle (HTTP 504 Gatewa...)."
+    },
+    {
+      "id": "CHECK-08",
+      "name": "Liberación de la reserva",
+      "status": "PASS",
+      "details": "Bloqueo transaccional aprovisionamiento_lease_token liberado inmediatamente (NULL) permitiendo reintentos limpios posteriores."
+    },
+    {
+      "id": "CHECK-09",
+      "name": "Recuperación a COMPLETADO",
+      "status": "PASS",
+      "details": "Tras restablecer Moodle a HTTP 200, el reintento transicionó el aprovisionamiento a COMPLETADO y sincronizado_moodle a true."
+    },
+    {
+      "id": "CHECK-10",
+      "name": "Ausencia de duplicados e idempotencia",
+      "status": "PASS",
+      "details": "Verificado 1 única orden, 1 ítem de detalle, 1 comprobante y 1 notificación. Segundo reintento ejecutó 0 llamadas extras a Moodle sin duplicación."
+    },
+    {
+      "id": "CHECK-11",
+      "name": "Recepción de correo en el servidor local",
+      "status": "PASS",
+      "details": "Servidor SMTP simulado en puerto 62090 retuvo 1 correo(s) transaccionales sin conexión a internet ni tráfico saliente real."
+    },
+    {
+      "id": "CHECK-12",
+      "name": "Detención de procesos y limpieza exclusiva de recursos propios",
+      "status": "PASS",
+      "details": "Proceso Java terminado, Moodle y SMTP simulados detenidos, base desechable eliminada y clon persistente 100% verificado intacto."
+    }
+  ],
+  "exit_code": 0
+}

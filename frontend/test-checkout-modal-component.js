@@ -1,634 +1,371 @@
-// ==============================================================================
-// PRUEBAS AUTOMATIZADAS DE LA PANTALLA REAL DE CHECKOUT (CheckoutModal.tsx)
-// ==============================================================================
-// EJECUTA DIRECTAMENTE EL CÓDIGO REAL DE PRODUCCIÓN DE LA INTERFAZ:
-// - frontend/src/components/marketplace/CheckoutModal.tsx
-// - frontend/src/services/storeService.ts
-//
-// Simulando exclusivamente los servicios externos (red HTTP con Axios y sessionStorage)
-// ==============================================================================
-
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { JSDOM } from 'jsdom';
 import esbuild from 'esbuild';
 import axios from 'axios';
 import React from 'react';
-import ReactDOMServer from 'react-dom/server';
 
-console.log('================================================================================');
-console.log('PRUEBAS AUTOMATIZADAS DE COMPONENTE REAL: CheckoutModal.tsx');
-console.log('================================================================================');
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+  url: 'http://localhost/',
+});
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+globalThis.HTMLElement = dom.window.HTMLElement;
+globalThis.Node = dom.window.Node;
+globalThis.MutationObserver = dom.window.MutationObserver;
+globalThis.getComputedStyle = dom.window.getComputedStyle;
+Object.defineProperty(globalThis, 'navigator', {
+  configurable: true,
+  value: dom.window.navigator,
+});
+Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
+  configurable: true,
+  value: true,
+  writable: true,
+});
 
-// 1. Configurar entorno simulado de navegador (DOM / Storage / Navigator)
-const storage = new Map();
-globalThis.sessionStorage = {
-  getItem: (k) => storage.get(k) || null,
-  setItem: (k, v) => storage.set(k, String(v)),
-  removeItem: (k) => storage.delete(k),
-  clear: () => storage.clear()
-};
-
-globalThis.localStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-  clear: () => {}
-};
-
-let lastOpenedUrl = null;
-globalThis.window = {
-  location: { href: '' },
-  open: (url) => { lastOpenedUrl = url; },
-  sessionStorage: globalThis.sessionStorage,
-  localStorage: globalThis.localStorage
-};
-
-try {
-  Object.defineProperty(globalThis.navigator, 'clipboard', {
-    value: { writeText: async (t) => t },
-    configurable: true
-  });
-} catch {
-  // Ignorar si navigator no es configurable
-}
-
-// 2. Interceptor de llamadas Axios para pruebas de servicio y UI
-let axiosPostMock = null;
-let axiosGetMock = null;
+const { cleanup, fireEvent, render, screen, waitFor } = await import('@testing-library/react');
 const originalPost = axios.post;
 const originalGet = axios.get;
+let postHandler;
+let getHandler;
+axios.post = (...args) => postHandler(...args);
+axios.get = (...args) => getHandler(...args);
 
-axios.post = async (url, data, config) => {
-  if (axiosPostMock) {
-    return axiosPostMock(url, data, config);
-  }
-  return originalPost(url, data, config);
+let currentAuthUser = null;
+globalThis.__mockAuthModule = {
+  useAuth: () => ({
+    user: currentAuthUser,
+    token: currentAuthUser ? 'test-token' : null,
+    isAuthenticated: Boolean(currentAuthUser),
+    isLoading: false,
+    logout: () => { currentAuthUser = null; },
+    setSessionUser: (user) => { currentAuthUser = user; },
+  }),
 };
 
-axios.get = async (url, config) => {
-  if (axiosGetMock) {
-    return axiosGetMock(url, config);
-  }
-  return originalGet(url, config);
-};
-
-// 3. Importar storeService real de producción
-const { storeService } = await import('./src/services/storeService.ts');
-
-// 4. Compilar CheckoutModal.tsx con esbuild para su ejecución en Node.js
-const checkoutModalPath = path.resolve(import.meta.dirname, 'src/components/marketplace/CheckoutModal.tsx');
-const transpiled = esbuild.buildSync({
-  entryPoints: [checkoutModalPath],
+const componentPath = path.resolve(import.meta.dirname, 'src/components/marketplace/CheckoutModal.tsx');
+const compiledPath = path.resolve(import.meta.dirname, '.test-compiled-CheckoutModal.mjs');
+const compiled = esbuild.buildSync({
+  entryPoints: [componentPath],
   bundle: true,
   format: 'esm',
   platform: 'node',
   write: false,
-  external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext']
+  external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext'],
 });
-
-// Mock de AuthContext para pruebas
-let currentAuthUser = null;
-const mockAuthModule = {
-  useAuth: () => ({
-    user: currentAuthUser,
-    token: currentAuthUser ? 'mock-jwt-token' : null,
-    isAuthenticated: !!currentAuthUser,
-    isLoading: false,
-    logout: () => { currentAuthUser = null; },
-    setSessionUser: (u) => { currentAuthUser = u; }
-  })
-};
-
-// Escribir archivo temporal compilado en runner
-const tempModalPath = path.resolve(import.meta.dirname, 'test-compiled-CheckoutModal.mjs');
-let modalCode = transpiled.outputFiles[0].text;
-// Reemplazar importación de AuthContext con módulo mockeado
-modalCode = modalCode.replace(
+const source = compiled.outputFiles[0].text.replace(
   /import\s*\{[^}]*useAuth[^}]*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
-  'const { useAuth } = globalThis.__mockAuthModule;'
+  'const { useAuth } = globalThis.__mockAuthModule;',
 );
-globalThis.__mockAuthModule = mockAuthModule;
-fs.writeFileSync(tempModalPath, modalCode, 'utf8');
+fs.writeFileSync(compiledPath, source, 'utf8');
+const { CheckoutModal } = await import(pathToFileURL(compiledPath).href);
 
-const { CheckoutModal } = await import(pathToFileURL(tempModalPath).href);
-
-let passedTests = 0;
-const totalTests = 9;
-
-const mockPlaybook = {
+const playbook = {
   id: 1,
   programId: 101,
   title: 'FinOps y Transformación Digital Cloud',
   tier: 'ENTERPRISE',
   price: 799,
   currency: 'USD',
-  active: true
+  active: true,
 };
+const account = {
+  id: 'bcp-oficial',
+  banco: 'BCP',
+  titular: 'LYSANDRI S.A.C.',
+  moneda: 'USD',
+  tipoCuenta: 'CORRIENTE',
+  numeroCuenta: '193-98218491-0-28',
+  cci: '002-193-009821849102-18',
+  activo: true,
+  estado: 'OFICIAL_ACTIVA',
+  instrucciones: 'Cuenta para transferencia',
+};
+const createUrl = '/api/v1/orders/create-checkout-session';
+const guestUrl = '/api/v1/orders/guest-session';
+let assertions = 0;
+
+function resetStorage() {
+  window.sessionStorage.clear();
+  currentAuthUser = null;
+  window.open = () => {};
+}
+
+function renderModal() {
+  return render(React.createElement(CheckoutModal, {
+    isOpen: true,
+    onClose: () => {},
+    playbook,
+  }));
+}
+
+async function selectTransferAndFill(email = 'carlos@empresa.pe') {
+  fireEvent.click(screen.getByText('Transferencia Bancaria', { exact: true }));
+  fireEvent.change(screen.getByPlaceholderText('Ej. Carlos Alberto Mendoza Alarcón'), {
+    target: { value: 'Carlos Mendoza' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('c.mendoza@empresa.com'), {
+    target: { value: email },
+  });
+  fireEvent.change(screen.getByPlaceholderText('Ej. 45892147'), {
+    target: { value: '70809010' },
+  });
+  await waitFor(() => assert.ok(screen.getByText('193-98218491-0-28')));
+}
+
+function createRequestCall(calls, handler) {
+  return async (url, data, config) => {
+    if (url.includes(guestUrl)) {
+      calls.guest.push({ url, data, config });
+      return { data: { guestSessionToken: 'guest-token-test-101' } };
+    }
+    if (url.includes(createUrl)) {
+      calls.create.push({ url, data, config });
+      return handler(url, data, config);
+    }
+    throw new Error(`POST inesperado: ${url}`);
+  };
+}
+
+function successfulAccountRequest() {
+  getHandler = async (url) => {
+    if (url.includes('cuentas-bancarias')) return { data: [account] };
+    throw new Error(`GET inesperado: ${url}`);
+  };
+}
 
 try {
-  // --------------------------------------------------------------------------
-  // ESCENARIO 1: Adquisición y persistencia de credencial criptográfica antes de compra
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    currentAuthUser = null; // Comprador invitado
-    let sessionRequested = false;
-    let createOrderCalled = false;
-    let tokenPersistedBeforeCreate = false;
+  console.log('PRUEBAS DE INTERACCIÓN REAL: CheckoutModal con React Testing Library + jsdom');
 
-    axiosPostMock = async (url, data, config) => {
-      if (url.includes('/api/v1/orders/guest-session')) {
-        sessionRequested = true;
-        return { data: { guestSessionToken: 'jwt-guest-crypto-session-778899' } };
-      }
-      if (url.includes('/api/v1/orders/create-checkout-session')) {
-        createOrderCalled = true;
-        // Comprobar que en sessionStorage YA está persistido el token
-        const saved = storeService.getCheckoutIntent('guest_carlos@empresa.pe', 101);
-        if (saved && saved.guestSessionToken === 'jwt-guest-crypto-session-778899') {
-          tokenPersistedBeforeCreate = true;
-        }
-        return {
-          data: {
-            codigoOrden: 'ORD-GUEST-001',
-            checkoutUrl: '/checkout/success?session_id=ORD-GUEST-001&manual=true',
-            guestSessionToken: 'jwt-guest-crypto-session-778899'
-          }
-        };
-      }
-      throw new Error(`URL no manejada: ${url}`);
-    };
+  // a. Compra invitada: el estado de intención se guarda antes de emitir la creación.
+  resetStorage();
+  let calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async (_url, data, config) => {
+    const saved = [...Array(window.sessionStorage.length)]
+      .map((_, index) => window.sessionStorage.key(index))
+      .filter((key) => key?.startsWith('lysandri_checkout_intent_guest_carlos@empresa.pe_'))
+      .map((key) => JSON.parse(window.sessionStorage.getItem(key)));
+    assert.equal(saved.length, 1, 'La intención debe estar guardada antes de la llamada HTTP');
+    assert.equal(saved[0].guestSessionToken, 'guest-token-test-101');
+    assert.equal(saved[0].claveIdempotencia, config.headers['X-Idempotency-Key']);
+    assert.equal(data.guestSessionToken, 'guest-token-test-101');
+    return { data: { codigoOrden: 'ORD-UI-001', guestSessionToken: 'guest-token-test-101' } };
+  });
+  renderModal();
+  await selectTransferAndFill();
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  await waitFor(() => assert.ok(screen.getByText('ORD-UI-001')));
+  assert.equal(calls.guest.length, 1);
+  assert.equal(calls.create.length, 1);
+  assert.ok(calls.create[0].config.headers['X-Idempotency-Key']);
+  assert.equal(calls.create[0].config.headers['X-Guest-Session-Token'], 'guest-token-test-101');
+  cleanup();
+  assertions++;
+  console.log('PASS UI a: credencial y clave persistidas antes del POST de creación.');
 
-    // Renderizar modal para comprobar visualización correcta
-    const html = ReactDOMServer.renderToString(
-      React.createElement(CheckoutModal, {
-        isOpen: true,
-        onClose: () => {},
-        playbook: mockPlaybook
-      })
-    );
-    assert.ok(html.includes('FinOps y Transformación Digital Cloud'), 'El modal debe renderizar el programa');
-    assert.ok(html.includes('799'), 'Debe mostrar el precio oficial configurado');
-
-    // Ejecutar adquisición segura del token vía storeService como lo hace el modal
-    const scope = storeService.getBuyerScope(null, 'carlos@empresa.pe');
-    const guestToken = await storeService.getOrCreateGuestSession('carlos@empresa.pe', scope, 101);
-    assert.strictEqual(guestToken, 'jwt-guest-crypto-session-778899', 'Debe adquirir la credencial');
-
-    // Persistir antes de la creación
-    const key = storeService.getOrCreateIdempotencyKey(scope, 101);
-    storeService.saveCheckoutIntent({
-      claveIdempotencia: key,
-      programId: 101,
-      buyerScope: scope,
-      email: 'carlos@empresa.pe',
-      nombreCompleto: 'Carlos Mendoza',
-      tipoComprobante: 'BOLETA',
-      numeroDocumento: '70809010',
-      metodoPago: 'Transferencia Bancaria',
-      guestSessionToken: guestToken,
-      status: 'PENDIENTE',
-      createdAt: Date.now()
-    });
-
-    const res = await storeService.createCheckoutSession({
-      programaIds: [101],
-      programaTitulo: mockPlaybook.title,
-      email: 'carlos@empresa.pe',
-      nombreCompleto: 'Carlos Mendoza',
-      tipoComprobante: 'BOLETA',
-      numeroDocumento: '70809010',
-      metodoPago: 'TRANSFERENCIA',
-      claveIdempotencia: key,
-      guestSessionToken: guestToken
-    });
-
-    assert.ok(sessionRequested, 'Debe haber solicitado la sesión de invitado');
-    assert.ok(createOrderCalled, 'Debe haber llamado a creación de orden');
-    assert.ok(tokenPersistedBeforeCreate, 'La credencial DEBE estar persistida en sessionStorage ANTES de llamar al backend');
-    assert.strictEqual(res.codigoOrden, 'ORD-GUEST-001');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 1 APROBADO: Adquisición y persistencia de credencial criptográfica antes de compra');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 2: Falla en sesión de invitado (mensaje visible, botón restaurado, sin orden creada)
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    let createOrderAttempted = false;
-
-    axiosPostMock = async (url, data, config) => {
-      if (url.includes('/api/v1/orders/guest-session')) {
-        const err = new Error('Network timeout al conectar con servidor');
-        err.code = 'ECONNABORTED';
-        throw err;
-      }
-      if (url.includes('/api/v1/orders/create-checkout-session')) {
-        createOrderAttempted = true;
-        return { data: { codigoOrden: 'INVENTADA-ERRONEA' } };
-      }
-      throw new Error(`URL no manejada: ${url}`);
-    };
-
-    const scope = storeService.getBuyerScope(null, 'fallo@test.pe');
-    let capturedError = null;
-    try {
-      await storeService.getOrCreateGuestSession('fallo@test.pe', scope, 101);
-    } catch (err) {
-      capturedError = err;
+  // b. Fallo obteniendo guest-session: no crea orden y se recupera el botón.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = async (url) => {
+    if (url.includes(guestUrl)) {
+      calls.guest.push(url);
+      throw new Error('No hay conexión con el servidor');
     }
+    if (url.includes(createUrl)) calls.create.push(url);
+    throw new Error(`POST inesperado: ${url}`);
+  };
+  renderModal();
+  await selectTransferAndFill('fallo@test.pe');
+  const submitButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  fireEvent.click(submitButton);
+  await screen.findByText(/No hay conexión con el servidor/);
+  await waitFor(() => assert.equal(submitButton.disabled, false));
+  assert.equal(calls.guest.length, 1);
+  assert.equal(calls.create.length, 0);
+  cleanup();
+  assertions++;
+  console.log('PASS UI b: error de guest-session, botón recuperado y cero POST de creación.');
 
-    assert.ok(capturedError, 'Debe arrojar un error explícito ante fallo de red en la sesión');
-    assert.ok(capturedError.message.includes('Tiempo de espera agotado') || capturedError.message.includes('servidor'),
-      'El mensaje debe ser claro para el usuario');
-    assert.strictEqual(createOrderAttempted, false, 'NO debe llamar a creación de orden si falló la sesión previa');
-
-    const intent = storeService.getCheckoutIntent(scope, 101);
-    assert.strictEqual(intent, null, 'No debe existir ninguna orden creada en storage');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 2 APROBADO: Falla en sesión de invitado rechazada limpiamente sin crear órdenes huérfanas');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 3: Timeout en creación y reintento con la misma clave y credencial
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    const scope = storeService.getBuyerScope(null, 'reintento@empresa.pe');
-    const guestToken = 'token-fijo-reintento-123';
-    const key = storeService.getOrCreateIdempotencyKey(scope, 101);
-
-    storeService.saveCheckoutIntent({
-      claveIdempotencia: key,
-      programId: 101,
-      buyerScope: scope,
-      email: 'reintento@empresa.pe',
-      nombreCompleto: 'Ana Reintento',
-      tipoComprobante: 'BOLETA',
-      numeroDocumento: '71829304',
-      metodoPago: 'Transferencia Bancaria',
-      guestSessionToken: guestToken,
-      status: 'PENDIENTE',
-      createdAt: Date.now()
-    });
-
-    let attempts = 0;
-    const capturedKeys = [];
-    const capturedTokens = [];
-
-    axiosPostMock = async (url, data, config) => {
-      if (url.includes('/api/v1/orders/create-checkout-session')) {
-        attempts++;
-        capturedKeys.push(config?.headers?.['X-Idempotency-Key'] || data.claveIdempotencia);
-        capturedTokens.push(config?.headers?.['X-Guest-Session-Token'] || data.guestSessionToken);
-
-        if (attempts === 1) {
-          const timeoutErr = new Error('Timeout de lectura');
-          timeoutErr.code = 'ECONNABORTED';
-          throw timeoutErr;
-        }
-        return {
-          data: {
-            codigoOrden: 'ORD-REINTENTO-EXITOSA-777',
-            guestSessionToken: guestToken
-          }
-        };
-      }
-      throw new Error(`URL: ${url}`);
-    };
-
-    // Intento 1: falla por timeout
-    try {
-      await storeService.createCheckoutSession({
-        programaIds: [101],
-        email: 'reintento@empresa.pe',
-        nombreCompleto: 'Ana Reintento',
-        tipoComprobante: 'BOLETA',
-        numeroDocumento: '71829304',
-        metodoPago: 'TRANSFERENCIA',
-        claveIdempotencia: key,
-        guestSessionToken: guestToken
-      });
-    } catch (e) {
-      assert.ok(e.message.includes('Tiempo de espera agotado'), 'Debe reportar timeout');
+  // c. Timeout tras registrar: reintento desde UI con mismo idempotency key y credencial.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  const registeredByKey = new Map();
+  postHandler = createRequestCall(calls, async (_url, data, config) => {
+    const key = config.headers['X-Idempotency-Key'];
+    const token = config.headers['X-Guest-Session-Token'];
+    if (!registeredByKey.has(key)) registeredByKey.set(key, `ORD-RETRY-${registeredByKey.size + 1}`);
+    if (calls.create.length === 1) {
+      const error = new Error('timeout after server registered the order');
+      error.code = 'ECONNABORTED';
+      throw error;
     }
+    assert.equal(data.guestSessionToken, token);
+    return { data: { codigoOrden: registeredByKey.get(key), guestSessionToken: token } };
+  });
+  renderModal();
+  await selectTransferAndFill('reintento@empresa.pe');
+  const retryButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  fireEvent.click(retryButton);
+  await screen.findByText(/Tiempo de espera agotado/);
+  await waitFor(() => assert.equal(retryButton.disabled, false));
+  fireEvent.click(retryButton);
+  await waitFor(() => assert.ok(screen.getByText('ORD-RETRY-1')));
+  assert.equal(calls.guest.length, 1, 'El segundo intento debe reutilizar la credencial conservada');
+  assert.equal(calls.create.length, 2);
+  assert.equal(calls.create[0].config.headers['X-Idempotency-Key'], calls.create[1].config.headers['X-Idempotency-Key']);
+  assert.equal(calls.create[0].config.headers['X-Guest-Session-Token'], calls.create[1].config.headers['X-Guest-Session-Token']);
+  assert.equal(registeredByKey.size, 1, 'El backend idempotente simulado registra una única orden');
+  cleanup();
+  assertions++;
+  console.log('PASS UI c: retry tras timeout mantiene clave/token y no duplica el registro simulado.');
 
-    // Intento 2: el usuario hace clic nuevamente en el botón reintentar
-    const keyReintento = storeService.getOrCreateIdempotencyKey(scope, 101);
-    assert.strictEqual(keyReintento, key, 'El reintento debe reutilizar la misma clave de idempotencia');
+  // d. Desmontar/montar con el mismo sessionStorage recupera la orden sin otro POST.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async () => ({
+    data: { codigoOrden: 'ORD-RELOAD-1', guestSessionToken: 'guest-token-test-101' },
+  }));
+  const firstMount = renderModal();
+  await selectTransferAndFill('recarga@empresa.pe');
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  await screen.findByText('ORD-RELOAD-1');
+  const createdBeforeReload = calls.create.length;
+  firstMount.unmount();
+  renderModal();
+  await screen.findByText('ORD-RELOAD-1');
+  assert.equal(calls.create.length, createdBeforeReload);
+  cleanup();
+  assertions++;
+  console.log('PASS UI d: remount recupera la orden persistida sin crear otra.');
 
-    const res2 = await storeService.createCheckoutSession({
-      programaIds: [101],
-      email: 'reintento@empresa.pe',
-      nombreCompleto: 'Ana Reintento',
-      tipoComprobante: 'BOLETA',
-      numeroDocumento: '71829304',
-      metodoPago: 'TRANSFERENCIA',
-      claveIdempotencia: keyReintento,
-      guestSessionToken: guestToken
-    });
+  // e. Conflicto 409 se muestra, no anuncia éxito y libera el botón.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async () => {
+    const error = new Error('HTTP 409');
+    error.response = { status: 409, data: { message: 'Conflicto de idempotencia para esta compra' } };
+    throw error;
+  });
+  renderModal();
+  await selectTransferAndFill('conflicto@test.pe');
+  const conflictButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  fireEvent.click(conflictButton);
+  await screen.findByText('Conflicto de idempotencia para esta compra');
+  await waitFor(() => assert.equal(conflictButton.disabled, false));
+  assert.equal(calls.create.length, 1);
+  assert.equal(screen.queryByText(/¡Orden Registrada en el Sistema Lysandri!/), null);
+  assert.equal(screen.queryByRole('button', { name: /Enviar Comprobante por WhatsApp/i }), null);
+  cleanup();
+  assertions++;
+  console.log('PASS UI e: 409 visible, sin éxito ni WhatsApp, y botón reactivado.');
 
-    assert.strictEqual(res2.codigoOrden, 'ORD-REINTENTO-EXITOSA-777');
-    assert.strictEqual(capturedKeys[0], capturedKeys[1], 'Ambas peticiones deben enviar exactamente la misma clave');
-    assert.strictEqual(capturedTokens[0], capturedTokens[1], 'Ambas peticiones deben enviar exactamente el mismo token');
+  // f. Al cambiar la identidad del comprador, no conserva el voucher anterior.
+  resetStorage();
+  window.sessionStorage.setItem('lysandri_checkout_intent_guest_primero@test.pe_101', JSON.stringify({
+    claveIdempotencia: 'old-key',
+    programId: 101,
+    buyerScope: 'guest_primero@test.pe',
+    email: 'primero@test.pe',
+    nombreCompleto: 'Comprador Primero',
+    tipoComprobante: 'BOLETA',
+    numeroDocumento: '11111111',
+    metodoPago: 'Transferencia Bancaria',
+    codigoOrden: 'ORD-ANTERIOR',
+    guestSessionToken: 'old-token',
+    status: 'REGISTRADA',
+    createdAt: Date.now(),
+  }));
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = async (url) => { throw new Error(`POST inesperado: ${url}`); };
+  const buyerMount = renderModal();
+  await screen.findByText('ORD-ANTERIOR');
+  currentAuthUser = { id: 202, email: 'segundo@test.pe', nombre: 'Comprador Segundo' };
+  buyerMount.rerender(React.createElement(CheckoutModal, { isOpen: true, onClose: () => {}, playbook }));
+  await waitFor(() => assert.equal(screen.queryByText('ORD-ANTERIOR'), null));
+  assert.equal(calls.create.length, 0);
+  cleanup();
+  assertions++;
+  console.log('PASS UI f: cambio de comprador no muestra ni recupera la orden previa.');
 
-    passedTests++;
-    console.log('✅ ESCENARIO 3 APROBADO: Timeout en creación y reintento con la misma clave y contexto autorizado');
-  }
+  // g. Solo la acción explícita de nueva orden cambia la clave.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async () => ({
+    data: { codigoOrden: 'ORD-OLD-INTENT', guestSessionToken: 'guest-token-test-101' },
+  }));
+  renderModal();
+  await selectTransferAndFill('nueva@test.pe');
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  await screen.findByText('ORD-OLD-INTENT');
+  const previousKey = calls.create[0].config.headers['X-Idempotency-Key'];
+  fireEvent.click(screen.getByRole('button', { name: 'Iniciar Nueva Orden' }));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  await waitFor(() => assert.equal(calls.create.length, 2));
+  assert.notEqual(calls.create[1].config.headers['X-Idempotency-Key'], previousKey);
+  cleanup();
+  assertions++;
+  console.log('PASS UI g: nueva compra explícita genera otra clave.');
 
-  // --------------------------------------------------------------------------
-  // ESCENARIO 4: Recarga y recuperación del flujo
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    const scope = 'guest_recarga@empresa.pe';
-    storeService.saveCheckoutIntent({
-      claveIdempotencia: 'idemp-recarga-999',
-      programId: 101,
-      buyerScope: scope,
-      email: 'recarga@empresa.pe',
-      nombreCompleto: 'Laura Recarga',
-      tipoComprobante: 'BOLETA',
-      numeroDocumento: '11223344',
-      metodoPago: 'Transferencia Bancaria',
-      codigoOrden: 'ORD-CONFIRMADA-RECARGA-55',
-      guestSessionToken: 'token-recarga-valid',
-      status: 'REGISTRADA',
-      createdAt: Date.now()
-    });
+  // h. El destino backend aparece en pantalla y los errores de carga se muestran.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = async (url) => { throw new Error(`POST inesperado: ${url}`); };
+  renderModal();
+  fireEvent.click(screen.getByText('Transferencia Bancaria', { exact: true }));
+  await screen.findByText('193-98218491-0-28');
+  assert.ok(screen.getByText('BCP'));
+  cleanup();
+  resetStorage();
+  getHandler = async () => {
+    const error = new Error('Backend cuentas no disponible');
+    error.response = { data: { message: 'No se pudieron cargar destinos por mantenimiento' } };
+    throw error;
+  };
+  renderModal();
+  fireEvent.click(screen.getByText('Transferencia Bancaria', { exact: true }));
+  await screen.findByText('No se pudieron cargar destinos por mantenimiento');
+  cleanup();
+  assertions++;
+  console.log('PASS UI h: destino visible y error de carga backend mostrado.');
 
-    // Simular que el componente monta nuevamente tras F5 / reload
-    const intentRecuperado = storeService.getCheckoutIntent(scope, 101);
-    assert.ok(intentRecuperado, 'Debe existir la orden previa en el storage');
-    assert.strictEqual(intentRecuperado.codigoOrden, 'ORD-CONFIRMADA-RECARGA-55');
-    assert.strictEqual(intentRecuperado.status, 'REGISTRADA');
+  // i. Error de red no muestra éxito, no abre WhatsApp y restaura el botón.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  window.openCalls = [];
+  window.open = (...args) => window.openCalls.push(args);
+  postHandler = createRequestCall(calls, async () => {
+    throw new Error('No se pudo conectar con el servidor para registrar la orden.');
+  });
+  renderModal();
+  await selectTransferAndFill('red@test.pe');
+  const networkButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  fireEvent.click(networkButton);
+  await screen.findByText(/No se pudo conectar con el servidor/);
+  await waitFor(() => assert.equal(networkButton.disabled, false));
+  assert.equal(calls.create.length, 1);
+  assert.equal(window.openCalls.length, 0);
+  assert.equal(screen.queryByText(/¡Orden Registrada en el Sistema Lysandri!/), null);
+  cleanup();
+  assertions++;
+  console.log('PASS UI i: error de red no genera éxito ni abre WhatsApp.');
 
-    // Renderizar modal para verificar que en el estado inicial de orden registrada se muestra el voucher
-    const htmlRecarga = ReactDOMServer.renderToString(
-      React.createElement(CheckoutModal, {
-        isOpen: true,
-        onClose: () => {},
-        playbook: mockPlaybook
-      })
-    );
-    assert.ok(htmlRecarga.length > 500, 'El modal debe renderizar correctamente tras recarga');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 4 APROBADO: Recarga y recuperación íntegra de orden confirmada sin reprocesamiento');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 5: Cambio de comprador (aislamiento estricto IDOR)
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    const scopeBuyer1 = storeService.getBuyerScope(null, 'comprador1@test.pe');
-    const key1 = storeService.getOrCreateIdempotencyKey(scopeBuyer1, 101);
-    storeService.saveCheckoutIntent({
-      claveIdempotencia: key1,
-      programId: 101,
-      buyerScope: scopeBuyer1,
-      email: 'comprador1@test.pe',
-      codigoOrden: 'ORD-BUYER-1',
-      guestSessionToken: 'token-buyer-1',
-      status: 'REGISTRADA',
-      createdAt: Date.now()
-    });
-
-    // El segundo comprador ingresa con otro correo
-    const scopeBuyer2 = storeService.getBuyerScope(null, 'comprador2@test.pe');
-    assert.notStrictEqual(scopeBuyer1, scopeBuyer2, 'Los ámbitos deben ser completamente diferentes');
-
-    const intentBuyer2 = storeService.getCheckoutIntent(scopeBuyer2, 101);
-    assert.strictEqual(intentBuyer2, null, 'El comprador 2 no debe ver ni heredar la orden del comprador 1');
-
-    const key2 = storeService.getOrCreateIdempotencyKey(scopeBuyer2, 101);
-    assert.notStrictEqual(key1, key2, 'Las claves de idempotencia deben ser completamente distintas');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 5 APROBADO: Aislamiento criptográfico y de storage entre compradores diferentes');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 6: Conflicto de datos 409
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    axiosPostMock = async (url) => {
-      if (url.includes('/api/v1/orders/create-checkout-session')) {
-        const error409 = new Error('Request failed with status code 409');
-        error409.response = {
-          status: 409,
-          data: {
-            message: 'Conflicto de idempotencia: La clave ya existe pero con una selección de programas diferente'
-          }
-        };
-        throw error409;
-      }
-      throw new Error(`URL: ${url}`);
-    };
-
-    let caughtConflict = null;
-    try {
-      await storeService.createCheckoutSession({
-        programaIds: [101],
-        email: 'conflicto@test.pe',
-        nombreCompleto: 'Usuario Conflicto',
-        tipoComprobante: 'BOLETA',
-        numeroDocumento: '88776655',
-        metodoPago: 'IZIPAY',
-        claveIdempotencia: 'idemp-conflict-key',
-        guestSessionToken: 'tok-conflict'
-      });
-    } catch (err) {
-      caughtConflict = err;
-    }
-
-    assert.ok(caughtConflict, 'Debe capturar la excepción 409');
-    assert.ok(
-      caughtConflict.message.includes('Conflicto de idempotencia') ||
-      caughtConflict.response?.data?.message.includes('Conflicto de idempotencia'),
-      'El mensaje de conflicto debe preservarse para despliegue al usuario'
-    );
-
-    passedTests++;
-    console.log('✅ ESCENARIO 6 APROBADO: Manejo y despliegue transparente de conflicto 409 del backend');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 7: Nueva compra intencional
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    const scope = 'guest_reinicio@test.pe';
-    storeService.saveCheckoutIntent({
-      claveIdempotencia: 'idemp-old-order-1',
-      programId: 101,
-      buyerScope: scope,
-      email: 'reinicio@test.pe',
-      codigoOrden: 'ORD-VIEJA-1',
-      status: 'REGISTRADA',
-      createdAt: Date.now()
-    });
-
-    assert.ok(storeService.getCheckoutIntent(scope, 101), 'Debe existir intención previa');
-
-    // Acción intencional del usuario: Iniciar nueva orden
-    storeService.clearCheckoutIntent(scope, 101);
-
-    assert.strictEqual(storeService.getCheckoutIntent(scope, 101), null, 'La intención debe haberse limpiado');
-    const newKey = storeService.getOrCreateIdempotencyKey(scope, 101);
-    assert.notStrictEqual(newKey, 'idemp-old-order-1', 'Debe generar una nueva clave de idempotencia');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 7 APROBADO: Nueva compra intencional limpia estado previo y genera nueva clave');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 8: Selección de destino y despliegue de errores del backend
-  // --------------------------------------------------------------------------
-  {
-    axiosGetMock = async (url) => {
-      if (url.includes('cuentas-bancarias')) {
-        return {
-          data: [
-            {
-              id: 'bcp-oficial',
-              banco: 'BCP',
-              titular: 'LYSANDRI S.A.C.',
-              moneda: 'USD',
-              tipoCuenta: 'CORRIENTE',
-              numeroCuenta: '193-98218491-0-28',
-              cci: '002-193-009821849102-18',
-              activo: true,
-              estado: 'OFICIAL_ACTIVA',
-              instrucciones: 'Realice su transferencia a la cuenta indicada.'
-            }
-          ]
-        };
-      }
-      throw new Error(`GET URL: ${url}`);
-    };
-
-    const cuentas = await storeService.obtenerCuentasBancarias();
-    assert.strictEqual(cuentas.length, 1);
-    assert.strictEqual(cuentas[0].banco, 'BCP');
-    assert.strictEqual(cuentas[0].activo, true);
-
-    // Simular error del backend al confirmar comprobante manual (ej. abono duplicado)
-    axiosPostMock = async (url) => {
-      if (url.includes('/confirmar-pago-manual')) {
-        const err = new Error('Duplicate');
-        err.response = {
-          status: 400,
-          data: {
-            message: 'El abono bancario [banco: BCP, operación: OP001234] ya fue utilizado para pagar otra orden.'
-          }
-        };
-        throw err;
-      }
-      throw new Error(`URL: ${url}`);
-    };
-
-    let backendError = null;
-    try {
-      await storeService.confirmarPagoManual({
-        idOrden: 100,
-        numeroOperacion: 'OP001234',
-        bancoDestino: 'BCP',
-        cuentaDestino: '19398218491028',
-        montoVerificado: 799,
-        monedaVerificada: 'USD',
-        fechaAbono: new Date().toISOString()
-      });
-    } catch (e) {
-      backendError = e;
-    }
-
-    assert.ok(backendError, 'Debe capturar el error de abono duplicado del backend');
-    assert.ok(backendError.message.includes('ya fue utilizado para pagar otra orden'));
-
-    passedTests++;
-    console.log('✅ ESCENARIO 8 APROBADO: Cuentas configurables cargadas y errores de validación desplegados fielmente');
-  }
-
-  // --------------------------------------------------------------------------
-  // ESCENARIO 9: Ningún estado de éxito ficticio (Truth in UI)
-  // --------------------------------------------------------------------------
-  {
-    storage.clear();
-    axiosPostMock = async () => {
-      const err = new Error('Network Failure');
-      throw err;
-    };
-
-    // storeService.createCheckoutSession no debe inventar orden
-    let createErr = null;
-    try {
-      await storeService.createCheckoutSession({
-        programaIds: [101],
-        email: 'test@truth.pe',
-        nombreCompleto: 'Verdad',
-        tipoComprobante: 'BOLETA',
-        numeroDocumento: '77665544',
-        metodoPago: 'TRANSFERENCIA'
-      });
-    } catch (e) {
-      createErr = e;
-    }
-    assert.ok(createErr, 'createCheckoutSession no debe inventar respuestas exitosas');
-
-    // storeService.confirmarPago no debe inventar credenciales Moodle
-    let payErr = null;
-    try {
-      await storeService.confirmarPago('sesion-red-caida');
-    } catch (e) {
-      payErr = e;
-    }
-    assert.ok(payErr, 'confirmarPago no debe inventar credenciales');
-
-    // storeService.confirmarPagoManual no debe inventar estado PAGADO
-    let manualErr = null;
-    try {
-      await storeService.confirmarPagoManual({
-        idOrden: 200,
-        numeroOperacion: 'OP999',
-        bancoDestino: 'BCP',
-        cuentaDestino: '19398218491028',
-        montoVerificado: 799,
-        monedaVerificada: 'USD',
-        fechaAbono: new Date().toISOString()
-      });
-    } catch (e) {
-      manualErr = e;
-    }
-    assert.ok(manualErr, 'confirmarPagoManual no debe inventar estados exitosos');
-
-    passedTests++;
-    console.log('✅ ESCENARIO 9 APROBADO: Ningún estado de éxito ficticio en UI ni en servicios cliente');
-  }
-
-  console.log('================================================================================');
-  console.log(`RESUMEN: ${passedTests} de ${totalTests} escenarios aprobados exitosamente.`);
-  console.log('CÓDIGO DE SALIDA: 0 (EXIT CODE 0)');
-  console.log('================================================================================');
-
-  // Limpiar archivo temporal compilado
-  try {
-    fs.unlinkSync(tempModalPath);
-  } catch {}
-
-  process.exit(0);
-
-} catch (err) {
-  console.error('\n❌ ERROR EN PRUEBA DE CHECKOUT MODAL:', err);
-  try {
-    fs.unlinkSync(tempModalPath);
-  } catch {}
-  process.exit(1);
+  console.log(`RESULTADO UI: ${assertions}/9 escenarios aprobados (interacciones DOM reales).`);
+} finally {
+  cleanup();
+  axios.post = originalPost;
+  axios.get = originalGet;
+  dom.window.close();
+  if (fs.existsSync(compiledPath)) fs.unlinkSync(compiledPath);
 }

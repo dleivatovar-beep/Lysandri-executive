@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-10-26T18:15:00-05:00",
+  "version": "1.0.0-SNAPSHOT",
+  "jar": {
+    "file": "backend/target/lysandri-backend-1.0.0-SNAPSHOT.jar",
+    "sha256": "461FA41BD5D85099C1D8D6FA1BC616088A13082466DC9FFBE802297DBEBADB25"
+  },
+  "database": {
+    "original_database_port_5432": "UNTOUCHED_UNMODIFIED",
+    "target_clone_port": 5434,
+    "target_clone_database": "lysandri_clone_db",
+    "migrations": {
+      "latest_version": "27",
+      "new_migration": "V27__separate_activation_and_administrative_blocking.sql",
+      "immutable_range": "V1-V26",
+      "total_history_records": 29
+    }
+  },
+  "test_suites": {
+    "suite_A_habitual": {
+      "description": "Suite de regresión estándar de pagos, moneda, programas inactivos, login y recuperación Moodle",
+      "tests_run": 189,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASSED"
+    },
+    "suite_B_restauracion_aislada": {
+      "description": "Restauración aislada en contenedor/volumen temporal, snapshot V7, migración V7.1 a V27 y comprobación exhaustiva 100% de conservación de columnas y datos",
+      "class": "com.lysandri.adapters.IsolatedRestorationFullComparisonIntegrationTest",
+      "tests_run": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASSED"
+    },
+    "suite_C_activacion_http_smtp": {
+      "description": "Flujo de compra como invitado, confirmación de pago, captura de enlace en SMTP mock local (puerto 1025), activación atómica, establecimiento de contraseña y login",
+      "class": "com.lysandri.adapters.GuestActivationHttpMockSmtpIntegrationTest",
+      "tests_run": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASSED"
+    },
+    "suite_D_concurrencia_bloqueo_admin": {
+      "description": "Consumo atómico concurrente bajo bloqueo pesimista en PostgreSQL desechable, separación de activación y bloqueo administrativo, y recuperación segura",
+      "class": "com.lysandri.adapters.ConcurrentTokenConsumptionIntegrationTest",
+      "tests_run": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASSED"
+    },
+    "suite_E_scripts_powershell": {
+      "description": "Verificación estricta de scripts iniciar-backend.ps1 (-SoloVerificar, fallback de Moodle, aislamiento de puertos y comprobación de identidad)",
+      "script": "backend/test-scripts-behavior.ps1",
+      "tests_run": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASSED"
+    }
+  },
+  "findings_resolved": [
+    {
+      "id": 1,
+      "title": "Completar la activación de cuentas de invitados",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Entrega de enlace por correo vía adaptador de notificación tras confirmación de transacción, URL frontend configurada, hash SHA-256 de tokens en BD, endpoint uniforme /api/v1/auth/solicitar-activacion con rate limit (3/15m), vista frontend /activar-cuenta implementada sin rediseño."
+    },
+    {
+      "id": 2,
+      "title": "Garantizar consumo atómico del token",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Bloqueo pesimista FOR UPDATE en base de datos, transacción única atómica para consumo de token, actualización de password y activación de cuenta. Concurrencia real verificada con PostgreSQL desechable (1 ganador, 1 rechazo controlado)."
+    },
+    {
+      "id": 3,
+      "title": "Separar activación pendiente y bloqueo administrativo",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Campos explícitos bloqueado_admin y pendiente_activacion en entidad usuario. Migración V27 clasifica cuentas existentes. Un token de activación nunca levanta bloqueo admin. Desactivar revoca tokens activos. Cuentas provisionales tienen ruta de recuperación."
+    },
+    {
+      "id": 4,
+      "title": "Corregir script PowerShell de arranque",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Lógica PowerShell válida para MOODLE_URL con fallback a http://localhost:8081, validación de URL, puertos separados y no exposición de secretos."
+    },
+    {
+      "id": 5,
+      "title": "Hacer estricto el modo -SoloVerificar",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Exigencia de CLONE_APP_PASSWORD y CLONE_ADMIN_PASSWORD, JWT_SECRET temporal no impreso, verificación de identidad por SQL de solo lectura para DataSource y Flyway. Códigos de salida estrictos (0, 1, 2, 3, 4)."
+    },
+    {
+      "id": 6,
+      "title": "Resolver ambigüedad de las pruebas de restauración",
+      "status": "IMPLEMENTED_AND_VERIFIED",
+      "details": "Retiro definitivo de clase obsoleta RealCloneUpgradeIntegrationTest. Sustitución demostrada y conservada por IsolatedRestorationFullComparisonIntegrationTest (100% cobertura de datos y columnas, contenedor y volumen temporales por ejecución)."
+    }
+  ]
+}

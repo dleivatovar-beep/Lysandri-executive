@@ -59,4 +59,7 @@ public interface SpringDataOrderRepository extends JpaRepository<OrdenEntity, Lo
 
     @Query(value = "SELECT * FROM ordenes o WHERE o.estado_orden = 'PAGADO' AND o.numero_operacion IS NOT NULL AND translate(UPPER(o.numero_operacion), ' -./_', '') = :opNorm", nativeQuery = true)
     List<OrdenEntity> findAbonosHistoricosCandidatos(@Param("opNorm") String opNorm);
+
+    @Query(value = "SELECT pg_advisory_xact_lock(hashtextextended(:operation, 0))", nativeQuery = true)
+    Object lockManualPaymentOperation(@Param("operation") String operation);
 }

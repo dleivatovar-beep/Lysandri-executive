@@ -95,41 +95,49 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [user, isOpen]);
 
-  // Cargar cuentas bancarias oficiales y recuperar orden existente (si ya fue registrada)
+  // Cargar cuentas bancarias oficiales.
   useEffect(() => {
     if (isOpen && playbook) {
       setErrorMessage('');
       setCargandoCuentas(true);
-
-      // Recuperar intento previo existente para este comprador y programa
-      const scope = getBuyerScope();
-      const existingIntent = storeService.getCheckoutIntent(scope, playbook.programId);
-      if (existingIntent && existingIntent.codigoOrden) {
-        setOrdenRegistradaCodigo(existingIntent.codigoOrden);
-        setOrdenRegistradaMetodo(existingIntent.metodoPago || null);
-        if (existingIntent.nombreCompleto) setNombreCompleto(existingIntent.nombreCompleto);
-        if (existingIntent.numeroDocumento) setNumeroDocumento(existingIntent.numeroDocumento);
-        if (existingIntent.tipoComprobante) setTipoComprobante(existingIntent.tipoComprobante);
-        if (existingIntent.nombreFacturacion) setRazonSocial(existingIntent.nombreFacturacion);
-      } else {
-        setOrdenRegistradaCodigo(null);
-        setOrdenRegistradaMetodo(null);
-      }
 
       storeService
         .obtenerCuentasBancarias()
         .then((cuentas) => {
           setCuentasBancarias(cuentas || []);
         })
-        .catch(() => {
-          // Si falla la consulta de cuentas, se mantiene lista vacía
+        .catch((err) => {
           setCuentasBancarias([]);
+          setErrorMessage(
+            err.response?.data?.message ||
+              err.response?.data?.error ||
+              'No se pudieron cargar los destinos bancarios oficiales. Intenta nuevamente.'
+          );
         })
         .finally(() => {
           setCargandoCuentas(false);
         });
     }
-  }, [isOpen, playbook, user]);
+  }, [isOpen, playbook]);
+
+  // Recuperar órdenes solo para la identidad actual del comprador.
+  useEffect(() => {
+    if (!isOpen || !playbook) return;
+
+    const scope = getBuyerScope();
+    const existingIntent = storeService.getCheckoutIntent(scope, playbook.programId);
+    if (existingIntent && existingIntent.codigoOrden) {
+      setOrdenRegistradaCodigo(existingIntent.codigoOrden);
+      setOrdenRegistradaMetodo(existingIntent.metodoPago || null);
+      if (existingIntent.nombreCompleto) setNombreCompleto(existingIntent.nombreCompleto);
+      if (existingIntent.numeroDocumento) setNumeroDocumento(existingIntent.numeroDocumento);
+      if (existingIntent.tipoComprobante) setTipoComprobante(existingIntent.tipoComprobante);
+      if (existingIntent.nombreFacturacion) setRazonSocial(existingIntent.nombreFacturacion);
+    } else {
+      setOrdenRegistradaCodigo(null);
+      setOrdenRegistradaMetodo(null);
+    }
+  }, [isOpen, playbook, user, email]);
 
   if (!isOpen || !playbook) return null;
 

@@ -29,6 +29,8 @@ public interface OrderRepositoryPort {
 
     Optional<Orden> buscarPorAbonoBancario(String bancoDestino, String cuentaDestino, String numeroOperacion);
 
+    void bloquearAbonoBancario(String numeroOperacionNormalizado);
+
     List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado);
 
     List<Orden> buscarPorUsuario(Long idUsuario);

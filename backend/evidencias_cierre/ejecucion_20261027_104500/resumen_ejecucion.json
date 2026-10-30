@@ -1,0 +1,311 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-27T10:44:57.303666",
+    "evidence_directory": "F:\\Lysandri-executive\\backend\\evidencias_cierre\\ejecucion_20261027_104500",
+    "jar_path": "F:\\Lysandri-executive\\backend\\target\\lysandri-backend-1.0.0-SNAPSHOT.jar",
+    "jar_sha256": "F8023B7E0C5A062A8A52FFE1F66A8EEB56ADEA23CC3C2631FC66D8939CA040C0"
+  },
+  "java_suite": {
+    "total_test_classes": 31,
+    "total_executions": 224,
+    "total_unique_test_cases": 224,
+    "passed": 224,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "status": "BUILD SUCCESS",
+    "classes_summary": {
+      "com.lysandri.adapters.AtomicActivationOutboxPostgresIntegrationTest": {
+        "tests": 9,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.ConcurrentTokenConsumptionIntegrationTest": {
+        "tests": 3,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.DatabaseTargetSafetyGuardTest": {
+        "tests": 7,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.GuestActivationHttpMockSmtpIntegrationTest": {
+        "tests": 2,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.LegacyV7UpgradeIntegrationTest": {
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.PostgresJdbcConnectivityTest": {
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.PostgresPersistenceIntegrationTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.PostgresRestartIntegrationTest": {
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.ProvisioningIdempotencyAdaptersTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.in.web.InternalAccountingControllerTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.in.web.IzipayWebhookControllerTest": {
+        "tests": 11,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.in.web.OrderControllerTest": {
+        "tests": 13,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.in.web.StripeWebhookControllerTest": {
+        "tests": 24,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.in.web.UsuarioControllerTest": {
+        "tests": 8,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.out.database.adapter.UserActivationRepositoryAdapterTest": {
+        "tests": 7,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.out.payment.MockStripePaymentAdapterTest": {
+        "tests": 5,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.adapters.out.payment.StripePaymentAdapterTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.ActivationOutboxServiceTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.AuthServiceTest": {
+        "tests": 11,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.BuyCourseServiceTest": {
+        "tests": 21,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.ChatRagServiceTest": {
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.LysandriBackendIntegrationFlowsTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.MatriculaCorporativaServiceTest": {
+        "tests": 2,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.MoodleFailureAndRecoveryIntegrationTest": {
+        "tests": 1,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.OrderFinancialTransactionServiceTest": {
+        "tests": 15,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.StripeIdempotencyServiceTest": {
+        "tests": 9,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.application.service.UserManagementServiceTest": {
+        "tests": 10,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.config.CloneDatabaseSafetyStartupIntegrationTest": {
+        "tests": 13,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.security.ActivationCryptoServiceTest": {
+        "tests": 6,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.security.RolUsuarioSecurityTest": {
+        "tests": 2,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      },
+      "com.lysandri.security.SanitizerUtilsTest": {
+        "tests": 5,
+        "errors": 0,
+        "failures": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "powershell_suite": {
+    "total_cases": 19,
+    "passed": 19,
+    "failed": 0,
+    "cases": [
+      {
+        "name": "1. MOODLE_URL ausente (usa default http://localhost:8081) (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      },
+      {
+        "name": "2. MOODLE_URL vacia (usa default http://localhost:8081) (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      },
+      {
+        "name": "3. MOODLE_URL personalizada valida (http://localhost:8085) (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      },
+      {
+        "name": "4. MOODLE_URL invalida (ftp://bad-url) (Expected: 1, Actual: 1)",
+        "status": "PASS"
+      },
+      {
+        "name": "5. MOODLE_URL conflicto de puerto con HttpPort (Expected: 1, Actual: 1)",
+        "status": "PASS"
+      },
+      {
+        "name": "6. Destino original rechazado: Puerto prohibido 5432 (Expected: 1, Actual: 1)",
+        "status": "PASS"
+      },
+      {
+        "name": "7. Destino original rechazado: Base original lysandri_db (Expected: 1, Actual: 1)",
+        "status": "PASS"
+      },
+      {
+        "name": "8. Destino original rechazado: Host lysandri-postgres (Expected: 1, Actual: 1)",
+        "status": "PASS"
+      },
+      {
+        "name": "9. Fallo de conexion TCP a host:puerto no activo (Expected: 2, Actual: 2)",
+        "status": "PASS"
+      },
+      {
+        "name": "10. Puerto HTTP ocupado detecta conflicto (Expected: 3, Actual: 3)",
+        "status": "PASS"
+      },
+      {
+        "name": "11. Herramienta de verificacion ausente (-ForzarHerramientaAusente) (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "12. Base incorrecta: Nombre no autorizado antes de conectar (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "13. Base incorrecta: Servidor responde con base distinta (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "14. Servidor accesible pero identidad ajena (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "15. Credenciales incorrectas para usuario lysandri_app (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "16. Credenciales incorrectas para usuario lysandri_admin (Expected: 4, Actual: 4)",
+        "status": "PASS"
+      },
+      {
+        "name": "17. Destino correcto y verificado (-SoloVerificar) (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      },
+      {
+        "name": "18. Verificacion de argumentos Java y proteccion de secretos (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      },
+      {
+        "name": "19. Ejecucion delegada desde script raiz (iniciar-backend.ps1) (Expected: 0, Actual: 0)",
+        "status": "PASS"
+      }
+    ]
+  },
+  "live_jar_execution": {
+    "executed_artifact": "lysandri-backend-1.0.0-SNAPSHOT.jar",
+    "sha256": "F8023B7E0C5A062A8A52FFE1F66A8EEB56ADEA23CC3C2631FC66D8939CA040C0",
+    "verified_live": true,
+    "details": {
+      "verified": true,
+      "disposable_postgres": "127.0.0.1:15438 (pgvector/pgvector:pg16)",
+      "mock_smtp": "127.0.0.1:1025",
+      "http_port": 18088,
+      "automatic_scheduled_processing": "VERIFICADO_EXITOSO",
+      "restart_recovery_same_task": "VERIFICADO_EXITOSO",
+      "http_activation_consumed": "VERIFICADO_EXITOSO",
+      "zero_production_db_contact": true
+    }
+  },
+  "global_deduplication": {
+    "unique_java_tests": 224,
+    "unique_powershell_tests": 19,
+    "total_unique_tests": 243,
+    "deduplicated": true,
+    "note": "Casos unicos sin duplicar ejecuciones repetidas."
+  }
+}

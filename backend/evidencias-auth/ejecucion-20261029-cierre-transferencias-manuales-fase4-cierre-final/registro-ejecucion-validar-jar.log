@@ -1,0 +1,111 @@
+[2026-10-29 12:50:20] ================================================================================
+[2026-10-29 12:50:20] INICIO DE VALIDACIÓN REPRODUCIBLE DEL ARTEFACTO JAR (validar-jar.py)
+[2026-10-29 12:50:20] Identificador único de ejecución: run-20261029-125020-9f36a5
+[2026-10-29 12:50:20] Carpeta de evidencias propia: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4-9f36a5
+[2026-10-29 12:50:20] ================================================================================
+[2026-10-29 12:50:20] [ARTEFACTO] JAR localizado: F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar
+[2026-10-29 12:50:20] [ARTEFACTO] SHA-256 del JAR probado: 520F52B2BA1B4020A5BAE65681C086D41392679C4D1DC91AD7CD0228064758B4
+[2026-10-29 12:50:20] [INFRAESTRUCTURA] Iniciando servidor Mock SMTP local en puerto 1025...
+[2026-10-29 12:50:20] [INFRAESTRUCTURA] Iniciando servidor Mock WhatsApp Cloud API en puerto 19099...
+[2026-10-29 12:50:20] [INFRAESTRUCTURA] Lanzando contenedor PostgreSQL desechable (lysandri-pg-9f36a5) en puerto 15445...
+[2026-10-29 12:50:20] [INFRAESTRUCTURA] Contenedor creado con ID: 5667398e3cf0
+[2026-10-29 12:50:20] [INFRAESTRUCTURA] Esperando a que PostgreSQL desechable esté listo...
+[2026-10-29 12:50:23] [DB] Destino efectivo PostgreSQL: 127.0.0.1:15445/lysandri_disposable_jar_db (usuario: lysandri_test_runner, contrasena: [PROTEGIDA])
+[2026-10-29 12:50:23] [DB] Inicializando roles administrativos mínimos para migración V25...
+[2026-10-29 12:50:23] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-10-29 12:50:23] [JAR] Proceso hijo iniciado con PID: 33440
+[2026-10-29 12:50:23] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-10-29 12:50:37] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-10-29 12:50:37] [JAR] Backend JAR completamente inicializado y aceptando peticiones HTTP.
+[2026-10-29 12:50:37] [DB] Configurando datos base en base desechable...
+[2026-10-29 12:50:38] [PROVISIÓN] Registrando cuenta administrativa con hash BCrypt nativo de Spring Security...
+[2026-10-29 12:50:38] [PROVISIÓN] Cuenta elevada a ADMIN y habilitada correctamente en BD.
+[2026-10-29 12:50:38] [HTTP] Inicio de sesión exitoso de Administrador -> APROBADO (HTTP 200 / esperado 200) Retorna HTTP 200 y token JWT emitido por el servidor
+[2026-10-29 12:50:38] [HTTP] Rechazo de contraseña incorrecta con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 12:50:38] [HTTP] Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración) -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 12:50:39] [HTTP] Creación de orden checkout para invitado -> APROBADO (HTTP 200 / esperado 200) Orden checkout creada con Session ID: izisess_mock_498c7955307040f0938c1ea20818b03e
+[2026-10-29 12:50:39] [HTTP] Confirmación de pago de orden y disparo de outbox de activación -> APROBADO (HTTP 200 / esperado 200) Pago confirmado. Evento de activación encolado en outbox.
+[2026-10-29 12:50:39] [MAIL] Esperando entrega de correo de activación en servidor Mock SMTP local...
+[2026-10-29 12:50:39] [MAIL] Recepción de correo de activación en Mock SMTP -> APROBADO (HTTP EMAIL_RECIBIDO / esperado EMAIL_RECIBIDO) Correo capturado por el outbox worker sin tocar servicios externos
+[2026-10-29 12:50:39] [MAIL] Token de activación válido capturado (longitud 43 chars).
+[2026-10-29 12:50:39] [HTTP] Rechazo de login para cuenta pendiente de activación con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 12:50:39] [HTTP] Activación de cuenta con token válido y establecimiento de contraseña -> APROBADO (HTTP 200 / esperado 200) Cuenta activada y token de sesión retornado
+[2026-10-29 12:50:39] [HTTP] Rechazo de token de activación ya consumido (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Retorna HTTP 409 Conflict ante intento de reusar token consumido
+[2026-10-29 12:50:39] [HTTP] Rechazo de token manipulado / alterado -> APROBADO (HTTP 400 / esperado 400) Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos
+[2026-10-29 12:50:40] [DB] Hash SHA-256 recuperado de la base de datos (longitud 64).
+[2026-10-29 12:50:40] [HTTP] Rechazo del hash de BD presentado directamente como token -> APROBADO (HTTP 400 / esperado 400) El hash almacenado no puede utilizarse como sustituto del token en claro
+[2026-10-29 12:50:40] [HTTP] Inicio de sesión exitoso de Usuario 1 activado -> APROBADO (HTTP 200 / esperado 200) Sesión iniciada correctamente con la nueva contraseña
+[2026-10-29 12:50:40] [HTTP] Registro de Usuario 2 -> APROBADO (HTTP 201 / esperado 201) Usuario 2 registrado exitosamente
+[2026-10-29 12:50:40] [DB] IDs asignados en BD: Usuario 1 = 5, Usuario 2 = 6
+[2026-10-29 12:50:40] [HTTP] Administrador desactiva cuenta de Usuario 2 -> APROBADO (HTTP 200 / esperado 200) Usuario 2 marcado como inactivo/desactivado por la administración
+[2026-10-29 12:50:40] [HTTP] Rechazo de login para cuenta desactivada con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 12:50:40] [HTTP] Rechazo de petición no autenticada a ruta protegida -> APROBADO (HTTP 401 / esperado 401) Ruta protegida rechaza peticiones sin cabecera Authorization
+[2026-10-29 12:50:40] [HTTP] Rechazo de JWT manipulado / firma inválida -> APROBADO (HTTP 401 / esperado 401) Filtro de seguridad rechaza JWT con firma alterada
+[2026-10-29 12:50:40] [HTTP] Rechazo de JWT firmado con clave distinta -> APROBADO (HTTP 401 / esperado 401) El servidor rechaza tokens firmados con llaves no autorizadas
+[2026-10-29 12:50:40] [HTTP] Usuario común bloqueado de endpoints administrativos (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios
+[2026-10-29 12:50:40] [HTTP] Administrador autorizado accede a endpoints administrativos (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 5 usuarios correctamente
+[2026-10-29 12:50:40] [HTTP] Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Acceso concedido al propietario de la cuenta
+[2026-10-29 12:50:40] [HTTP] Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Lectura cruzada entre usuarios bloqueada por control de autorización
+[2026-10-29 12:50:40] [HTTP] Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Modificación no autorizada rechazada con AccessDeniedException
+[2026-10-29 12:50:41] [DB] Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó -> APROBADO (HTTP Segundo / esperado Segundo) El nombre en BD permanece intacto: 'Segundo'
+[2026-10-29 12:50:41] [DB] Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado -> APROBADO (HTTP ENVIADO|t / esperado ENVIADO|t) Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)
+[2026-10-29 12:50:41] [HTTP] WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR
+[2026-10-29 12:50:41] [HTTP] WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud -> APROBADO (HTTP 201 / esperado 201) Mensaje creado con ID 1, estado ENVIADO, contactó al proveedor simulado
+[2026-10-29 12:50:41] [HTTP] WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor -> APROBADO (HTTP 201 / esperado 201) Proveedor llamado 1 veces (0 llamadas nuevas). Mensaje ID consistente: 1
+[2026-10-29 12:50:41] [HTTP] WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazado con IllegalArgumentException al intentar reusar idSolicitud con datos diferentes
+[2026-10-29 12:50:41] ================================================================================
+[2026-10-29 12:50:41] [ESCENARIO 3B] INICIO DE PRUEBA DE REINICIO REAL DE PROCESO JAVA CONSERVANDO POSTGRESQL
+[2026-10-29 12:50:41] ================================================================================
+[2026-10-29 12:50:41] [REINICIO REAL] Esperando que la petición para req-restart-1793296241 contacte al servidor mock de WhatsApp...
+[2026-10-29 12:50:41] [REINICIO REAL] Estado en BD en pleno vuelo de despacho: 'EN_PROCESO_ENVIO|t'
+[2026-10-29 12:50:41] [HTTP] Orden Idempotencia: Creación de orden en JVM 1 previa a reinicio del backend -> APROBADO (HTTP 200 / esperado 200) Orden creada con código 'a18a07a1-5dcf-4103-b24d-bacccce114d4' en JVM 1 (PID 33440)
+[2026-10-29 12:50:41] [REINICIO REAL] Deteniendo forzosamente el proceso del SO Java #1 (PID 33440) antes de persistir resultado...
+[2026-10-29 12:50:41] [REINICIO REAL] Proceso Java #1 finalizado. La base de datos PostgreSQL permanece intacta.
+[2026-10-29 12:50:41] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-10-29 12:50:41] [JAR] Proceso hijo iniciado con PID: 30464
+[2026-10-29 12:50:41] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-10-29 12:50:53] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-10-29 12:50:54] [HTTP] Orden Idempotencia: Recuperación idéntica de orden en JVM 2 tras reinicio del proceso (DB count=1) -> APROBADO (HTTP 200 / esperado 200) Mismo código 'a18a07a1-5dcf-4103-b24d-bacccce114d4' recuperado en JVM 2 (PID 30464), conteo estricto en BD=1
+[2026-10-29 12:50:54] [DB] WhatsApp Reinicio Real: Recuperación a RESULTADO_INCIERTO tras muerte del proceso JVM -> APROBADO (HTTP RESULTADO_INCIERTO / esperado RESULTADO_INCIERTO) La solicitud fue recuperada conservadoramente como RESULTADO_INCIERTO por el nuevo proceso JVM
+[2026-10-29 12:50:54] [HTTP] WhatsApp Reinicio Real: Solicitud en RESULTADO_INCIERTO rechaza nuevo despacho a la red -> APROBADO (HTTP 201 / esperado 201) No se reenvió a la red. Llamadas al proveedor para esta solicitud se mantuvieron en 1
+[2026-10-29 12:50:54] [HTTP] WhatsApp Reinicio Real: Webhook autenticado concilia solicitud recuperada -> APROBADO (HTTP 200 / esperado 200) Webhook procesado exitosamente por el segundo proceso JVM
+[2026-10-29 12:50:54] [DB] WhatsApp Reinicio Real: Estado final ENTREGADO y llamadas totales al proveedor igual a 1 -> APROBADO (HTTP ENTREGADO|wamid.restart.delivered.1793296254|1 / esperado ENTREGADO|wamid.restart.delivered.1793296254|1) Estado final ENTREGADO conciliado, id_proveedor guardado, y exactamente 1 llamada al proveedor
+[2026-10-29 12:50:54] ================================================================================
+[2026-10-29 12:50:54] [FASE 4] INICIO DE PRUEBAS DE TRANSFERENCIAS BANCARIAS, CUENTAS E IDEMPOTENCIA
+[2026-10-29 12:50:54] ================================================================================
+[2026-10-29 12:50:54] [HTTP] Cuentas Bancarias: Consulta pública retorna cuentas oficiales autorizadas (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 4 cuentas y billeteras activas oficiales
+[2026-10-29 12:50:54] [HTTP] Transferencia Manual: Creación de orden para transferencia bancaria en USD -> APROBADO (HTTP 200 / esperado 200) Orden creada con código c342b99f-accd-4714-9964-2908b6709d29, ID 3, monto None USD
+[2026-10-29 12:50:55] [HTTP] Idempotencia Órdenes: Reintento transparente recupera la misma orden sin duplicar en BD -> APROBADO (HTTP 200 / esperado 200) Recuperada orden existente c342b99f-accd-4714-9964-2908b6709d29 y conteo en BD se mantuvo en 1 fila
+[2026-10-29 12:50:55] [HTTP] Idempotencia Órdenes: Intento de reuso de clave con datos divergentes es rechazado (HTTP 409) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict ante colisión de clave de idempotencia con contenido diferente
+[2026-10-29 12:50:55] [HTTP] Idempotencia Órdenes: Aislamiento por comprador y prevención IDOR de clave (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Bloqueado con HTTP 403 al intentar acceder o reaprovechar clave de idempotencia de otro comprador
+[2026-10-29 12:50:55] [HTTP] Validación Método de Pago: Creación con método no permitido es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Método de pago no admitido ('BITCOIN') rechazado con IllegalArgumentException
+[2026-10-29 12:50:55] [HTTP] Aprobación Manual BCP: Aprobación oficial con cuenta configurada y ceros a la izquierda en operación -> APROBADO (HTTP 200 / esperado 200) Estado PAGADO, operación normalizada con ceros 'OP0012345', cuenta normalizada '19398218491028'
+[2026-10-29 12:50:55] [HTTP] Detección Duplicados: Bloqueo de segundo abono con misma operación normalizada (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict al detectar número de operación previamente registrado tras normalización
+[2026-10-29 12:50:55] [HTTP] Validación Cuenta Destino: Rechazo de abono hacia cuenta bancaria no configurada o ajena (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Cuenta destino no autorizada rechazada con IllegalArgumentException sin alterar la orden
+[2026-10-29 12:50:56] [HTTP] Billeteras Digitales: Creación y aprobación con Yape en moneda PEN -> APROBADO (HTTP 200 / esperado 200) Orden Yape aprobada a PAGADO, operación '00887766' (ceros conservados) y destino '987654321'
+[2026-10-29 12:50:56] [HTTP] Seguridad de Pasarela: Rechazo de aprobación manual sobre orden de pasarela en línea (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Bloqueado con IllegalArgumentException: órdenes de pasarelas en línea (IZIPAY) no admiten aprobación manual
+[2026-10-29 12:50:56] [HTTP] Validación Transferencia: Discrepancia en moneda verificada es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazado con HTTP 400 Bad Request por incompatibilidad de moneda (orden USD vs abono PEN)
+[2026-10-29 12:50:56] [HTTP] Validación Transferencia: Intento de mutar método de pago en aprobación es rechazado (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazado con HTTP 400: no se permite alterar el método de pago original registrado en la orden
+[2026-10-29 12:50:56] [HTTP] Validación Transferencia: Repetición idéntica sobre orden PAGADA es idempotente (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Aprobación idéntica repetida retorna la orden PAGADA sin duplicar abonos ni fallar
+[2026-10-29 12:50:56] [HTTP] Orden Idempotencia: Inserción concurrente simultánea recupera orden ganadora sin duplicados -> APROBADO (HTTP 200 / esperado 200) Ambas peticiones concurrentes retornaron el mismo código 'f73fa2c3-5fe0-466f-a75f-0f9c5eb5eff9', registros en BD=1
+[2026-10-29 12:50:56] [TRANSFERENCIAS] Verificando detección de abono duplicado mediante variante de entidad bancaria y CCI...
+[2026-10-29 12:50:56] [HTTP] Anti-reuso Variantes: Bloqueo de abono con variante de nombre de banco o CCI (HTTP 409) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict: la resolución canónica detecta que 'BANCO DE CREDITO DEL PERU' y CCI corresponden al abono BCP ya aplicado a otra orden
+[2026-10-29 12:50:56] [TRANSFERENCIAS] Verificando rechazo de combinaciones incompatibles entre método y destino...
+[2026-10-29 12:50:56] [HTTP] Compatibilidad Método/Destino: Rechazo de método y destino incompatibles o banco no aprobado (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazados con HTTP 400 Bad Request: validación estricta de destinos y compatibilidad con método de pago
+[2026-10-29 12:50:56] [INVITADOS] Probando autorización de recuperación con token criptográfico seguro...
+[2026-10-29 12:50:56] [INVITADOS] Token de sesión de invitado obtenido (longitud=404)
+[2026-10-29 12:50:57] [HTTP] Contexto Invitado: Validación de token criptográfico y rechazo 403 ante ausencia o manipulación -> APROBADO (HTTP 200 / esperado 200) Orden '8c29c3f7-7ba9-495d-b7f5-32e7499c6eb8' protegida contra IDOR: rechaza recuperación sin token (HTTP 403) y con token alterado (HTTP 403); autoriza con token válido (HTTP 200)
+[2026-10-29 12:50:57] [REINICIO REAL JVM 3] Verificando persistencia y recuperación de contexto de invitado a través de reinicio del backend...
+[2026-10-29 12:50:57] [REINICIO REAL JVM 3] Orden creada en JVM 2 (PID 30464) con código '9cadf998-cef1-491a-a311-2d1b993b232f'
+[2026-10-29 12:50:57] [REINICIO REAL JVM 3] Terminando proceso Java #2 (PID 30464)...
+[2026-10-29 12:50:57] [REINICIO REAL JVM 3] Proceso Java #2 terminado.
+[2026-10-29 12:50:57] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-10-29 12:50:57] [JAR] Proceso hijo iniciado con PID: 24748
+[2026-10-29 12:50:57] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-10-29 12:51:07] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-10-29 12:51:07] [REINICIO REAL JVM 3] Proceso Java #3 iniciado con éxito (PID 24748)
+[2026-10-29 12:51:08] [HTTP] Contexto Invitado Reinicio: Recuperación de orden de invitado tras reinicio real de JVM (DB count=1) -> APROBADO (HTTP 200 / esperado 200) Mismo código '9cadf998-cef1-491a-a311-2d1b993b232f' recuperado en JVM 3 (PID 24748, previo PID 30464), sin token HTTP 403, conteo en BD=1
+[2026-10-29 12:51:08] ================================================================================
+[2026-10-29 12:51:08] VALIDACIÓN COMPLETADA EXITOSAMENTE: 54 PASOS APROBADOS DE 54
+[2026-10-29 12:51:08] ================================================================================
+[2026-10-29 12:51:08] [EVIDENCIA] Reporte estructurado guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4-9f36a5\recorrido-http-jar-real.json
