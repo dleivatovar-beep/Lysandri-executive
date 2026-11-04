@@ -39,6 +39,18 @@ public class OrderController {
     public record GuestSessionRequest(String email) {}
     public record GuestSessionResponse(String guestSessionToken, String guestSessionId, long expiresIn) {}
 
+    public record ResolverDestinoMoodleRequest(
+            @jakarta.validation.constraints.NotNull(message = "El identificador del curso Moodle es obligatorio")
+            @jakarta.validation.constraints.Positive(message = "El identificador del curso Moodle debe ser un número positivo")
+            Long moodleCourseId,
+
+            @jakarta.validation.constraints.NotBlank(message = "La justificación o motivo es obligatorio")
+            String motivo,
+
+            @jakarta.validation.constraints.NotBlank(message = "La referencia a la evidencia documental es obligatoria")
+            String referenciaEvidencia
+    ) {}
+
     @org.springframework.beans.factory.annotation.Autowired
     public OrderController(
             BuyCourseUseCase buyCourseUseCase,
@@ -227,6 +239,26 @@ public class OrderController {
     public ResponseEntity<Orden> reintentarMatricula(@PathVariable Long idOrden) {
         log.info("Llamada administrativa de reintento de matrícula para orden ID: {}", idOrden);
         Orden orden = buyCourseUseCase.reintentarMatricula(idOrden);
+        return ResponseEntity.ok(orden);
+    }
+
+    @PostMapping({"/detalles/{idDetalle}/resolver-moodle", "/{idOrden}/detalles/{idDetalle}/resolver-moodle"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'TRABAJADOR', 'COORDINADOR_ACADEMICO')")
+    @Operation(summary = "Resolución administrativa autorizada para un detalle de orden con curso Moodle ambiguo o histórico sin respaldo")
+    public ResponseEntity<Orden> resolverDestinoMoodleDetalle(
+            @PathVariable Long idDetalle,
+            @Valid @RequestBody ResolverDestinoMoodleRequest request,
+            Authentication authentication) {
+        String authUser = authentication != null ? authentication.getName() : "ADMIN_SISTEMA";
+        log.info("Llamada administrativa para resolver destino Moodle de detalle ID: {} por usuario: {}", idDetalle, authUser);
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand command = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                request.moodleCourseId(),
+                request.motivo(),
+                request.referenciaEvidencia(),
+                authUser
+        );
+        Orden orden = buyCourseUseCase.resolverDestinoMoodleDetalle(idDetalle, command);
         return ResponseEntity.ok(orden);
     }
 

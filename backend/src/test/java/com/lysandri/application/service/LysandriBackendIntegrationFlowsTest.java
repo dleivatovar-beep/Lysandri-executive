@@ -121,6 +121,7 @@ class LysandriBackendIntegrationFlowsTest {
                 .moodleCourseId(404L)
                 .activo(true)
                 .precioAprobado(true)
+                .moodleVerificado(true)
                 .build();
 
         comprobanteMock = ComprobantePago.builder()

@@ -114,7 +114,7 @@ const FAQ_ITEMS = [
   {
     question: '¿Qué métodos de pago aceptan y qué tan seguro es el proceso?',
     answer:
-      'Aceptamos tarjetas de crédito y débito Visa, Mastercard, Diners y Amex mediante la pasarela segura izipay Online con certificación PCI-DSS Nivel 1 y 3D Secure. Además, puedes pagar al instante mediante Yape/Plin o transferencia bancaria en BCP e Interbank.',
+      'Aceptamos tarjetas de crédito y débito Visa, Mastercard, Diners y Amex mediante la pasarela segura izipay Online con certificación PCI-DSS Nivel 1 y 3D Secure. Además, puedes coordinar abonos mediante Yape/Plin o transferencia bancaria en BCP e Interbank para verificación administrativa.',
   },
   {
     question: '¿Emiten Boleta o Factura electrónica con RUC para reembolso de empresa?',
@@ -122,14 +122,14 @@ const FAQ_ITEMS = [
       'Sí, emitimos comprobantes electrónicos válidos ante SUNAT (Boleta o Factura con RUC). Durante el checkout puedes ingresar la Razón Social y RUC de tu empresa para remitirte el comprobante con valor tributario para deducibilidad o reembolso corporativo.',
   },
   {
-    question: '¿Cuándo y cómo recibo el acceso al Campus Moodle 4.x y los videos?',
+    question: '¿Cuándo y cómo recibo el acceso al Campus Moodle y los contenidos?',
     answer:
-      'Una vez confirmado el pago (inmediato con tarjeta, Yape o pasarela izipay), recibes tus credenciales de acceso automático por correo electrónico. Podrás ingresar al Campus Moodle 4.x con CDN global Bunny.net y consultar al Tutor RAG con IA las 24 horas.',
+      'Una vez confirmado el pago por la pasarela izipay Online o verificado el abono bancario por administración, recibes tus credenciales de acceso por correo electrónico. Podrás ingresar al Campus Moodle y consultar las lecciones y recursos del programa.',
   },
   {
-    question: '¿Cómo funciona la Garantía Institucional de 7 Días?',
+    question: '¿Cómo se procesa la confirmación de matrícula y entrega de credenciales?',
     answer:
-      'Si durante los primeros 7 días naturales tras tu matrícula consideras que el programa no cumple con tus expectativas de rigor técnico y aplicabilidad ejecutiva, te devolvemos el 100% de tu dinero sin preguntas ni trabas.',
+      'Al confirmarse la transacción por la pasarela segura o tras la validación administrativa del comprobante bancario, el sistema emite el comprobante tributario y aprovisiona tus credenciales de Moodle de forma auditada.',
   },
   {
     question: '¿Cómo puedo inscribir a mi equipo de tecnología o solicitar un programa In-Company?',
@@ -199,6 +199,8 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
   return (
     <div className="lx-marketplace">
+      
+
       {/* 1. HERO EDITORIAL DE JARED */}
       <section className="lx-hero" aria-labelledby="lx-hero-title">
         <div className="lx-hero-visual" aria-hidden="true">
@@ -265,7 +267,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
                 <div className="lx-feature-content">
                   <span className="lx-feature-category">
                     {featured.category}
-                    {featured.isDemo && ' · Curso simulado'}
+                    
                   </span>
                   <h2>{featured.title}</h2>
                   <p>{featured.description}</p>
@@ -367,11 +369,21 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
               <strong>No se pudo cargar el catálogo</strong>
               <p>{errorMessage}</p>
             </div>
-            {onRetry && (
-              <button type="button" onClick={onRetry}>
-                <RefreshCw aria-hidden="true" /> Reintentar
-              </button>
-            )}
+            <div className="flex flex-wrap gap-2 pt-2">
+              {onRetry && (
+                <button type="button" onClick={onRetry}>
+                  <RefreshCw aria-hidden="true" /> Reintentar
+                </button>
+              )}
+            </div>
+          </div>
+        ) : playbooks.length === 0 ? (
+          <div className="lx-catalog-state">
+            <BookOpen aria-hidden="true" />
+            <div>
+              <strong>No hay programas disponibles</strong>
+              <p>Actualmente no hay programas académicos publicados en la plataforma.</p>
+            </div>
           </div>
         ) : filteredPlaybooks.length === 0 ? (
           <div className="lx-catalog-state">
@@ -513,13 +525,13 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       <section className="lx-guarantee-section" aria-labelledby="lx-guarantee-title">
         <div className="lx-guarantee-banner">
           <div className="lx-guarantee-seal">
-            100%<br />Garantía<br />7 Días
+            100%<br />Rigor<br />Oficial
           </div>
           <div className="lx-guarantee-info">
-            <h3 id="lx-guarantee-title">Garantía Institucional de Satisfacción de 7 Días</h3>
+            <h3 id="lx-guarantee-title">Compromiso y Rigor Académico Lysandri</h3>
             <p>
-              Inscríbete con total confianza. Si en tus primeros 7 días naturales consideras que el programa no cumple
-              tus expectativas técnicas o directivas, te reembolsamos el 100% de tu matrícula sin preguntas.
+              Inscríbete con respaldo institucional. Cada programa cuenta con certificación oficial, temarios orientados
+              a la práctica ejecutiva y acompañamiento técnico para asegurar la aplicación efectiva en tu organización.
             </p>
           </div>
         </div>

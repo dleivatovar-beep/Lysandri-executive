@@ -12,7 +12,6 @@ import {
   MessageSquareText,
   Store,
   Users,
-  Calculator,
   CreditCard,
   Building2,
   LogOut,
@@ -133,11 +132,6 @@ const ROLE_NAVIGATION: Record<
       label: 'In-Company',
       view: 'IN_COMPANY',
       icon: Building2,
-    },
-    {
-      label: 'Área Contable',
-      view: 'ACCOUNTING',
-      icon: Calculator,
     },
   ],
 };

@@ -12,6 +12,15 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', {
 });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+Object.defineProperty(globalThis, 'localStorage', {
+  configurable: true,
+  value: dom.window.localStorage,
+});
+
+Object.defineProperty(globalThis, 'sessionStorage', {
+  configurable: true,
+  value: dom.window.sessionStorage,
+});
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.Node = dom.window.Node;
 globalThis.MutationObserver = dom.window.MutationObserver;
@@ -55,6 +64,7 @@ const compiled = esbuild.buildSync({
   platform: 'node',
   write: false,
   external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext'],
+  loader: { '.svg': 'text', '.png': 'dataurl', '.css': 'empty' },
 });
 const source = compiled.outputFiles[0].text.replace(
   /import\s*\{[^}]*useAuth[^}]*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
@@ -157,7 +167,7 @@ try {
   });
   renderModal();
   await selectTransferAndFill();
-  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i }));
   await waitFor(() => assert.ok(screen.getByText('ORD-UI-001')));
   assert.equal(calls.guest.length, 1);
   assert.equal(calls.create.length, 1);
@@ -181,7 +191,7 @@ try {
   };
   renderModal();
   await selectTransferAndFill('fallo@test.pe');
-  const submitButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  const submitButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
   fireEvent.click(submitButton);
   await screen.findByText(/No hay conexión con el servidor/);
   await waitFor(() => assert.equal(submitButton.disabled, false));
@@ -210,7 +220,7 @@ try {
   });
   renderModal();
   await selectTransferAndFill('reintento@empresa.pe');
-  const retryButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  const retryButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
   fireEvent.click(retryButton);
   await screen.findByText(/Tiempo de espera agotado/);
   await waitFor(() => assert.equal(retryButton.disabled, false));
@@ -234,11 +244,22 @@ try {
   }));
   const firstMount = renderModal();
   await selectTransferAndFill('recarga@empresa.pe');
-  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i }));
   await screen.findByText('ORD-RELOAD-1');
   const createdBeforeReload = calls.create.length;
-  firstMount.unmount();
+    firstMount.unmount();
   renderModal();
+
+  // No mostrar la orden mientras el correo esté vacío.
+  assert.equal(screen.queryByText('ORD-RELOAD-1'), null);
+
+  // El comprador vuelve a introducir su correo.
+  fireEvent.change(
+    screen.getByPlaceholderText('c.mendoza@empresa.com'),
+    { target: { value: 'recarga@empresa.pe' } }
+  );
+
+  // Recuperar la orden guardada sin pulsar otra vez Registrar.
   await screen.findByText('ORD-RELOAD-1');
   assert.equal(calls.create.length, createdBeforeReload);
   cleanup();
@@ -256,7 +277,7 @@ try {
   });
   renderModal();
   await selectTransferAndFill('conflicto@test.pe');
-  const conflictButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  const conflictButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
   fireEvent.click(conflictButton);
   await screen.findByText('Conflicto de idempotencia para esta compra');
   await waitFor(() => assert.equal(conflictButton.disabled, false));
@@ -286,7 +307,17 @@ try {
   calls = { guest: [], create: [] };
   successfulAccountRequest();
   postHandler = async (url) => { throw new Error(`POST inesperado: ${url}`); };
-  const buyerMount = renderModal();
+    const buyerMount = renderModal();
+
+  // Sin identificar al comprador, su orden no debe aparecer.
+  assert.equal(screen.queryByText('ORD-ANTERIOR'), null);
+
+  // Introducir el correo del primer comprador.
+  fireEvent.change(
+    screen.getByPlaceholderText('c.mendoza@empresa.com'),
+    { target: { value: 'primero@test.pe' } }
+  );
+
   await screen.findByText('ORD-ANTERIOR');
   currentAuthUser = { id: 202, email: 'segundo@test.pe', nombre: 'Comprador Segundo' };
   buyerMount.rerender(React.createElement(CheckoutModal, { isOpen: true, onClose: () => {}, playbook }));
@@ -305,11 +336,11 @@ try {
   }));
   renderModal();
   await selectTransferAndFill('nueva@test.pe');
-  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i }));
   await screen.findByText('ORD-OLD-INTENT');
   const previousKey = calls.create[0].config.headers['X-Idempotency-Key'];
   fireEvent.click(screen.getByRole('button', { name: 'Iniciar Nueva Orden' }));
-  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i }));
   await waitFor(() => assert.equal(calls.create.length, 2));
   assert.notEqual(calls.create[1].config.headers['X-Idempotency-Key'], previousKey);
   cleanup();
@@ -350,7 +381,7 @@ try {
   });
   renderModal();
   await selectTransferAndFill('red@test.pe');
-  const networkButton = screen.getByRole('button', { name: /Registrar Orden y Continuar con Voucher/i });
+  const networkButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
   fireEvent.click(networkButton);
   await screen.findByText(/No se pudo conectar con el servidor/);
   await waitFor(() => assert.equal(networkButton.disabled, false));
@@ -361,7 +392,134 @@ try {
   assertions++;
   console.log('PASS UI i: error de red no genera éxito ni abre WhatsApp.');
 
-  console.log(`RESULTADO UI: ${assertions}/9 escenarios aprobados (interacciones DOM reales).`);
+  // j. Programa no válido: muestra aviso y no envía orden real al backend
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async () => {
+    throw new Error('No debe llamar al backend con programa no válido');
+  });
+  render(React.createElement(CheckoutModal, {
+    isOpen: true,
+    onClose: () => {},
+    playbook: { ...playbook, id: '-1' },
+  }));
+  await selectTransferAndFill('invalido@test.pe');
+  const invalidButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
+  fireEvent.click(invalidButton);
+  await screen.findByText(/El programa seleccionado no es válido o no está disponible para compra/);
+  assert.equal(calls.create.length, 0, 'Cero peticiones de creación para programa no válido');
+  cleanup();
+  assertions++;
+  console.log('PASS UI j: programa no válido bloquea compra real, muestra aviso claro y no contacta backend.');
+
+  // k. Izipay formToken: muestra formulario incrustado sin redirección externa
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  window.KR = {
+    setFormToken: () => Promise.resolve(),
+    renderElements: () => Promise.resolve({ result: 'rendered' }),
+    removeForms: () => Promise.resolve(),
+    onError: () => {},
+    onSubmit: () => {},
+  };
+  postHandler = createRequestCall(calls, async () => ({
+    data: {
+      codigoOrden: 'ORD-IZI-TEST',
+      formToken: 'mock-form-token-12345',
+      publicKey: 'mock-public-key',
+    },
+  }));
+  renderModal();
+  fireEvent.change(screen.getByPlaceholderText('Ej. Carlos Alberto Mendoza Alarcón'), {
+    target: { value: 'Carlos Mendoza' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('c.mendoza@empresa.com'), {
+    target: { value: 'izipay@empresa.pe' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('Ej. 45892147'), {
+    target: { value: '70809010' },
+  });
+  const izipaySubmit = screen.getByRole('button', { name: /Pagar con izipay Online/i });
+  fireEvent.click(izipaySubmit);
+  await screen.findByText('ORD-IZI-TEST');
+  await screen.findByText('Formulario inteligente de pago preparado');
+  assert.equal(calls.create.length, 1);
+  cleanup();
+  delete window.KR;
+  assertions++;
+  console.log('PASS UI k: izipay formToken renderiza contenedor kr-embedded sin redirección.');
+
+  // l. Validación de respuesta de checkout incompleta (formToken sin publicKey)
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  postHandler = createRequestCall(calls, async () => ({
+    data: {
+      codigoOrden: 'ORD-INCOMPLETE',
+      formToken: 'mock-form-token-only',
+      // publicKey omitido
+    },
+  }));
+  renderModal();
+  fireEvent.change(screen.getByPlaceholderText('Ej. Carlos Alberto Mendoza Alarcón'), {
+    target: { value: 'Carlos Mendoza' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('c.mendoza@empresa.com'), {
+    target: { value: 'incomplete@empresa.pe' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('Ej. 45892147'), {
+    target: { value: '70809010' },
+  });
+  const incompleteBtn = screen.getByRole('button', { name: /Pagar con izipay Online/i });
+  fireEvent.click(incompleteBtn);
+  await screen.findByText(/Respuesta de checkout incompleta/);
+  assert.equal(screen.queryByText('ORD-INCOMPLETE'), null, 'No debe renderizar formulario con respuesta incompleta');
+  cleanup();
+  assertions++;
+  console.log('PASS UI l: respuesta incompleta (falta publicKey) bloquea renderizado y muestra aviso claro.');
+
+  // m. Manejo de error de inicialización y reintento de pasarela
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  let removeFormsInvoked = false;
+  window.KR = {
+    setFormToken: () => Promise.reject(new Error('Fallo de inicialización de tarjeta')),
+    removeForms: () => { removeFormsInvoked = true; },
+  };
+  postHandler = createRequestCall(calls, async () => ({
+    data: {
+      codigoOrden: 'ORD-IZI-ERR',
+      formToken: 'mock-token',
+      publicKey: 'mock-key',
+    },
+  }));
+  renderModal();
+  fireEvent.change(screen.getByPlaceholderText('Ej. Carlos Alberto Mendoza Alarcón'), {
+    target: { value: 'Carlos Mendoza' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('c.mendoza@empresa.com'), {
+    target: { value: 'error@empresa.pe' },
+  });
+  fireEvent.change(screen.getByPlaceholderText('Ej. 45892147'), {
+    target: { value: '70809010' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /Pagar con izipay Online/i }));
+  await screen.findByText(/No se pudo inicializar el formulario seguro de izipay/);
+  assert.ok(screen.getByRole('button', { name: /Reintentar carga de pasarela/i }));
+
+  // n. Volver a opciones de pago limpia formulario y llama a removeForms()
+  fireEvent.click(screen.getByRole('button', { name: /Volver a opciones de pago/i }));
+  await waitFor(() => assert.equal(screen.queryByText('ORD-IZI-ERR'), null));
+  assert.ok(removeFormsInvoked, 'window.KR.removeForms() debe ser invocado al limpiar o cambiar de orden');
+  cleanup();
+  delete window.KR;
+  assertions += 2;
+  console.log('PASS UI m & n: errores del SDK muestran reintento y reinicio de orden invoca KR.removeForms().');
+
+  console.log(`RESULTADO UI: ${assertions}/14 escenarios aprobados (interacciones DOM reales).`);
 } finally {
   cleanup();
   axios.post = originalPost;

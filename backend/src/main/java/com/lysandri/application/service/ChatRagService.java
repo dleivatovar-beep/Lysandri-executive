@@ -9,7 +9,6 @@ import com.lysandri.domain.ports.out.VectorStorePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,6 +26,9 @@ public class ChatRagService implements ChatRagUseCase {
     private static final int TOP_K = 4;
     private static final double MIN_SIMILARITY = 0.60;
 
+    public static final String RESPUESTA_SIN_INFORMACION_OFICIAL =
+            "Estimado ejecutivo, la información solicitada no se encuentra disponible en los documentos oficiales o sílabos de la plataforma. Le sugerimos solicitar asesoría personalizada a través de nuestro formulario de contacto corporativo.";
+
     private static final String SYSTEM_PROMPT = """
         Eres el Asistente Ejecutivo de Admisiones y Asesoría Académica de 'Lysandri Executive'.
         Tu objetivo es resolver dudas de ejecutivos, líderes tecnológicos y gerentes sobre los 
@@ -41,12 +43,11 @@ public class ChatRagService implements ChatRagUseCase {
         """;
 
     @Override
-    @Transactional
     public ChatRagResponse procesarConsulta(ChatRagCommand command) {
         long startTime = System.currentTimeMillis();
         log.info("Procesando consulta RAG. Sesión: {}, Programa: {}", command.sesionId(), command.idPrograma());
 
-        // 1. Generar embedding vectorial de la pregunta (1536 dimensiones)
+        // 1. Generar embedding vectorial de la pregunta (1536 dimensiones) sin retener transacción de BD
         float[] queryEmbedding = llmClientPort.generarEmbedding(command.pregunta());
 
         // 2. Búsqueda semántica por distancia coseno (<=>) en pgvector
@@ -57,14 +58,26 @@ public class ChatRagService implements ChatRagUseCase {
                 command.idPrograma()
         );
 
-        // 3. Ensamblado del contexto oficial (Grounding)
-        String contextoDocumentos = fragmentosRelevantes.isEmpty()
-                ? "No se hallaron fragmentos técnicos específicos en la base de conocimiento para este programa."
-                : fragmentosRelevantes.stream()
-                        .map(chunk -> String.format("[Pág. %s]: %s", 
-                                chunk.getNumeroPagina() != null ? chunk.getNumeroPagina() : "S/N", 
-                                chunk.getContenido()))
-                        .collect(Collectors.joining("\n---\n"));
+        long latency = System.currentTimeMillis() - startTime;
+
+        // 3. Diferenciar falta de información de fallos técnicos: si no hay fragmentos oficiales, reconocerlo
+        if (fragmentosRelevantes == null || fragmentosRelevantes.isEmpty()) {
+            log.info("RAG: Sin fragmentos relevantes para la consulta. Reconociendo falta de información oficial.");
+            guardarHistorialAuditoria(command, RESPUESTA_SIN_INFORMACION_OFICIAL, List.of(), 0, 0, (int) latency);
+            return new ChatRagResponse(
+                    RESPUESTA_SIN_INFORMACION_OFICIAL,
+                    List.of(),
+                    0,
+                    latency
+            );
+        }
+
+        // 4. Ensamblado del contexto oficial (Grounding)
+        String contextoDocumentos = fragmentosRelevantes.stream()
+                .map(chunk -> String.format("[Pág. %s]: %s",
+                        chunk.getNumeroPagina() != null ? chunk.getNumeroPagina() : "S/N",
+                        chunk.getContenido()))
+                .collect(Collectors.joining("\n---\n"));
 
         String userPromptCompleto = String.format("""
             CONTEXTO OFICIAL DEL SÍLABO:
@@ -74,41 +87,65 @@ public class ChatRagService implements ChatRagUseCase {
             %s
             """, contextoDocumentos, command.pregunta());
 
-        // 4. Inferencia con LLM
+        // 5. Inferencia con LLM sin transacción de BD abierta
         LlmClientPort.LlmCompletion completion = llmClientPort.completarChat(
                 SYSTEM_PROMPT,
                 userPromptCompleto,
                 0.2
         );
 
-        long latency = System.currentTimeMillis() - startTime;
+        long totalLatency = System.currentTimeMillis() - startTime;
 
-        // 5. Citas de referencia
+        // 6. Citas de referencia verificadas
         List<SourceCitation> citas = fragmentosRelevantes.stream()
                 .map(chunk -> new SourceCitation(
                         chunk.getIdDocumento(),
                         chunk.getNumeroPagina(),
-                        chunk.getContenido().length() > 200 
-                                ? chunk.getContenido().substring(0, 200) + "..." 
+                        chunk.getContenido().length() > 200
+                                ? chunk.getContenido().substring(0, 200) + "..."
                                 : chunk.getContenido(),
                         chunk.getSimilitud()
                 ))
                 .toList();
 
-        // 6. Registro de auditoría en HistorialConsulta
+        // 7. Registro de auditoría
+        guardarHistorialAuditoria(
+                command,
+                completion.textoRespuesta(),
+                fragmentosRelevantes.stream()
+                        .map(c -> "doc_" + c.getIdDocumento() + "_chunk_" + c.getIdChunk())
+                        .toList(),
+                completion.tokensPrompt(),
+                completion.tokensCompletion(),
+                (int) totalLatency
+        );
+
+        return new ChatRagResponse(
+                completion.textoRespuesta(),
+                citas,
+                completion.totalTokens(),
+                totalLatency
+        );
+    }
+
+    private void guardarHistorialAuditoria(
+            ChatRagCommand command,
+            String respuesta,
+            List<String> chunksReferenciados,
+            int tokensPrompt,
+            int tokensCompletion,
+            int latenciaMs) {
         try {
             HistorialConsulta historial = HistorialConsulta.builder()
                     .idUser(command.idUsuario())
                     .idPrograma(command.idPrograma())
                     .sesionId(command.sesionId())
                     .pregunta(command.pregunta())
-                    .respuestaIa(completion.textoRespuesta())
-                    .chunksReferenciados(fragmentosRelevantes.stream()
-                            .map(c -> "doc_" + c.getIdDocumento() + "_chunk_" + c.getIdChunk())
-                            .toList())
-                    .tokensPrompt(completion.tokensPrompt())
-                    .tokensCompletion(completion.tokensCompletion())
-                    .tiempoRespuestaMs((int) latency)
+                    .respuestaIa(respuesta)
+                    .chunksReferenciados(chunksReferenciados)
+                    .tokensPrompt(tokensPrompt)
+                    .tokensCompletion(tokensCompletion)
+                    .tiempoRespuestaMs(latenciaMs)
                     .fechaConsulta(OffsetDateTime.now())
                     .build();
 
@@ -116,12 +153,5 @@ public class ChatRagService implements ChatRagUseCase {
         } catch (Exception e) {
             log.warn("No se pudo guardar el registro de auditoría en historial: {}", e.getMessage());
         }
-
-        return new ChatRagResponse(
-                completion.textoRespuesta(),
-                citas,
-                completion.totalTokens(),
-                latency
-        );
     }
 }

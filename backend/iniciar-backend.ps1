@@ -17,6 +17,7 @@ param(
     [int]$ClonePort = 5434,
     [string]$CloneDatabase = "lysandri_clone_db",
     [switch]$SoloVerificar,
+    [switch]$SoloVerificarBaseDatos,
     [switch]$ForzarHerramientaAusente
 )
 
@@ -34,42 +35,45 @@ Write-Host "====================================================================
 Write-Host "INICIO REPRODUCIBLE Y SEGURO: BACKEND LYSANDRI EXECUTIVE" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
 
-# 1. Comprobación de Java (Java 17 o superior)
-Write-Host "[1/7] Comprobando instalacion de Java..." -ForegroundColor Yellow
-$javaCmd = Get-Command java -ErrorAction SilentlyContinue
-if (-not $javaCmd) {
-    Stop-Script "Java no esta instalado o no se encuentra en el PATH. Se requiere Java 17 o superior." 1
-}
-
-$javaVersionOutput = & $env:ComSpec /d /c 'java -version 2>&1'
-Write-Host "  -> Java detectado: $($javaCmd.Source)" -ForegroundColor Green
-$versionMatch = [regex]::Match($javaVersionOutput, 'version "(?<ver>\d+)')
-if ($versionMatch.Success) {
-    $majorVer = [int]$versionMatch.Groups['ver'].Value
-    if ($majorVer -lt 17) {
-        Stop-Script "Version de Java no soportada ($majorVer). Se requiere Java 17 o superior." 1
-    }
-}
-else {
-    Stop-Script "No se pudo determinar la version de Java." 1
-}
-
-# 2. Comprobación del artefacto JAR ejecutable
-Write-Host "[2/7] Comprobando artefacto JAR ejecutable..." -ForegroundColor Yellow
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$jarPath = Join-Path $scriptDir "target/lysandri-backend-1.0.0-SNAPSHOT.jar"
-if (-not (Test-Path -LiteralPath $jarPath)) {
-    # Probar ruta alternativa desde raiz
-    $jarPath = Join-Path $scriptDir "backend/target/lysandri-backend-1.0.0-SNAPSHOT.jar"
-}
 
-if (-not (Test-Path -LiteralPath $jarPath)) {
-    Stop-Script "No se encontro el archivo JAR en $jarPath. Ejecute primero 'mvnw package -DskipTests' para compilarlo." 1
-}
+if (-not $SoloVerificarBaseDatos) {
+    # 1. Comprobación de Java (Java 17 o superior)
+    Write-Host "[1/7] Comprobando instalacion de Java..." -ForegroundColor Yellow
+    $javaCmd = Get-Command java -ErrorAction SilentlyContinue
+    if (-not $javaCmd) {
+        Stop-Script "Java no esta instalado o no se encuentra en el PATH. Se requiere Java 17 o superior." 1
+    }
 
-$jarHash = (Get-FileHash -LiteralPath $jarPath -Algorithm SHA256).Hash
-Write-Host "  -> JAR encontrado: $(Split-Path -Leaf $jarPath)" -ForegroundColor Green
-Write-Host "  -> SHA-256 del JAR: $jarHash" -ForegroundColor DarkGray
+    $javaVersionOutput = & $env:ComSpec /d /c 'java -version 2>&1'
+    Write-Host "  -> Java detectado: $($javaCmd.Source)" -ForegroundColor Green
+    $versionMatch = [regex]::Match($javaVersionOutput, 'version "(?<ver>\d+)')
+    if ($versionMatch.Success) {
+        $majorVer = [int]$versionMatch.Groups['ver'].Value
+        if ($majorVer -lt 17) {
+            Stop-Script "Version de Java no soportada ($majorVer). Se requiere Java 17 o superior." 1
+        }
+    }
+    else {
+        Stop-Script "No se pudo determinar la version de Java." 1
+    }
+
+    # 2. Comprobación del artefacto JAR ejecutable
+    Write-Host "[2/7] Comprobando artefacto JAR ejecutable..." -ForegroundColor Yellow
+    $jarPath = Join-Path $scriptDir "target/lysandri-backend-1.0.0-SNAPSHOT.jar"
+    if (-not (Test-Path -LiteralPath $jarPath)) {
+        # Probar ruta alternativa desde raiz
+        $jarPath = Join-Path $scriptDir "backend/target/lysandri-backend-1.0.0-SNAPSHOT.jar"
+    }
+
+    if (-not (Test-Path -LiteralPath $jarPath)) {
+        Stop-Script "No se encontro el archivo JAR en $jarPath. Ejecute primero 'mvnw package -DskipTests' para compilarlo." 1
+    }
+
+    $jarHash = (Get-FileHash -LiteralPath $jarPath -Algorithm SHA256).Hash
+    Write-Host "  -> JAR encontrado: $(Split-Path -Leaf $jarPath)" -ForegroundColor Green
+    Write-Host "  -> SHA-256 del JAR: $jarHash" -ForegroundColor DarkGray
+}
 
 # 3. Comprobación de Variables de Entorno y Secretos
 Write-Host "[3/7] Comprobando variables de entorno y configuracion de seguridad..." -ForegroundColor Yellow
@@ -131,33 +135,35 @@ else {
 }
 Write-Host "  -> Variables y secretos verificados correctamente (protegidos, nunca impresos)" -ForegroundColor Green
 
-# 4. Resolución y Validación de MOODLE_URL
-Write-Host "[4/7] Resolviendo y validando MOODLE_URL..." -ForegroundColor Yellow
-$rawMoodleUrl = $env:MOODLE_URL
-if ([string]::IsNullOrWhiteSpace($rawMoodleUrl)) {
-    $resolvedMoodleUrl = "http://localhost:8081"
-}
-else {
-    $resolvedMoodleUrl = $rawMoodleUrl.Trim()
-}
+if (-not $SoloVerificarBaseDatos) {
+    # 4. Resolución y Validación de MOODLE_URL
+    Write-Host "[4/7] Resolviendo y validando MOODLE_URL..." -ForegroundColor Yellow
+    $rawMoodleUrl = $env:MOODLE_URL
+    if ([string]::IsNullOrWhiteSpace($rawMoodleUrl)) {
+        $resolvedMoodleUrl = "http://localhost:8081"
+    }
+    else {
+        $resolvedMoodleUrl = $rawMoodleUrl.Trim()
+    }
 
-$uriResult = $null
-$isValidUri = [System.Uri]::TryCreate($resolvedMoodleUrl, [System.UriKind]::Absolute, [ref]$uriResult)
-if (-not $isValidUri -or ($uriResult.Scheme -ne "http" -and $uriResult.Scheme -ne "https")) {
-    Stop-Script "MOODLE_URL invalida: '$resolvedMoodleUrl'. Debe ser una URL absoluta http o https." 1
-}
+    $uriResult = $null
+    $isValidUri = [System.Uri]::TryCreate($resolvedMoodleUrl, [System.UriKind]::Absolute, [ref]$uriResult)
+    if (-not $isValidUri -or ($uriResult.Scheme -ne "http" -and $uriResult.Scheme -ne "https")) {
+        Stop-Script "MOODLE_URL invalida: '$resolvedMoodleUrl'. Debe ser una URL absoluta http o https." 1
+    }
 
-$moodlePort = if ($uriResult.IsDefaultPort) {
-    if ($uriResult.Scheme -eq "https") { 443 } else { 80 }
-}
-else {
-    $uriResult.Port
-}
+    $moodlePort = if ($uriResult.IsDefaultPort) {
+        if ($uriResult.Scheme -eq "https") { 443 } else { 80 }
+    }
+    else {
+        $uriResult.Port
+    }
 
-if ($moodlePort -eq $HttpPort -and ($uriResult.Host -eq "localhost" -or $uriResult.Host -eq "127.0.0.1")) {
-    Stop-Script "Conflicto de puerto: El puerto de MOODLE_URL ($moodlePort) coincide con el puerto HTTP del backend ($HttpPort)." 1
+    if ($moodlePort -eq $HttpPort -and ($uriResult.Host -eq "localhost" -or $uriResult.Host -eq "127.0.0.1")) {
+        Stop-Script "Conflicto de puerto: El puerto de MOODLE_URL ($moodlePort) coincide con el puerto HTTP del backend ($HttpPort)." 1
+    }
+    Write-Host "  -> MOODLE_URL resuelta: $resolvedMoodleUrl (puerto $moodlePort)" -ForegroundColor Green
 }
-Write-Host "  -> MOODLE_URL resuelta: $resolvedMoodleUrl (puerto $moodlePort)" -ForegroundColor Green
 
 # 5. Verificación Estricta de Disponibilidad e Identidad Autenticada de PostgreSQL
 Write-Host "[5/7] Verificando PostgreSQL autorizado en $CloneHost`:$ClonePort ($CloneDatabase)..." -ForegroundColor Yellow
@@ -172,9 +178,21 @@ if (-not ($CloneDatabase -eq "lysandri_clone_db" -or $CloneDatabase.StartsWith("
     Stop-Script "Base de datos no autorizada para perfil clone: '$CloneDatabase'. Solo se admiten 'lysandri_clone_db' o bases clon autorizadas." 4
 }
 
-# C. Verificar conectividad TCP al destino exacto
-$tcpTest = Test-NetConnection -ComputerName $CloneHost -Port $ClonePort -WarningAction SilentlyContinue
-if (-not $tcpTest.TcpTestSucceeded) {
+# C. Verificar conectividad TCP al destino exacto con socket directo
+$tcpConnected = $false
+try {
+    $tcpSocket = New-Object System.Net.Sockets.TcpClient
+    $tcpConnectTask = $tcpSocket.BeginConnect($CloneHost, $ClonePort, $null, $null)
+    $tcpWaitSuccess = $tcpConnectTask.AsyncWaitHandle.WaitOne(2000, $false)
+    if ($tcpWaitSuccess -and $tcpSocket.Connected) {
+        $tcpSocket.EndConnect($tcpConnectTask)
+        $tcpConnected = $true
+    }
+    $tcpSocket.Close()
+} catch {
+    $tcpConnected = $false
+}
+if (-not $tcpConnected) {
     Stop-Script "No hay conexion TCP en $CloneHost`:$ClonePort. Verifique que el servicio PostgreSQL este activo en dicho host y puerto." 2
 }
 Write-Host "  -> Conectividad TCP confirmada en $CloneHost`:$ClonePort" -ForegroundColor Green
@@ -233,6 +251,13 @@ finally {
 
 if (-not $identityVerified) {
     Stop-Script "No se pudo verificar la identidad y autenticacion de la base de datos de destino." 4
+}
+
+if ($SoloVerificarBaseDatos) {
+    Write-Host "================================================================================" -ForegroundColor Green
+    Write-Host "VERIFICACION EXITOSA: Base de datos autenticada e identidad confirmada." -ForegroundColor Green
+    Write-Host "================================================================================" -ForegroundColor Green
+    exit 0
 }
 
 # 6. Detección de Conflictos en Puerto HTTP

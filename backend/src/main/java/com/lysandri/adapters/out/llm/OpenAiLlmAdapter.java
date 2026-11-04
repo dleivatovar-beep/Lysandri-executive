@@ -24,34 +24,45 @@ public class OpenAiLlmAdapter implements LlmClientPort {
     private final String apiKey;
     private final String model;
     private final String embeddingModel;
+    private final boolean mockAllowed;
     private final ObjectMapper objectMapper;
 
     public OpenAiLlmAdapter(
             @Value("${llm.api-key:mock-key}") String apiKey,
             @Value("${llm.model:gpt-4o-mini}") String model,
             @Value("${llm.embedding-model:text-embedding-3-small}") String embeddingModel,
+            @Value("${llm.mock-allowed:false}") boolean mockAllowed,
             WebClient.Builder webClientBuilder,
             ObjectMapper objectMapper) {
-        this.apiKey = apiKey;
+        this.apiKey = apiKey != null ? apiKey.trim() : "";
         this.model = model;
         this.embeddingModel = embeddingModel;
+        this.mockAllowed = mockAllowed;
         this.objectMapper = objectMapper;
         this.webClient = webClientBuilder
                 .baseUrl("https://api.openai.com/v1")
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + this.apiKey)
                 .build();
+    }
+
+    private boolean isMockKey() {
+        return apiKey.isBlank() || apiKey.startsWith("mock");
     }
 
     @Override
     public float[] generarEmbedding(String texto) {
-        if (apiKey == null || apiKey.startsWith("mock") || apiKey.isBlank()) {
-            log.debug("Generando vector para consulta de longitud: {}", texto != null ? texto.length() : 0);
+        if (isMockKey()) {
+            if (!mockAllowed) {
+                log.error("CONFIGURACIÓN LLM INSEGURA: Se intentó generar embeddings con mock-key pero llm.mock-allowed está deshabilitado en este entorno.");
+                throw new IllegalStateException("El proveedor de LLM no está configurado para producción. Configure OPENAI_API_KEY o active llm.mock-allowed=true exclusivamente en entornos de prueba.");
+            }
+            log.debug("Generando vector determinístico simulado (entorno de desarrollo/prueba) para texto longitud: {}", texto != null ? texto.length() : 0);
             return generarEmbeddingDeterministico(texto, 1536);
         }
 
         try {
             Map<String, Object> body = Map.of(
-                    "input", texto,
+                    "input", texto != null ? texto : "",
                     "model", embeddingModel
             );
 
@@ -73,16 +84,24 @@ public class OpenAiLlmAdapter implements LlmClientPort {
             }
             return vector;
         } catch (Exception e) {
-            log.warn("Fallo llamada a OpenAI Embeddings (usando fallback local): {}", e.getMessage());
-            return generarEmbeddingDeterministico(texto, 1536);
+            log.error("Fallo llamada a OpenAI Embeddings: {}", e.getMessage(), e);
+            if (mockAllowed) {
+                log.warn("Usando fallback de embedding local debido a fallo de red en entorno de prueba.");
+                return generarEmbeddingDeterministico(texto, 1536);
+            }
+            throw new IllegalStateException("Error de comunicación con el servicio de embeddings de OpenAI: " + e.getMessage(), e);
         }
     }
 
     @Override
     public LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura) {
-        if (apiKey == null || apiKey.startsWith("mock") || apiKey.isBlank()) {
-            log.debug("Generando respuesta asistida basada en el contexto curricular provisto.");
-            String simulatedResponse = "Basado en los lineamientos académicos de Lysandri Executive, nuestros programas combinan sesiones síncronas de alta dirección con seguimiento en el Campus Virtual y certificación oficial. Si requieres evaluar el plan de estudios o coordinar una propuesta corporativa in-company, puedes contactar con nuestro equipo de admisiones.";
+        if (isMockKey()) {
+            if (!mockAllowed) {
+                log.error("CONFIGURACIÓN LLM INSEGURA: Se intentó completar chat con mock-key pero llm.mock-allowed está deshabilitado.");
+                throw new IllegalStateException("El proveedor de LLM no está configurado para producción. Configure OPENAI_API_KEY o active llm.mock-allowed=true exclusivamente en entornos de prueba.");
+            }
+            log.debug("Generando respuesta asistida simulada (entorno de prueba) basada en el contexto provisto.");
+            String simulatedResponse = "Basado en los lineamientos académicos oficiales de Lysandri Executive, nuestros programas combinan sesiones síncronas de alta dirección con seguimiento en el Campus Virtual y certificación oficial. Si requieres evaluar el plan de estudios o coordinar una propuesta corporativa in-company, puedes contactar con nuestro equipo de admisiones.";
             return new LlmCompletion(simulatedResponse, 120, 45, 165);
         }
 
@@ -113,8 +132,12 @@ public class OpenAiLlmAdapter implements LlmClientPort {
             return new LlmCompletion(text, promptTokens, compTokens, total);
         } catch (Exception e) {
             log.error("Fallo al llamar a OpenAI Chat Completion: {}", e.getMessage(), e);
-            String fallback = "Estimado ejecutivo, en este momento el servicio de inferencia está experimentando alta latencia. Los contenidos del programa pueden consultarse directamente en el sílabo descargable.";
-            return new LlmCompletion(fallback, 50, 20, 70);
+            if (mockAllowed) {
+                log.warn("Usando fallback de completion en entorno de prueba debido a fallo de red.");
+                String fallback = "Estimado ejecutivo, en este momento el servicio de inferencia está experimentando alta latencia. Los contenidos del programa pueden consultarse directamente en el sílabo descargable.";
+                return new LlmCompletion(fallback, 50, 20, 70);
+            }
+            throw new IllegalStateException("Error de comunicación con el servicio de inferencia LLM de OpenAI: " + e.getMessage(), e);
         }
     }
 

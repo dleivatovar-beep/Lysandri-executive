@@ -1,0 +1,598 @@
+package com.lysandri.adapters;
+
+import com.lysandri.adapters.out.database.entity.DetalleOrdenEntity;
+import com.lysandri.adapters.out.database.entity.OrdenEntity;
+import com.lysandri.adapters.out.database.entity.ProgramaEntity;
+import com.lysandri.adapters.out.database.entity.UsuarioEntity;
+import com.lysandri.adapters.out.database.repository.SpringDataOrderRepository;
+import com.lysandri.adapters.out.database.repository.SpringDataProgramRepository;
+import com.lysandri.adapters.out.database.repository.SpringDataUserRepository;
+import com.lysandri.application.service.CatalogService;
+import com.lysandri.domain.model.*;
+import com.lysandri.domain.ports.in.BuyCourseUseCase;
+import com.lysandri.domain.ports.out.LmsClientPort;
+import com.lysandri.domain.ports.out.ProgramRepositoryPort;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@ActiveProfiles("test")
+public class MoodleConcurrencyAndResolutionIntegrationTest extends PostgresTestDatabase {
+
+    private static HttpServer mockMoodleServer;
+    private static int mockMoodlePort;
+
+    private static final AtomicBoolean pauseMoodleVerification = new AtomicBoolean(false);
+    private static CountDownLatch inMoodleLatch;
+    private static CountDownLatch releaseMoodleLatch;
+
+    @BeforeAll
+    static void startMockMoodle() throws IOException {
+        mockMoodleServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        mockMoodlePort = mockMoodleServer.getAddress().getPort();
+
+        mockMoodleServer.createContext("/webservice/rest/server.php", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                InputStream is = exchange.getRequestBody();
+                String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+                if (pauseMoodleVerification.get() && body.contains("wsfunction=core_course_get_courses_by_field")) {
+                    if (inMoodleLatch != null) {
+                        inMoodleLatch.countDown();
+                    }
+                    if (releaseMoodleLatch != null) {
+                        try {
+                            releaseMoodleLatch.await(10, TimeUnit.SECONDS);
+                        } catch (InterruptedException ignored) {}
+                    }
+                }
+
+                String jsonResponse;
+                if (body.contains("wsfunction=core_course_get_courses_by_field")) {
+                    jsonResponse = "{\"courses\": [{\"id\": 101, \"fullname\": \"Curso Concurrente 101\", \"shortname\": \"CC101\"}, {\"id\": 102, \"fullname\": \"Curso Concurrente 102\", \"shortname\": \"CC102\"}, {\"id\": 505, \"fullname\": \"Curso Resolucion 505\", \"shortname\": \"CR505\"}, {\"id\": 606, \"fullname\": \"Curso Resolucion 606\", \"shortname\": \"CR606\"}]}";
+                } else if (body.contains("wsfunction=core_user_get_users_by_field")) {
+                    jsonResponse = "[{\"id\": 7001}]";
+                } else if (body.contains("wsfunction=core_user_create_users")) {
+                    jsonResponse = "[{\"id\": 7001}]";
+                } else if (body.contains("enrol_manual_enrol_users")) {
+                    jsonResponse = "null";
+                } else if (body.contains("wsfunction=core_enrol_get_users_courses")) {
+                    jsonResponse = "[{\"id\": 101}, {\"id\": 505}]";
+                } else {
+                    jsonResponse = "[]";
+                }
+
+                byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(bytes);
+                }
+            }
+        });
+
+        mockMoodleServer.start();
+    }
+
+    @AfterAll
+    static void stopMockMoodle() {
+        if (mockMoodleServer != null) {
+            mockMoodleServer.stop(0);
+        }
+    }
+
+    @DynamicPropertySource
+    static void moodleProperties(DynamicPropertyRegistry registry) {
+        registry.add("moodle.url", () -> "http://127.0.0.1:" + mockMoodlePort);
+        registry.add("moodle.token", () -> "mock-test-token");
+    }
+
+    @Autowired
+    private CatalogService catalogService;
+
+    @Autowired
+    private BuyCourseUseCase buyCourseService;
+
+    @Autowired
+    private ProgramRepositoryPort programRepositoryPort;
+
+    @Autowired
+    private SpringDataProgramRepository springDataProgramRepository;
+
+    @Autowired
+    private SpringDataOrderRepository springDataOrderRepository;
+
+    @Autowired
+    private SpringDataUserRepository springDataUserRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private LmsClientPort lmsClientPort;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @BeforeEach
+    void cleanUp() {
+        pauseMoodleVerification.set(false);
+        inMoodleLatch = null;
+        releaseMoodleLatch = null;
+        jdbcTemplate.execute("TRUNCATE TABLE detalle_ordenes, comprobante_pago, ordenes, programa CASCADE");
+    }
+
+    private Programa crearProgramaBase(String suffix, Long moodleCourseId) {
+        Programa p = Programa.builder()
+                .titulo("Programa Test " + suffix)
+                .slug("prog-test-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 6))
+                .precio(new BigDecimal("299.00"))
+                .moneda("PEN")
+                .activo(true)
+                .precioAprobado(true)
+                .moodleCourseId(moodleCourseId)
+                .moodleVinculacionRevision(1L)
+                .moodleEstadoVerificacion(moodleCourseId != null ? MoodleVerificationStatus.PENDIENTE_VERIFICACION : MoodleVerificationStatus.SIN_VINCULACION)
+                .build();
+        return programRepositoryPort.guardar(p);
+    }
+
+    @Test
+    @DisplayName("Item 1.1: Verificación normal sin error de transacción vía TransactionTemplate")
+    void testVerificacionNormalSinErrorDeTransaccion() {
+        Programa p = crearProgramaBase("normal", 101L);
+
+        Programa verificado = catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma());
+
+        assertNotNull(verificado);
+        assertTrue(verificado.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, verificado.getMoodleEstadoVerificacion());
+        assertEquals("Curso Concurrente 101", verificado.getMoodleCourseNombre());
+        assertEquals(1L, verificado.getMoodleVinculacionRevision());
+
+        ProgramaEntity entity = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(entity.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, entity.getMoodleEstadoVerificacion());
+    }
+
+    @Test
+    @DisplayName("Item 1.2: Desvinculación mientras Moodle tarda -> descarta respuesta tardía y conserva desvinculación")
+    void testDesvinculacionMientrasMoodleTarda() throws Exception {
+        Programa p = crearProgramaBase("desv-lenta", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió ser alcanzado y pausado");
+
+        // Acción concurrente de administración: desvincular curso
+        Programa desvinculado = catalogService.desvincularCursoMoodle(p.getIdPrograma());
+        assertNull(desvinculado.getMoodleCourseId());
+        assertEquals(MoodleVerificationStatus.SIN_VINCULACION, desvinculado.getMoodleEstadoVerificacion());
+        assertEquals(2L, desvinculado.getMoodleVinculacionRevision());
+
+        // Liberar la llamada de Moodle para que intente aplicar su resultado
+        releaseMoodleLatch.countDown();
+        Programa resultadoH1 = futureVerif.get(5, TimeUnit.SECONDS);
+
+        // El resultado devuelto debe conservar el estado desvinculado
+        assertNull(resultadoH1.getMoodleCourseId());
+        assertFalse(resultadoH1.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.SIN_VINCULACION, resultadoH1.getMoodleEstadoVerificacion());
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertNull(enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.3: Cambio de curso mientras Moodle tarda -> descarta respuesta tardía del curso anterior")
+    void testCambioDeCursoMientrasMoodleTarda() throws Exception {
+        Programa p = crearProgramaBase("cambio-curso", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió pausar la verificación del 101");
+
+        // Acción concurrente: Cambiar curso a 102 directamente en la base con nueva revisión
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setMoodleCourseId(102L);
+            ent.setMoodleVinculacionRevision(2L);
+            ent.setMoodleVerificado(false);
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(102L, enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado(), "La verificación tardía del 101 no debe marcar verificado al 102");
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.4: Cambio A->B->A durante consulta a Moodle -> descarta por revisión de vinculación diferente")
+    void testCambioABA() throws Exception {
+        Programa p = crearProgramaBase("aba", 101L); // Rev 1, Course 101
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió pausar la verificación de 101 (rev 1)");
+
+        // Admin cambia a B (curso 102, rev 2) y luego vuelve a A (curso 101, rev 3)
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setMoodleCourseId(101L); // Vuelve a 101
+            ent.setMoodleVinculacionRevision(3L); // Pero con revisión 3
+            ent.setMoodleVerificado(false);
+            ent.setMoodleEstadoVerificacion(MoodleVerificationStatus.PENDIENTE_VERIFICACION);
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(101L, enBd.getMoodleCourseId());
+        assertEquals(3L, enBd.getMoodleVinculacionRevision());
+        assertFalse(enBd.isMoodleVerificado(), "La respuesta de la rev 1 no debe verificar la vinculación en rev 3");
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.5: Dos verificaciones con respuestas fuera de orden -> intento antiguo se descarta")
+    void testDosVerificacionesConRespuestasFueraDeOrden() {
+        Programa p = crearProgramaBase("fuera-de-orden", 101L);
+
+        OffsetDateTime tAntiguo = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(10);
+        OffsetDateTime tReciente = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1);
+
+        MoodleCourseVerification verifExitoso = MoodleCourseVerification.verificado(101L, "Curso 101", "C101");
+        MoodleCourseVerification verifNoEncontrado = MoodleCourseVerification.noEncontrado(101L);
+
+        // 1. Aplica intento más reciente primero
+        catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, tReciente, verifExitoso);
+
+        ProgramaEntity trasReciente = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(trasReciente.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, trasReciente.getMoodleEstadoVerificacion());
+
+        // 2. Llega respuesta tardía de intento antiguo (con fallo)
+        catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, tAntiguo, verifNoEncontrado);
+
+        ProgramaEntity trasTardio = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(trasTardio.isMoodleVerificado(), "El intento antiguo no debe sobreescribir al intento más reciente");
+        assertEquals(MoodleVerificationStatus.VERIFICADO, trasTardio.getMoodleEstadoVerificacion());
+    }
+
+    @Test
+    @DisplayName("Item 1.6: Edición de precio y título durante verificación -> se conservan cambios concurrentes")
+    void testEdicionDeOtrosCamposDuranteVerificacion() throws Exception {
+        Programa p = crearProgramaBase("edicion-otros", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS));
+
+        // Edición concurrente de precio y título directamente en BD
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setPrecio(new BigDecimal("888.00"));
+            ent.setTitulo("Título Modificado Concurrente");
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(new BigDecimal("888.00"), enBd.getPrecio());
+        assertEquals("Título Modificado Concurrente", enBd.getTitulo());
+        assertTrue(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.7: Instancias independientes sin mapa compartido se coordinan vía PostgreSQL row lock y revisión")
+    void testInstanciasIndependientesSinMapaCompartido() throws Exception {
+        Programa p = crearProgramaBase("instancias-indep", 101L);
+
+        // Crear instancia independiente de CatalogService sin compartir memoria
+        CatalogService instanciaB = new CatalogService(
+                programRepositoryPort,
+                lmsClientPort,
+                Clock.systemUTC(),
+                168L,
+                new TransactionTemplate(transactionManager)
+        );
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        // Instancia A inicia verificación lenta
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureA = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS));
+
+        // Instancia B desvincula en base de datos independiente de mapa de memoria
+        Programa desvB = instanciaB.desvincularCursoMoodle(p.getIdPrograma());
+        assertNull(desvB.getMoodleCourseId());
+
+        releaseMoodleLatch.countDown();
+        futureA.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertNull(enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    // =========================================================================
+    // PRUEBAS DE RESOLUCIÓN ADMINISTRATIVA (ITEM 2)
+    // =========================================================================
+
+    private Long crearOrdenConDetalleHistoricoPendiente() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ProgramaEntity prog = springDataProgramRepository.save(ProgramaEntity.builder()
+                    .titulo("Programa Auxiliar " + UUID.randomUUID().toString().substring(0, 6))
+                    .slug("prog-aux-" + UUID.randomUUID().toString().substring(0, 8))
+                    .precio(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .activo(true)
+                    .precioAprobado(true)
+                    .moodleCourseId(null)
+                    .moodleVinculacionRevision(1L)
+                    .moodleEstadoVerificacion(MoodleVerificationStatus.SIN_VINCULACION)
+                    .build());
+
+            UsuarioEntity u = springDataUserRepository.save(UsuarioEntity.builder()
+                    .email("cliente." + UUID.randomUUID().toString().substring(0, 6) + "@test.pe")
+                    .nombres("Cliente")
+                    .apellidos("Test")
+                    .passw("hash")
+                    .rol(RolUsuario.ESTUDIANTE)
+                    .activo(true)
+                    .build());
+
+            OrdenEntity o = springDataOrderRepository.save(OrdenEntity.builder()
+                    .idUser(u.getIdUser())
+                    .codigoOrden("ORD-" + UUID.randomUUID().toString().substring(0, 8))
+                    .estadoOrden(EstadoOrden.PAGADO)
+                    .estadoAprovisionamiento(EstadoAprovisionamiento.PENDIENTE)
+                    .total(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .metodoPago("STRIPE")
+                    .moodleMatriculaSincronizada(false)
+                    .items(new ArrayList<>())
+                    .build());
+
+            DetalleOrdenEntity det = DetalleOrdenEntity.builder()
+                    .orden(o)
+                    .idPrograma(prog.getIdPrograma())
+                    .precioUnitario(new BigDecimal("150.00"))
+                    .cantidad(1)
+                    .subtotal(new BigDecimal("150.00"))
+                    .moodleMatriculado(false)
+                    .moodleCourseId(null)
+                    .origenMoodleCourseId("PENDIENTE_RESOLUCION_ADMINISTRATIVA")
+                    .build();
+
+            o.getItems().add(det);
+            OrdenEntity saved = springDataOrderRepository.save(o);
+            return saved.getItems().get(0).getIdDetalle();
+        });
+    }
+
+    @Test
+    @DisplayName("Item 2.1: Dos administradores proponen cursos diferentes simultáneamente -> solo uno resuelve")
+    void testDosAdministradoresProponenCursosDiferentesSimultaneamente() throws Exception {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        CountDownLatch done = new CountDownLatch(2);
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd1 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Propuesta Admin 1", "EXP-1", "admin1@test.com"
+        );
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd2 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                606L, "Propuesta Admin 2", "EXP-2", "admin2@test.com"
+        );
+
+        List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+        List<Orden> successes = Collections.synchronizedList(new ArrayList<>());
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        pool.submit(() -> {
+            try {
+                barrier.await();
+                successes.add(buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd1));
+            } catch (Throwable t) {
+                errors.add(t);
+            } finally {
+                done.countDown();
+            }
+        });
+
+        pool.submit(() -> {
+            try {
+                barrier.await();
+                successes.add(buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd2));
+            } catch (Throwable t) {
+                errors.add(t);
+            } finally {
+                done.countDown();
+            }
+        });
+
+        assertTrue(done.await(10, TimeUnit.SECONDS));
+        pool.shutdownNow();
+
+        assertEquals(1, successes.size(), "Exactamente una resolución debe triunfar");
+        assertEquals(1, errors.size(), "La otra solicitud debe fallar con conflicto");
+        assertTrue(errors.get(0).getMessage().contains("No se permite sobrescribir ni sustituir una resolución existente"));
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+        assertTrue(det.getMoodleCourseId().equals(505L) || det.getMoodleCourseId().equals(606L));
+    }
+
+    @Test
+    @DisplayName("Item 2.2: Repetición de la misma resolución -> sin cambios de auditoría (idempotente)")
+    void testRepeticionMismaResolucionSinCambiosAuditoria() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Inicial", "EXP-001", "admin@test.com"
+        );
+
+        Orden o1 = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd);
+        DetalleOrden det1 = o1.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        OffsetDateTime fecha1 = det1.getMoodleResolucionFecha();
+        assertNotNull(fecha1);
+
+        // Repetir exactamente la misma resolución
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmdRep = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Intento duplicado", "EXP-999", "otro_autor@test.com"
+        );
+        Orden o2 = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmdRep);
+        DetalleOrden det2 = o2.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+
+        // Debe conservar intactos fecha, autor y evidencia de la primera resolución
+        assertEquals(505L, det2.getMoodleCourseId());
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det2.getOrigenMoodleCourseId());
+        assertEquals("admin@test.com", det2.getMoodleResolucionAutorizadaPor());
+        assertEquals("Resolución Inicial", det2.getMoodleResolucionMotivo());
+        assertEquals("EXP-001", det2.getMoodleResolucionEvidencia());
+        assertEquals(fecha1, det2.getMoodleResolucionFecha());
+    }
+
+    @Test
+    @DisplayName("Item 2.3: Intento de sustituir resolución existente con otro curso -> lanza conflicto HTTP 409")
+    void testIntentoSustituirResolucionExistenteLanzaConflicto409() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd1 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Inicial", "EXP-001", "admin@test.com"
+        );
+        buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd1);
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmdDistinto = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                606L, "Intento de cambiar curso", "EXP-002", "otro@test.com"
+        );
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmdDistinto));
+        assertTrue(ex.getMessage().contains("No se permite sobrescribir ni sustituir una resolución existente"));
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals(505L, det.getMoodleCourseId(), "El curso 505 debe mantenerse inalterado");
+    }
+
+    @Test
+    @DisplayName("Item 2.4: Coordinación con arrendamiento de aprovisionamiento activo -> rechaza resolución en progreso")
+    void testResolucionSimultaneaConAprovisionamiento() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        // Poner orden en estado PROCESANDO con lease vigente
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            OrdenEntity o = springDataOrderRepository.findByDetalleIdWithLock(idDetalle).orElseThrow();
+            o.setEstadoAprovisionamiento(EstadoAprovisionamiento.PROCESANDO);
+            o.setAprovisionamientoLeaseToken("worker-1");
+            o.setAprovisionamientoLeaseExpiresAt(OffsetDateTime.now().plusMinutes(5));
+            springDataOrderRepository.save(o);
+        });
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Intento durante lease", "EXP-001", "admin@test.com"
+        );
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd));
+        assertTrue(ex.getMessage().contains("arrendamiento activo de aprovisionamiento"));
+    }
+
+    @Test
+    @DisplayName("Item 2.5: Conservación del pago, destino y auditoría tras reintento de matrícula")
+    void testConservacionPagoDestinoAuditoriaDespuesDeReintento() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Completa", "EXP-FINAL", "admin_auditor@test.com"
+        );
+        Orden res = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd);
+        Long idOrden = res.getIdOrden();
+
+        // Ejecutar reintento administrativo de aprovisionamiento
+        Orden ordenFinal = buyCourseService.reintentarMatricula(idOrden);
+
+        assertEquals(EstadoOrden.PAGADO, ordenFinal.getEstadoOrden(), "Estado debe continuar siendo PAGADO");
+        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenFinal.getEstadoAprovisionamiento());
+        assertTrue(ordenFinal.isMoodleMatriculaSincronizada());
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity detFinal = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals(505L, detFinal.getMoodleCourseId());
+        assertEquals("RESOLUCION_ADMINISTRATIVA", detFinal.getOrigenMoodleCourseId());
+        assertEquals("admin_auditor@test.com", detFinal.getMoodleResolucionAutorizadaPor());
+        assertEquals("Resolución Completa", detFinal.getMoodleResolucionMotivo());
+        assertEquals("EXP-FINAL", detFinal.getMoodleResolucionEvidencia());
+        assertTrue(detFinal.isMoodleMatriculado());
+    }
+}

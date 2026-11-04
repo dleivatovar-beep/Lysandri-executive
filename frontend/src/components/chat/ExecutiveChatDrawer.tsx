@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { X, Send, FileText, LoaderCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Send, FileText, LoaderCircle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { Playbook } from '../../types';
 import { storeService, RagCitation } from '../../services/storeService';
 import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
@@ -28,6 +28,13 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   activePlaybook = null,
   onClearContext,
 }) => {
+  const [sesionId, setSesionId] = useState<string>(() =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `chat-session-${Date.now()}`
+  );
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [lastFailedQuestion, setLastFailedQuestion] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -39,9 +46,36 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
+
+  const handleNewConversation = () => {
+    const newSession = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `chat-session-${Date.now()}`;
+    setSesionId(newSession);
+    setSessionToken(null);
+    setLastFailedQuestion(null);
+    setMessages([
+      {
+        id: 'welcome',
+        sender: 'ia',
+        text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Lysandri. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const dialogRef = useDialogAccessibility<HTMLDivElement>(isOpen, onClose);
+
+  // Reiniciar la conversación de forma segura si cambia el usuario o el estado de autenticación
+  const currentAuthToken = typeof window !== 'undefined' ? localStorage.getItem('lysandri_token') : null;
+  const lastAuthTokenRef = useRef<string | null>(currentAuthToken);
+  useEffect(() => {
+    if (currentAuthToken !== lastAuthTokenRef.current) {
+      lastAuthTokenRef.current = currentAuthToken;
+      handleNewConversation();
+    }
+  }, [currentAuthToken]);
 
   useEffect(() => {
     if (activePlaybook) {
@@ -67,6 +101,7 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     const q = (questionText || inputQuestion).trim();
     if (!q || isLoading) return;
 
+    setLastFailedQuestion(null);
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -81,25 +116,35 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     try {
       const response = await storeService.consultarAsistenteRag(
         q,
-        activePlaybook ? activePlaybook.programId : undefined
+        activePlaybook ? activePlaybook.programId : undefined,
+        sesionId,
+        sessionToken || undefined
       );
+
+      if (response.sesionId) {
+        setSesionId(response.sesionId);
+      }
+      if (response.sessionToken) {
+        setSessionToken(response.sessionToken);
+      }
 
       const iaMsg: ChatMessage = {
         id: `ia-${Date.now()}`,
         sender: 'ia',
         text: response.respuesta,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        fuentes: response.fuentes,
+        fuentes: response.fuentes && response.fuentes.length > 0 ? response.fuentes : undefined,
         tokensUsados: response.tokensUsados,
         latenciaMs: response.latenciaMs,
       };
 
       setMessages((prev) => [...prev, iaMsg]);
     } catch (err: any) {
+      setLastFailedQuestion(q);
       const errorMsg: ChatMessage = {
         id: `error-${Date.now()}`,
         sender: 'ia',
-        text: 'No pude responder ahora. Comprueba tu conexión e inténtalo de nuevo en unos momentos.',
+        text: err?.message || 'No pude responder en este momento. Por favor comprueba tu conexión e inténtalo de nuevo.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -148,15 +193,26 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              data-dialog-close
-              aria-label="Cerrar asistente"
-              className="lx-overlay-close flex h-11 w-11 items-center justify-center"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNewConversation}
+                className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                title="Iniciar una nueva conversación independiente"
+              >
+                <RefreshCw className="h-3 w-3" />
+                <span>Nueva conversación</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                data-dialog-close
+                aria-label="Cerrar asistente"
+                className="lx-overlay-close flex h-11 w-11 items-center justify-center"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {/* Active Context Banner */}
@@ -231,6 +287,18 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
                     </div>
                   )}
 
+                  {msg.id.startsWith('error-') && lastFailedQuestion && (
+                    <div className="mt-2 pt-2 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => handleSend(lastFailedQuestion)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-rose-500/20 px-2.5 py-1 text-[10px] font-bold text-rose-300 hover:bg-rose-500/30 transition"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>Reintentar</span>
+                      </button>
+                    </div>
+                  )}
                   <div className="mt-1 flex items-center justify-end gap-2 text-[9px] text-slate-500">
                     {msg.fuentes && msg.fuentes.length > 0 && (
                       <span className="text-cyan-400 font-medium">Contenido oficial verificado</span>

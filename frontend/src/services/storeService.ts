@@ -40,11 +40,21 @@ export interface RagResponse {
   fuentes: RagCitation[];
   tokensUsados: number;
   latenciaMs: number;
+  sesionId?: string;
+  sessionToken?: string;
 }
 
 export interface OrdenDetalleItem {
   idDetalle: number;
   idPrograma: number;
+  moodleCourseId?: number | null;
+  origenMoodleCourseId?: string | null;
+  moodleResolucionAutorizadaPor?: string | null;
+  moodleResolucionFecha?: string | null;
+  moodleResolucionMotivo?: string | null;
+  moodleResolucionEvidencia?: string | null;
+  moodleResolucionCursoAnterior?: number | null;
+  moodleMatriculado?: boolean;
   programa?: {
     idPrograma: number;
     titulo: string;
@@ -53,6 +63,12 @@ export interface OrdenDetalleItem {
   };
   precioUnitario: number;
   subtotal: number;
+}
+
+export interface ResolverDestinoMoodlePayload {
+  moodleCourseId: number;
+  motivo: string;
+  referenciaEvidencia: string;
 }
 
 export interface OrdenResponse {
@@ -164,16 +180,19 @@ export interface OrderConfirmation {
   total: number;
   moneda: string;
   moodleMatriculaSincronizada: boolean;
-  moodleUsername?: string;
-  moodlePassword?: string;
+  estadoAprovisionamiento?: string;
+  aprovisionamientoUltimoError?: string;
   moodleCourseTitle?: string;
   moodleCampusUrl?: string;
   fechaPago?: string;
+  items?: OrdenDetalleItem[];
   usuario?: {
+    idUser?: number;
     email?: string;
     nombres?: string;
     apellidos?: string;
     nombreCompleto?: string;
+    moodleUserId?: number;
   };
   numeroDocumentoCliente?: string;
   nombreFacturacion?: string;
@@ -306,6 +325,11 @@ export const storeService = {
    * No fabrica respuestas ficticias ante errores de red.
    */
   async createCheckoutSession(payload: DirectCheckoutPayload): Promise<CheckoutResponse> {
+    if (!payload.programaIds || payload.programaIds.length === 0 || payload.programaIds.some((id) => !id || id <= 0 || isNaN(id) || !Number.isInteger(id))) {
+      throw new Error(
+        'El programa solicitado no es válido o no está disponible para compra.'
+      );
+    }
     try {
       const headers: Record<string, string> = {};
       if (payload.claveIdempotencia) {
@@ -459,63 +483,48 @@ export const storeService = {
 
   /**
    * Consulta el asistente RAG ejecutivo (FAQ y orientación).
+   * Envía token de autenticación cuando existe y propaga respuestas y errores reales.
    */
-  consultarAsistenteRag(
+  async consultarAsistenteRag(
     pregunta: string,
     idPrograma?: number,
-    sesionId?: string
+    sesionId?: string,
+    sessionToken?: string
   ): Promise<RagResponse> {
-    return axios
-      .post<RagResponse>(
+    const token = typeof window !== 'undefined' ? localStorage.getItem('lysandri_token') : null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token && !isJwtExpired(token)) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    if (sessionToken) {
+      headers['X-Chat-Session-Token'] = sessionToken;
+    }
+
+    try {
+      const res = await axios.post<RagResponse>(
         `${API_BASE_URL}/api/v1/chat/rag`,
         {
           pregunta,
           idPrograma: idPrograma || null,
           sesionId: sesionId || null,
+          sessionToken: sessionToken || null,
         },
         {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 6000,
+          headers,
+          timeout: 15000,
         }
-      )
-      .then((res) => res.data)
-      .catch(() => {
-        const q = pregunta.toLowerCase();
-        let respuesta = '';
-        if (q.includes('programar') || q.includes('codigo') || q.includes('requisito') || q.includes('tecnico')) {
-          respuesta = '¡No necesitas saber programar en absoluto! Todos los programas de Lysandri Executive están diseñados específicamente para directores, gerentes, dueños de negocios y profesionales que buscan resultados estratégicos y prácticos. Aprenderás a utilizar herramientas de Inteligencia Artificial, automatizaciones No-Code y marcos de gestión sin escribir una sola línea de código.';
-        } else if (q.includes('duracion') || q.includes('tiempo') || q.includes('hora') || q.includes('semana') || q.includes('modalidad')) {
-          respuesta = 'Nuestros programas ejecutivos tienen una duración de 6 a 8 semanas en modalidad 100% online y flexible a través de nuestro Campus Virtual disponible 24/7. Están diseñados para adaptarse a la agenda de gerentes y líderes, con una dedicación recomendada de 3 a 5 horas semanales a tu propio ritmo.';
-        } else if (q.includes('certifica') || q.includes('diploma') || q.includes('titulo') || q.includes('validez')) {
-          respuesta = 'Al culminar satisfactoriamente el programa, recibirás una Certificación Oficial emitida por Lysandri con código de verificación QR digital único. Este diploma acredita tus competencias directivas ante comités de gerencia y en tu perfil profesional de LinkedIn.';
-        } else if (q.includes('pago') || q.includes('precio') || q.includes('cuota') || q.includes('costo') || q.includes('factura') || q.includes('sunat') || q.includes('ruc')) {
-          respuesta = 'Aceptamos pagos seguros internacionales con tarjetas de crédito y débito (Visa, Mastercard, American Express, Diners Club, Apple Pay y Google Pay) a través de nuestra pasarela oficial izipay Online, así como transferencias directas (Interbank / BCP) y billeteras digitales (Yape / Plin). Para empresas y ejecutivos, emitimos Factura electrónica con RUC deducible o Boleta de venta oficial SUNAT con entrega inmediata.';
-        } else if (q.includes('empresa') || q.includes('in-company') || q.includes('equipo') || q.includes('corporativ')) {
-          respuesta = 'Contamos con la modalidad de Capacitación In-Company para empresas y corporativos. Diseñamos programas a la medida del rubro de tu organización, con cohortes privadas, seguimiento de métricas de desempeño y facturación corporativa.';
-        } else {
-          respuesta = '¡Hola! En Lysandri Executive formamos a directores, gerentes y líderes de empresa en Inteligencia Artificial, Ciberseguridad práctica, Reducción de costos operativos y Automatización No-Code, sin necesidad de saber programar. ¿Deseas orientación sobre algún programa en particular o para tu empresa?';
-        }
-
-        return {
-          respuesta,
-          fuentes: [
-            {
-              idDocumento: 1,
-              pagina: 1,
-              extracto: 'Programas diseñados para directivos y líderes de negocio con enfoque 100% práctico sin requisitos de programación.',
-              similitud: 0.98,
-            },
-            {
-              idDocumento: 2,
-              pagina: 1,
-              extracto: 'Acreditación ejecutiva con código QR digital verificable respaldada por Lysandri.',
-              similitud: 0.95,
-            },
-          ],
-          tokensUsados: 240,
-          latenciaMs: 120,
-        };
-      });
+      );
+      return res.data;
+    } catch (err: any) {
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        throw new Error('El asistente no pudo responder a tiempo. Por favor intenta de nuevo.');
+      }
+      if (!err.response) {
+        throw new Error('No se pudo conectar con el servicio del asistente. Verifica tu conexión e intenta de nuevo.');
+      }
+      const msg = err.response?.data?.message || err.response?.data?.error;
+      throw new Error(msg || 'Error al procesar la consulta con el asistente.');
+    }
   },
 
   /**
@@ -622,6 +631,40 @@ export const storeService = {
       }
       throw err;
     }
+  },
+
+  /**
+   * Resolución administrativa de un ítem de orden con destino Moodle pendiente o histórico ambiguo.
+   */
+  async resolverDestinoMoodleDetalle(idDetalle: number, payload: ResolverDestinoMoodlePayload): Promise<OrdenResponse> {
+    const token = localStorage.getItem('lysandri_token');
+    const headers: Record<string, string> = {};
+    if (token && !isJwtExpired(token)) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await axios.post<OrdenResponse>(
+      `${API_V1_URL}/orders/detalles/${idDetalle}/resolver-moodle`,
+      payload,
+      { headers }
+    );
+    return res.data;
+  },
+
+  /**
+   * Reintento administrativo de matrícula Moodle para órdenes pagadas no sincronizadas.
+   */
+  async reintentarMatricula(idOrden: number): Promise<OrdenResponse> {
+    const token = localStorage.getItem('lysandri_token');
+    const headers: Record<string, string> = {};
+    if (token && !isJwtExpired(token)) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const res = await axios.post<OrdenResponse>(
+      `${API_V1_URL}/orders/${idOrden}/reintentar-matricula`,
+      {},
+      { headers }
+    );
+    return res.data;
   },
 };
 

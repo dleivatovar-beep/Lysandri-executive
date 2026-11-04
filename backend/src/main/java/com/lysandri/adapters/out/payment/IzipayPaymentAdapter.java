@@ -137,7 +137,7 @@ public class IzipayPaymentAdapter implements PaymentPort {
                     String formToken = root.path("answer").path("formToken").asText();
                     String orderId = orden.getCodigoOrden();
                     log.info("formToken obtenido exitosamente de izipay Online para orden {}", orderId);
-                    return new PaymentSessionResult(orderId, redirectUrl, orderId, formToken, publicKey);
+                    return new PaymentSessionResult(orderId, null, orderId, formToken, publicKey);
                 } else {
                     String errorCode = root.path("answer").path("errorCode").asText();
                     String errorMessage = root.path("answer").path("errorMessage").asText();

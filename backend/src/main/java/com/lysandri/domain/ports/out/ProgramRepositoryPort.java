@@ -11,11 +11,19 @@ public interface ProgramRepositoryPort {
 
     Optional<Programa> buscarPorId(Long idPrograma);
 
+    Optional<Programa> buscarPorIdConBloqueo(Long idPrograma);
+
     Optional<Programa> buscarPorSlug(String slug);
+
+    Optional<Programa> buscarActivoYAprobadoPorId(Long idPrograma);
+
+    Optional<Programa> buscarActivoYAprobadoPorSlug(String slug);
 
     Optional<Programa> buscarPorMoodleCourseId(Long moodleCourseId);
 
     List<Programa> listarActivos();
+
+    List<Programa> listarTodos();
 
     List<Programa> buscarPorIds(List<Long> ids);
 }

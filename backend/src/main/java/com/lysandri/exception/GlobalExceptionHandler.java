@@ -21,6 +21,13 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        String msg = com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage());
+        log.warn("Recurso no encontrado (ResourceNotFoundException): {}", msg);
+        return buildResponse(HttpStatus.NOT_FOUND, msg);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         String msg = com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage());

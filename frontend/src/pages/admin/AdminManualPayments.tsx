@@ -48,6 +48,75 @@ export const AdminManualPayments: React.FC = () => {
   // Copiado temporal
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Modal de resolución administrativa de ítems históricos / ambiguos
+  const [selectedItemToResolve, setSelectedItemToResolve] = useState<{ orden: OrdenResponse; item: import('../../services/storeService').OrdenDetalleItem } | null>(null);
+  const [inputResolucionCourseId, setInputResolucionCourseId] = useState('');
+  const [inputResolucionMotivo, setInputResolucionMotivo] = useState('');
+  const [inputResolucionEvidencia, setInputResolucionEvidencia] = useState('');
+  const [isResolving, setIsResolving] = useState(false);
+  const [resolucionError, setResolucionError] = useState('');
+
+  // Reintento de matrícula
+  const [isRetryingId, setIsRetryingId] = useState<number | null>(null);
+
+  const handleOpenResolverModal = (orden: OrdenResponse, item: import('../../services/storeService').OrdenDetalleItem) => {
+    setSelectedItemToResolve({ orden, item });
+    setInputResolucionCourseId(item.moodleCourseId ? String(item.moodleCourseId) : '');
+    setInputResolucionMotivo('');
+    setInputResolucionEvidencia('');
+    setResolucionError('');
+  };
+
+  const handleResolveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItemToResolve) return;
+
+    const courseIdNum = Number(inputResolucionCourseId);
+    if (!courseIdNum || courseIdNum <= 0) {
+      setResolucionError('Ingrese un ID de curso de Moodle válido y positivo');
+      return;
+    }
+    if (!inputResolucionMotivo.trim()) {
+      setResolucionError('La justificación o motivo es obligatoria');
+      return;
+    }
+    if (!inputResolucionEvidencia.trim()) {
+      setResolucionError('La referencia a la evidencia documental es obligatoria');
+      return;
+    }
+
+    setIsResolving(true);
+    setResolucionError('');
+    try {
+      const updatedOrder = await storeService.resolverDestinoMoodleDetalle(
+        selectedItemToResolve.item.idDetalle,
+        {
+          moodleCourseId: courseIdNum,
+          motivo: inputResolucionMotivo.trim(),
+          referenciaEvidencia: inputResolucionEvidencia.trim(),
+        }
+      );
+      setOrders(prev => prev.map(o => o.idOrden === updatedOrder.idOrden ? { ...o, ...updatedOrder } : o));
+      setSelectedItemToResolve(null);
+    } catch (err: any) {
+      setResolucionError(getApiErrorMessage(err));
+    } finally {
+      setIsResolving(false);
+    }
+  };
+
+  const handleReintentarMatricula = async (idOrden: number) => {
+    setIsRetryingId(idOrden);
+    try {
+      const updatedOrder = await storeService.reintentarMatricula(idOrden);
+      setOrders(prev => prev.map(o => o.idOrden === updatedOrder.idOrden ? { ...o, ...updatedOrder } : o));
+    } catch (err: any) {
+      alert(getApiErrorMessage(err));
+    } finally {
+      setIsRetryingId(null);
+    }
+  };
+
   useEffect(() => {
     storeService.obtenerCuentasBancarias().then(data => setCuentasOficiales(data || [])).catch(() => setCuentasOficiales([]));
   }, []);
@@ -437,21 +506,42 @@ export const AdminManualPayments: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Programas adquiridos */}
-                    <div className="pt-1">
+                    {/* Programas adquiridos y destinos Moodle */}
+                    <div className="space-y-1.5 pt-1">
                       {orden.items && orden.items.length > 0 ? (
-                        orden.items.map((item) => (
-                          <div key={item.idDetalle} className="flex items-center gap-2 text-xs">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">
-                              {item.programa?.titulo || 'Programa Ejecutivo'}
-                            </span>
-                            {item.programa?.moodleCourseId && (
-                              <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800">
-                                Moodle ID #{item.programa.moodleCourseId}
+                        orden.items.map((item) => {
+                          const requiresResolution = (!item.moodleCourseId || item.origenMoodleCourseId === 'PENDIENTE_RESOLUCION_ADMINISTRATIVA') && !item.moodleMatriculado;
+                          return (
+                            <div key={item.idDetalle} className="flex flex-wrap items-center gap-2 text-xs">
+                              <span className="font-bold text-slate-800 dark:text-slate-200">
+                                {item.programa?.titulo || 'Programa Ejecutivo'}
                               </span>
-                            )}
-                          </div>
-                        ))
+                              {item.moodleCourseId ? (
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                  Curso Moodle #{item.moodleCourseId} ({item.origenMoodleCourseId || 'CONGELADO'})
+                                </span>
+                              ) : (
+                                <span className="rounded bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 font-mono text-[10px] text-amber-600 dark:text-amber-400">
+                                  Destino Pendiente de Resolución
+                                </span>
+                              )}
+                              {item.moodleMatriculado ? (
+                                <span className="text-[10px] font-semibold text-emerald-500">Matriculado</span>
+                              ) : (
+                                <span className="text-[10px] font-semibold text-slate-400">Sin matrícula</span>
+                              )}
+                              {requiresResolution && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenResolverModal(orden, item)}
+                                  className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 hover:bg-amber-500/30 transition dark:text-amber-300"
+                                >
+                                  Resolver Destino Moodle
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
                         <p className="text-xs italic text-slate-400">Programa Ejecutivo Lysandri</p>
                       )}
@@ -516,11 +606,22 @@ export const AdminManualPayments: React.FC = () => {
                           <span>Verificar Abono y Aprobar</span>
                         </button>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                             <Check className="h-3.5 w-3.5" />
                             Aprobado
                           </span>
+                          {!orden.moodleMatriculaSincronizada && (
+                            <button
+                              type="button"
+                              onClick={() => handleReintentarMatricula(orden.idOrden)}
+                              disabled={isRetryingId === orden.idOrden}
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/20 transition dark:text-amber-400"
+                            >
+                              <RefreshCw className={`h-3.5 w-3.5 ${isRetryingId === orden.idOrden ? 'animate-spin' : ''}`} />
+                              <span>Reintentar Matrícula</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -836,6 +937,121 @@ export const AdminManualPayments: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Resolución Administrativa de Destino Moodle */}
+      {selectedItemToResolve && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-amber-500/30 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-[#0c111a] md:p-8 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-950 dark:text-white">
+                    Resolución Administrativa de Destino
+                  </h3>
+                  <p className="font-mono text-xs text-slate-400">
+                    Orden {selectedItemToResolve.orden.codigoOrden} · Detalle #{selectedItemToResolve.item.idDetalle}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedItemToResolve(null)}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {resolucionError && (
+              <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-400">
+                {resolucionError}
+              </div>
+            )}
+
+            <form onSubmit={handleResolveSubmit} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Programa
+                </label>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  {selectedItemToResolve.item.programa?.titulo || 'Programa sin título'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  ID de Curso Moodle Confirmado *
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={inputResolucionCourseId}
+                  onChange={(e) => setInputResolucionCourseId(e.target.value)}
+                  placeholder="Ej: 101"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-900 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Justificación / Motivo de Resolución *
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  value={inputResolucionMotivo}
+                  onChange={(e) => setInputResolucionMotivo(e.target.value)}
+                  placeholder="Ej: Asignación histórica correspondiente al plan 2026 validada con secretaría académica."
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Referencia a Evidencia Documental *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={inputResolucionEvidencia}
+                  onChange={(e) => setInputResolucionEvidencia(e.target.value)}
+                  placeholder="Ej: TICKET-7842 / Correo confirmación fecha 2026-10-15"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setSelectedItemToResolve(null)}
+                  className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResolving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-amber-500/20 hover:brightness-110 active:scale-95 disabled:opacity-50"
+                >
+                  {isResolving ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <span>Verificando en Moodle...</span>
+                    </>
+                  ) : (
+                    <span>Confirmar Resolución</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 };

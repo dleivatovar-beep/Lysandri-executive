@@ -612,7 +612,7 @@ class OrderFinancialTransactionServiceTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 financialTransactionService.confirmarPagoManualFinanciero(100L, command));
 
-        assertTrue(ex.getMessage().contains("ya fue utilizado para pagar la orden ORD-HIST-080"));
+        assertTrue(ex.getMessage().contains("El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: 80"));
         verify(orderRepository, never()).guardar(any());
     }
 
@@ -642,7 +642,7 @@ class OrderFinancialTransactionServiceTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 financialTransactionService.confirmarPagoManualFinanciero(100L, command));
 
-        assertTrue(ex.getMessage().contains("ya fue utilizado para pagar la orden ORD-HIST-081"));
+        assertTrue(ex.getMessage().contains("El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: 81"));
         verify(orderRepository, never()).guardar(any());
     }
 
@@ -672,7 +672,7 @@ class OrderFinancialTransactionServiceTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 financialTransactionService.confirmarPagoManualFinanciero(100L, command));
 
-        assertTrue(ex.getMessage().contains("ya fue utilizado para pagar la orden ORD-HIST-082"));
+        assertTrue(ex.getMessage().contains("El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: 82"));
         verify(orderRepository, never()).guardar(any());
     }
 
@@ -711,9 +711,9 @@ class OrderFinancialTransactionServiceTest {
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 financialTransactionService.confirmarPagoManualFinanciero(100L, command));
 
-        assertTrue(ex.getMessage().contains("Conflicto por ambigüedad contable"));
-        assertTrue(ex.getMessage().contains("ORD-HIST-083"));
-        assertTrue(ex.getMessage().contains("ORD-HIST-084"));
+        assertTrue(ex.getMessage().contains("Conflicto por colisión de abono histórico"));
+        assertTrue(ex.getMessage().contains("Referencias internas: [83, 84]"));
+        assertTrue(ex.getMessage().contains("requiere revisión administrativa"));
         verify(orderRepository, never()).guardar(any());
     }
 

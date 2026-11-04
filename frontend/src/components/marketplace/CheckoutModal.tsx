@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import './checkout-modal.css';
 import {
   X,
   Lock,
   FileText,
   Building,
-  User,
-  Mail,
-  Phone,
   AlertCircle,
   LoaderCircle,
   ShieldCheck,
@@ -18,13 +16,18 @@ import {
   Copy,
   Check,
   MessageCircle,
-  QrCode,
   ArrowRight,
   ExternalLink,
   CheckCircle2,
   HeartHandshake,
-  Info,
 } from 'lucide-react';
+import visaLogo from '../../assets/payment-logos/visa.svg';
+import mastercardLogo from '../../assets/payment-logos/mastercard.svg';
+import amexLogo from '../../assets/payment-logos/american-express.svg';
+import dinersLogo from '../../assets/payment-logos/diners.svg';
+import yapeLogo from '../../assets/payment-logos/yape.png';
+import bcpLogo from '../../assets/payment-logos/bcp.svg';
+import interbankLogo from '../../assets/payment-logos/interbank.svg';
 import { Playbook } from '../../types';
 import { storeService, CuentaBancariaAprobada } from '../../services/storeService';
 import { useAuth } from '../../context/AuthContext';
@@ -36,6 +39,131 @@ export interface CheckoutModalProps {
 }
 
 export type PaymentMethod = 'IZIPAY' | 'YAPE_PLIN' | 'TRANSFERENCIA';
+
+// Gestor centralizado de carga de script de Krypton (compartido entre sesiones)
+export type ScriptLoadStatus = 'IDLE' | 'LOADING' | 'LOADED' | 'FAILED';
+let kryptonScriptStatus: ScriptLoadStatus = 'IDLE';
+let kryptonScriptPromise: Promise<any> | null = null;
+
+// Contador global incremental para sesiones de Izipay (garantiza unicidad entre diferentes montajes)
+let globalSessionSequence = 0;
+
+// Estado de propiedad global del SDK entre instancias del componente
+export interface GlobalSdkOwnership {
+  activeRequestedSessionId: string | null;
+  activeOwnerSessionId: string | null;
+  ownerInstanceId: string | null;
+}
+
+export const getGlobalSdkOwnership = (): GlobalSdkOwnership => {
+  if (typeof window !== 'undefined') {
+    if (!(window as any).__krSdkOwnership) {
+      (window as any).__krSdkOwnership = {
+        activeRequestedSessionId: null,
+        activeOwnerSessionId: null,
+        ownerInstanceId: null,
+      };
+    }
+    return (window as any).__krSdkOwnership;
+  }
+  return {
+    activeRequestedSessionId: null,
+    activeOwnerSessionId: null,
+    ownerInstanceId: null,
+  };
+};
+
+export const resetGlobalSdkOwnership = (): void => {
+  const state = getGlobalSdkOwnership();
+  state.activeRequestedSessionId = null;
+  state.activeOwnerSessionId = null;
+  state.ownerInstanceId = null;
+};
+
+export const getKryptonScriptStatus = (): ScriptLoadStatus => kryptonScriptStatus;
+
+export const resetKryptonScriptLoader = (): void => {
+  kryptonScriptStatus = 'IDLE';
+  kryptonScriptPromise = null;
+  if (typeof document !== 'undefined') {
+    const existing = document.getElementById('izipay-krypton-client-sdk');
+    if (existing) {
+      existing.remove();
+    }
+  }
+};
+
+export const loadKryptonClientScript = (publicKey: string): Promise<any> => {
+  if (typeof window === 'undefined') {
+    return Promise.resolve(null);
+  }
+
+  if ((window as any).KR) {
+    kryptonScriptStatus = 'LOADED';
+    kryptonScriptPromise = null;
+    return Promise.resolve((window as any).KR);
+  }
+
+  if (kryptonScriptStatus === 'LOADING' && kryptonScriptPromise) {
+    return kryptonScriptPromise;
+  }
+
+  const scriptId = 'izipay-krypton-client-sdk';
+  if (typeof document !== 'undefined') {
+    const existing = document.getElementById(scriptId);
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  kryptonScriptStatus = 'LOADING';
+  kryptonScriptPromise = new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      kryptonScriptStatus = 'LOADED';
+      kryptonScriptPromise = null;
+      resolve((window as any).KR || null);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js';
+    script.setAttribute('kr-public-key', publicKey);
+    script.setAttribute('kr-post-url-success', '');
+    script.setAttribute('kr-spa-mode', 'true');
+
+    script.onload = () => {
+      kryptonScriptStatus = 'LOADED';
+      kryptonScriptPromise = null;
+      resolve((window as any).KR);
+    };
+
+    script.onerror = () => {
+      kryptonScriptStatus = 'FAILED';
+      kryptonScriptPromise = null;
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+      reject(new Error('Error de conexión al cargar la pasarela segura izipay. Por favor verifique su conexión e intente nuevamente.'));
+    };
+
+    document.head.appendChild(script);
+  });
+
+  return kryptonScriptPromise;
+};
+
+// Cola de serialización para operaciones asíncronas globales sobre el SDK (KR)
+let activeSdkOperationPromise: Promise<any> = Promise.resolve();
+
+export function enqueueSdkOperation<T>(op: () => Promise<T>): Promise<T> {
+  const nextPromise = activeSdkOperationPromise
+    .catch(() => {}) // Un fallo en operación previa no debe bloquear operaciones subsiguientes
+    .then(() => op());
+
+  activeSdkOperationPromise = nextPromise.then(() => {}, () => {});
+  return nextPromise;
+}
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
@@ -63,6 +191,135 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [ordenRegistradaCodigo, setOrdenRegistradaCodigo] = useState<string | null>(null);
   const [ordenRegistradaMetodo, setOrdenRegistradaMetodo] = useState<string | null>(null);
 
+  // Estado para formulario incrustado de izipay Online y ciclo de vida de Krypton SDK
+  const [izipayData, setIzipayData] = useState<{
+    formToken: string;
+    publicKey?: string;
+    codigoOrden?: string;
+  } | null>(null);
+  const [izipaySdkLoading, setIzipaySdkLoading] = useState(false);
+  const [izipayFormReady, setIzipayFormReady] = useState(false);
+  const [izipaySdkError, setIzipaySdkError] = useState<string | null>(null);
+  const [izipayVerifying, setIzipayVerifying] = useState(false);
+
+  // Ciclo de vida explícito para sesiones y listeners de pasarela izipay (Krypton SDK)
+  const instanceIdRef = useRef<string>(`modal_${Math.random().toString(36).substring(2, 10)}`);
+  const isMountedRef = useRef<boolean>(true);
+  const activeOrderCodeRef = useRef<string | null>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
+  const formReadyRef = useRef<boolean>(false);
+  const generationRef = useRef<number>(0);
+
+  // Generador de identificadores de sesión globalmente únicos entre distintos montajes
+  const generateUniqueSessionId = useCallback((orderCode: string, instanceId: string): string => {
+    const seq = ++globalSessionSequence;
+    const timestamp = Date.now();
+    const rand = Math.random().toString(36).substring(2, 9);
+    return `izi_sess_${seq}_${timestamp}_${rand}_${instanceId}_${orderCode || 'sin_orden'}`;
+  }, []);
+
+  // Coordinación asíncrona de limpieza: garantiza propiedad global antes de modificar el SDK
+  const coordinateAsyncCleanup = useCallback((sessionIdToClean: string | null) => {
+    if (!sessionIdToClean) return;
+
+    // Si la sesión a limpiar era la solicitada activa globalmente, liberarla
+    const ownership = getGlobalSdkOwnership();
+    if (ownership.activeRequestedSessionId === sessionIdToClean) {
+      ownership.activeRequestedSessionId = null;
+    }
+
+    enqueueSdkOperation(async () => {
+      const globalState = getGlobalSdkOwnership();
+
+      // 1. Si otra sesión ya está solicitada o activa (inter o intra-instancia), no interferir
+      if (globalState.activeRequestedSessionId !== null && globalState.activeRequestedSessionId !== sessionIdToClean) {
+        return;
+      }
+
+      // 2. Si el SDK posee recursos que pertenecen a otra sesión propietaria, no borrarlos
+      if (globalState.activeOwnerSessionId !== null && globalState.activeOwnerSessionId !== sessionIdToClean) {
+        return;
+      }
+
+      // 3. Comprobar referencia local si la instancia aún está montada
+      if (activeSessionIdRef.current !== null && activeSessionIdRef.current !== sessionIdToClean) {
+        return;
+      }
+
+      // 4. Limpieza del coordinador global: solo si pertenece a sessionIdToClean
+      if (typeof window !== 'undefined') {
+        const coord = (window as any).__krCoordinator;
+        if (coord && coord.sessionId === sessionIdToClean) {
+          (window as any).__krCoordinator = null;
+        }
+      }
+
+      // 5. En este punto, no hay otra sesión solicitada ni propietaria.
+      // O bien sessionIdToClean es la dueña, o son recursos huérfanos que le pertenecían.
+      if (typeof window !== 'undefined') {
+        const KR = (window as any).KR;
+        if (KR) {
+          if (typeof KR.removeForms === 'function') {
+            await KR.removeForms();
+          } else if (typeof KR.removeEventCallbacks === 'function') {
+            await KR.removeEventCallbacks();
+          }
+        }
+      }
+
+      // Si sessionIdToClean era la dueña registrada, liberar la propiedad
+      if (globalState.activeOwnerSessionId === sessionIdToClean) {
+        globalState.activeOwnerSessionId = null;
+        globalState.ownerInstanceId = null;
+      }
+    }).catch((err) => {
+      console.warn('Advertencia en limpieza coordinada de pasarela izipay:', err);
+    });
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      generationRef.current += 1;
+      const sessToClean = activeSessionIdRef.current;
+      activeSessionIdRef.current = null;
+      activeOrderCodeRef.current = null;
+      formReadyRef.current = false;
+      if (typeof window !== 'undefined') {
+        const coord = (window as any).__krCoordinator;
+        if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+          (window as any).__krCoordinator = null;
+        }
+      }
+      coordinateAsyncCleanup(sessToClean);
+    };
+  }, [coordinateAsyncCleanup]);
+
+  // Al cerrar la modal, invalidar la sesión activa y limpiar formularios
+  useEffect(() => {
+    if (!isOpen) {
+      generationRef.current += 1;
+      const sessToClean = activeSessionIdRef.current;
+      activeSessionIdRef.current = null;
+      activeOrderCodeRef.current = null;
+      formReadyRef.current = false;
+      setIzipayFormReady(false);
+      if (typeof window !== 'undefined') {
+        const coord = (window as any).__krCoordinator;
+        if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+          (window as any).__krCoordinator = null;
+        }
+      }
+      coordinateAsyncCleanup(sessToClean);
+      setIzipayData(null);
+      setIzipaySdkError(null);
+      setIzipaySdkLoading(false);
+      setIzipayVerifying(false);
+      setErrorMessage('');
+    }
+  }, [isOpen, coordinateAsyncCleanup]);
+
   const getBuyerScope = (): string => {
     return storeService.getBuyerScope(user, email);
   };
@@ -73,13 +330,210 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return storeService.getOrCreateIdempotencyKey(scope, playbook.programId);
   };
 
+  const initKryptonSdk = useCallback(async () => {
+    if (!izipayData || !izipayData.formToken || !izipayData.publicKey) return;
+
+    setIzipaySdkError(null);
+    setIzipaySdkLoading(true);
+    setIzipayFormReady(false);
+    formReadyRef.current = false;
+
+    const sessionOrderCode = izipayData.codigoOrden || '';
+    const currentSessionId = generateUniqueSessionId(sessionOrderCode, instanceIdRef.current);
+    activeSessionIdRef.current = currentSessionId;
+    activeOrderCodeRef.current = sessionOrderCode;
+    const currentGen = ++generationRef.current;
+
+    // Registrar sesión como globalmente solicitada
+    const ownership = getGlobalSdkOwnership();
+    ownership.activeRequestedSessionId = currentSessionId;
+    ownership.ownerInstanceId = instanceIdRef.current;
+
+    const isSessionActive = () => {
+      const globalState = getGlobalSdkOwnership();
+      return (
+        isMountedRef.current &&
+        isOpen &&
+        activeSessionIdRef.current === currentSessionId &&
+        globalState.activeRequestedSessionId === currentSessionId
+      );
+    };
+
+    // Callback de error con aislamiento estricto por sesión
+    const handleSessionError = (ev: any) => {
+      if (!isSessionActive()) return;
+      const eventOrderId = ev?.orderId || 
+                           ev?.orderDetails?.orderId || 
+                           ev?.clientAnswer?.orderDetails?.orderId || 
+                           ev?.clientAnswer?.orderId;
+      if (eventOrderId && typeof eventOrderId === 'string' && eventOrderId.trim() && eventOrderId.trim() !== sessionOrderCode) {
+        return;
+      }
+      const msg = ev?.errorMessage || 'Ocurrió un error al procesar el pago con la pasarela.';
+      setIzipaySdkError(msg);
+      setIzipayVerifying(false);
+    };
+
+    // Callback de submit con verificación de orden y backend
+    const handleSessionSubmit = (paymentData: any) => {
+      if (!isSessionActive() || !formReadyRef.current) return false;
+      const paidOrderId = paymentData?.orderId || 
+                          paymentData?.orderDetails?.orderId || 
+                          paymentData?.clientAnswer?.orderDetails?.orderId ||
+                          paymentData?.clientAnswer?.orderId;
+
+      if (!paidOrderId || typeof paidOrderId !== 'string' || !paidOrderId.trim()) {
+        console.warn('Evento de pago descartado: no contiene identificador de orden.');
+        return false;
+      }
+
+      if (paidOrderId.trim() !== sessionOrderCode) {
+        console.warn('Evento de pago descartado: no coincide con la orden activa actual.', {
+          esperado: sessionOrderCode,
+          recibido: paidOrderId,
+        });
+        return false;
+      }
+
+      setIzipayVerifying(true);
+      window.location.href = `/pago-exitoso?orden=${encodeURIComponent(sessionOrderCode)}`;
+      return false;
+    };
+
+    // Publicar coordinador activo de inmediato para inspección externa e interoperabilidad
+    if (typeof window !== 'undefined') {
+      (window as any).__krCoordinator = {
+        ownerId: instanceIdRef.current,
+        sessionId: currentSessionId,
+        generation: currentGen,
+        activeOrderCode: sessionOrderCode,
+        isMounted: isSessionActive,
+        isReady: () => isSessionActive() && formReadyRef.current,
+        onError: handleSessionError,
+        onSubmit: handleSessionSubmit,
+        cleanup: () => coordinateAsyncCleanup(currentSessionId),
+      };
+    }
+
+    try {
+      // 1. Cargar script centralizado (o esperar si ya está cargando)
+      if (!isSessionActive()) return;
+      await loadKryptonClientScript(izipayData.publicKey);
+      if (!isSessionActive()) return;
+
+      // 2. Coordinar operaciones en cola para el SDK global
+      await enqueueSdkOperation(async () => {
+        if (!isSessionActive()) return;
+
+        const KR = (window as any).KR;
+        if (!KR) {
+          throw new Error('SDK de izipay (KR) no disponible tras la carga del script.');
+        }
+
+        // Limpieza previa si existen recursos de otra sesión anterior
+        if (typeof KR.removeForms === 'function') {
+          await KR.removeForms();
+        } else if (typeof KR.removeEventCallbacks === 'function') {
+          await KR.removeEventCallbacks();
+        }
+
+        // Comprobar vigencia tras esperar la limpieza
+        if (!isSessionActive()) return;
+
+        // Configurar el nuevo token
+        await KR.setFormToken(izipayData.formToken);
+
+        // Comprobar vigencia tras setFormToken
+        if (!isSessionActive()) return;
+
+        // Renderizar el formulario mediante renderElements (contrato oficial Lyra / Krypton)
+        // La promesa devuelta por renderElements confirma que los elementos fueron inyectados en el DOM.
+        // Si renderElements rechaza (por cualquier error, incluyendo "already rendered"),
+        // no se asume disponibilidad ni se valida por la mera existencia de contenedores vacíos en el DOM.
+        if (typeof KR.renderElements === 'function') {
+          await KR.renderElements('.kr-embedded');
+        } else {
+          throw new Error('Método KR.renderElements no disponible en el SDK de izipay.');
+        }
+
+        // Comprobar vigencia de la sesión tras la confirmación del renderizado
+        if (!isSessionActive()) return;
+
+        // Registrar propiedad de los recursos creados en el SDK
+        const ownershipSuccess = getGlobalSdkOwnership();
+        ownershipSuccess.activeOwnerSessionId = currentSessionId;
+        ownershipSuccess.ownerInstanceId = instanceIdRef.current;
+
+        formReadyRef.current = true;
+        setIzipayFormReady(true);
+        setIzipaySdkLoading(false);
+
+        // Registrar callbacks directamente en el SDK solo tras confirmar la disponibilidad documentada
+        if (typeof KR.onError === 'function') {
+          KR.onError(handleSessionError);
+        }
+        if (typeof KR.onSubmit === 'function') {
+          KR.onSubmit(handleSessionSubmit);
+        }
+      });
+    } catch (err: any) {
+      if (isSessionActive()) {
+        formReadyRef.current = false;
+        setIzipayFormReady(false);
+        setIzipaySdkLoading(false);
+        const detail = err?.message ? `: ${err.message}` : '';
+        const msg = `No se pudo inicializar el formulario seguro de izipay${detail}. Por favor reintente.`;
+        setIzipaySdkError(msg);
+      }
+    }
+  }, [izipayData, isOpen, coordinateAsyncCleanup, generateUniqueSessionId]);
+
+  useEffect(() => {
+    if (izipayData) {
+      initKryptonSdk();
+    }
+    const sessToClean = activeSessionIdRef.current;
+    return () => {
+      // Solo limpiar si la sesión que se desmonta o cambia es la que aún está activa
+      coordinateAsyncCleanup(sessToClean);
+    };
+  }, [izipayData, initKryptonSdk, coordinateAsyncCleanup]);
+
+  useEffect(() => {
+    const sessToClean = activeSessionIdRef.current;
+    activeSessionIdRef.current = null;
+    activeOrderCodeRef.current = null;
+    coordinateAsyncCleanup(sessToClean);
+    setIzipayData(null);
+    setIzipaySdkError(null);
+    setIzipaySdkLoading(false);
+    setIzipayVerifying(false);
+  }, [playbook?.programId, coordinateAsyncCleanup]);
+
   const handleStartNewOrder = () => {
+    generationRef.current += 1;
+    const sessToClean = activeSessionIdRef.current;
+    activeSessionIdRef.current = null;
+    activeOrderCodeRef.current = null;
+    formReadyRef.current = false;
+    setIzipayFormReady(false);
+    if (typeof window !== 'undefined') {
+      const coord = (window as any).__krCoordinator;
+      if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+        (window as any).__krCoordinator = null;
+      }
+    }
+    coordinateAsyncCleanup(sessToClean);
     if (playbook) {
       const scope = getBuyerScope();
       storeService.clearCheckoutIntent(scope, playbook.programId);
     }
     setOrdenRegistradaCodigo(null);
     setOrdenRegistradaMetodo(null);
+    setIzipayData(null);
+    setIzipaySdkError(null);
+    setIzipaySdkLoading(false);
+    setIzipayVerifying(false);
     setErrorMessage('');
   };
 
@@ -201,6 +655,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleSubmitIzipay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateFields()) return;
+    const parsedId = Number(playbook.id);
+    if (!playbook.id || isNaN(parsedId) || parsedId <= 0 || !Number.isInteger(parsedId)) {
+      setErrorMessage('El programa seleccionado no es válido o no está disponible para compra.');
+      return;
+    }
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -249,14 +708,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         guestSessionToken: guestToken,
       });
 
-      const targetUrl = response.checkoutUrl || response.stripeCheckoutUrl;
-      if (targetUrl) {
+      if (!isMountedRef.current || !isOpen) return;
+
+      if (response.formToken) {
+        if (!response.publicKey || !response.publicKey.trim()) {
+          throw new Error('Respuesta de checkout incompleta: la pasarela no suministró la clave pública requerida.');
+        }
+        setIzipayData({
+          formToken: response.formToken,
+          publicKey: response.publicKey,
+          codigoOrden: response.codigoOrden,
+        });
+      } else if (response.checkoutUrl || response.stripeCheckoutUrl) {
         storeService.clearCheckoutIntent(scope, playbook.programId);
-        window.location.href = targetUrl;
+        window.location.href = response.checkoutUrl || response.stripeCheckoutUrl!;
       } else {
         throw new Error('No se pudo generar la sesión de pago con izipay Online');
       }
     } catch (err: any) {
+      if (!isMountedRef.current || !isOpen) return;
       setErrorMessage(
         err.response?.data?.message ||
           err.response?.data?.error ||
@@ -270,6 +740,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleManualOrderRegistration = async (metodoTecnico: 'TRANSFERENCIA' | 'YAPE' | 'PLIN', nombreVisible: string) => {
     if (!validateFields()) return;
+    const parsedId = Number(playbook.id);
+    if (!playbook.id || isNaN(parsedId) || parsedId <= 0 || !Number.isInteger(parsedId)) {
+      setErrorMessage('El programa seleccionado no es válido o no está disponible para compra.');
+      return;
+    }
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -377,700 +852,635 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const cuentasActivas = cuentasBancarias.filter((c) => c.activo && c.numeroCuenta);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div
+      className="lx-checkout-shell"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkout-dialog-title"
+    >
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity"
+      <button
+        type="button"
+        className="lx-checkout-backdrop"
         onClick={onClose}
+        aria-label="Cerrar modal"
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-cyan-500/30 bg-[#0c121e] text-slate-100 shadow-[0_0_70px_rgba(6,182,212,0.18)] my-8 max-h-[92vh] flex flex-col">
-        {/* Header con estilo ejecutivo y cálido */}
-        <div className="relative border-b border-slate-800 bg-gradient-to-r from-slate-900 via-[#0f172a] to-[#171328] p-5 sm:p-6 shrink-0">
+      <section className="lx-checkout-dialog">
+        {/* Header con estilo editorial */}
+        <header className="lx-checkout-header">
+          <div className="lx-checkout-course">
+            <p className="lx-checkout-kicker">
+              <Sparkles size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }} />
+              Matrícula ejecutiva oficial · Campus Moodle 24/7
+            </p>
+            <h2 id="checkout-dialog-title">{playbook.title}</h2>
+          </div>
+
+          <div className="lx-checkout-price">
+            <strong>{priceCurrency === 'USD' ? `$${priceAmount}` : `S/ ${priceAmount}`}</strong>
+            <span>{priceCurrency} · SUNAT Oficial</span>
+          </div>
+
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="lx-checkout-close"
           >
-            <X className="h-5 w-5" />
+            <X size={18} />
           </button>
-
-          <div className="pr-8">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-500/30 bg-fuchsia-950/50 px-3 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-fuchsia-300">
-                <Sparkles className="h-3 w-3 text-fuchsia-400" />
-                Matrícula Ejecutiva Oficial
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-950/50 px-2.5 py-0.5 font-mono text-[10px] text-cyan-300">
-                Campus Moodle 24/7
-              </span>
-            </div>
-
-            <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
-              {playbook.title}
-            </h2>
-
-            <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-400">
-                  {priceCurrency === 'USD' ? `$${priceAmount}` : `S/ ${priceAmount}`}
-                </span>
-                <span className="text-xs font-semibold text-slate-400">
-                  {priceCurrency}
-                </span>
-              </div>
-              <span className="text-xs font-mono text-slate-400">
-                (Comprobante oficial SUNAT: Boleta o Factura deducible)
-              </span>
-            </div>
-          </div>
-        </div>
+        </header>
 
         {/* Scrollable Body */}
-        <div className="overflow-y-auto p-5 sm:p-6 space-y-6 flex-1">
+        <div className="lx-checkout-body">
+          
+
           {/* Tarjeta de Asesora Académica */}
-          <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-purple-950/25 to-slate-900/80 p-4 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="relative shrink-0">
-                <div className="h-11 w-11 rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 p-0.5 shadow-md">
-                  <div className="h-full w-full rounded-full bg-slate-900 flex items-center justify-center text-cyan-300 font-bold text-xs">
-                    SV
-                  </div>
-                </div>
-                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-slate-900" title="En línea para asistirte" />
-              </div>
-              <div className="space-y-1 flex-1 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-1">
-                  <div>
-                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span>Lic. Sofía Valdivia</span>
-                      <span className="text-[10px] font-normal text-indigo-300">· Coordinadora de Admisiones</span>
-                    </h4>
-                    <p className="text-[11px] text-slate-300 leading-snug mt-0.5">
-                      «¡Hola! Te acompaño en tu inscripción. Con izipay Online tu aula virtual se activa de inmediato. En transferencias y depósitos bancarios, nuestro equipo administrativo verifica el comprobante para dar de alta tus accesos.»
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-1 flex flex-wrap items-center gap-3 text-[10px] text-slate-400">
-                  <span className="inline-flex items-center gap-1 text-emerald-400">
-                    <CheckCircle2 className="h-3 w-3" /> Acompañamiento 1-a-1
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-cyan-400">
-                    <GraduationCap className="h-3 w-3" /> Alta en Moodle tras confirmación
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-fuchsia-400">
-                    <ShieldCheck className="h-3 w-3" /> Certificación oficial con QR
-                  </span>
-                </div>
+          <div className="lx-advisor-box">
+            <GraduationCap size={18} />
+            <div style={{ flex: 1 }}>
+              <strong>Lic. Sofía Valdivia · Coordinadora de Admisiones</strong>
+              <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#9eb0bc' }}>
+                «¡Hola! Te acompaño en tu inscripción. Con izipay Online tus accesos se aprovisionan una vez confirmada la notificación segura de pago (IPN). En transferencias bancarias, nuestro equipo administrativo verifica el comprobante para dar de alta tus accesos.»
+              </p>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px', fontSize: '10px', color: '#8da2af', flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#34d399' }}>
+                  <CheckCircle2 size={12} /> Acompañamiento 1-a-1
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#53cbe5' }}>
+                  <GraduationCap size={12} /> Alta en Moodle tras confirmación
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#c084fc' }}>
+                  <ShieldCheck size={12} /> Certificación oficial con QR
+                </span>
               </div>
             </div>
           </div>
 
           {/* Banner de Confirmación de Orden Registrada (cuando aplica) */}
           {ordenRegistradaCodigo ? (
-            <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/30 p-5 space-y-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-6 w-6 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    ¡Orden Registrada en el Sistema Lysandri!
-                  </h3>
-                  <p className="text-xs font-mono text-emerald-300 mt-0.5">
-                    Código Oficial: <span className="text-base font-black text-white">{ordenRegistradaCodigo}</span>
+            <div className="lx-order-confirmed">
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <CheckCircle2 size={22} style={{ color: '#34d399', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ flex: 1 }}>
+                  <h4>¡Orden Registrada en el Sistema Lysandri!</h4>
+                  <p style={{ margin: '4px 0 8px', fontSize: '12px', fontFamily: 'monospace', color: '#6ee7b7' }}>
+                    Código Oficial: <strong style={{ fontSize: '16px', color: '#ffffff' }}>{ordenRegistradaCodigo}</strong>
                   </p>
-                  <p className="text-[11px] text-slate-300 mt-2 leading-relaxed">
-                    Tu orden se encuentra en estado <strong className="text-amber-300 font-mono">PENDIENTE_PAGO</strong>.
+                  <p style={{ margin: '0 0 10px', fontSize: '11px', lineHeight: 1.45, color: '#d1fae5' }}>
+                    Tu orden se encuentra en estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PENDIENTE_PAGO</strong>.
                     Por favor remite tu comprobante de abono bancario indicando este código.
                     Nuestro equipo administrativo validará el abono en cuenta bancaria antes de activar tus credenciales en el Campus Virtual.
                   </p>
+                  <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', fontSize: '11px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ color: '#9eb0bc' }}>Importe Registrado:</span>
+                      <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{priceAmount} {priceCurrency}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ color: '#9eb0bc' }}>Titular:</span>
+                      <span style={{ color: '#ffffff' }}>{nombreCompleto}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#9eb0bc' }}>Comprobante:</span>
+                      <span style={{ color: '#ffffff' }}>{tipoComprobante} ({numeroDocumento})</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleOpenWhatsAppForRegisteredOrder}
+                      className="lx-checkout-whatsapp-action"
+                      style={{ marginTop: 0, flex: '1 1 200px' }}
+                    >
+                      <MessageCircle size={16} />
+                      <span>Enviar Comprobante por WhatsApp</span>
+                      <ExternalLink size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleStartNewOrder}
+                      className="lx-checkout-secondary-action"
+                      style={{ marginTop: 0, flex: '0 0 auto', padding: '0 16px' }}
+                    >
+                      Iniciar Nueva Orden
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-3 text-xs space-y-1">
-                <div className="flex justify-between text-slate-300">
-                  <span>Importe Registrado:</span>
-                  <span className="font-mono font-bold text-white">{priceAmount} {priceCurrency}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>Titular:</span>
-                  <span className="text-white">{nombreCompleto}</span>
-                </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>Comprobante:</span>
-                  <span className="text-white">{tipoComprobante} ({numeroDocumento})</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleOpenWhatsAppForRegisteredOrder}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-xs font-bold text-white shadow-lg hover:opacity-95 transition"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>Enviar Comprobante por WhatsApp</span>
-                  <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStartNewOrder}
-                  className="rounded-xl border border-slate-700 px-4 py-3 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
-                >
-                  Iniciar Nueva Orden
-                </button>
               </div>
             </div>
           ) : (
             <>
-              {/* Línea de progreso */}
-              <div className="flex items-center justify-between px-1 border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-500 text-[10px] font-black text-slate-950">
-                    1
-                  </span>
-                  <span className="text-xs font-bold text-white">Tus Datos & Facturación</span>
-                </div>
-                <div className="h-px w-8 bg-slate-700" />
-                <div className="flex items-center gap-2">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-fuchsia-500 text-[10px] font-black text-white">
-                    2
-                  </span>
-                  <span className="text-xs font-bold text-slate-300">Método de Pago</span>
-                </div>
-                <div className="h-px w-8 bg-slate-700 hidden sm:block" />
-                <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Acceso Tras Verificación</span>
-                </div>
-              </div>
-
               {errorMessage && (
-                <div className="flex flex-col gap-2 rounded-xl border border-rose-500/40 bg-rose-950/40 p-3 text-xs text-rose-300">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
-                    <span className="flex-1">{errorMessage}</span>
+                <div className="lx-checkout-error" role="alert">
+                  <AlertCircle size={18} />
+                  <div style={{ flex: 1 }}>
+                    <span>{errorMessage}</span>
+                    {(errorMessage.toLowerCase().includes('conflicto') ||
+                      errorMessage.toLowerCase().includes('difieren') ||
+                      errorMessage.toLowerCase().includes('clave')) && (
+                      <div style={{ marginTop: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={handleStartNewOrder}
+                          style={{ background: 'none', border: 'none', padding: 0, color: '#fcd34d', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          Iniciar una nueva compra con nueva clave
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  {(errorMessage.toLowerCase().includes('conflicto') ||
-                    errorMessage.toLowerCase().includes('difieren') ||
-                    errorMessage.toLowerCase().includes('clave')) && (
-                    <button
-                      type="button"
-                      onClick={handleStartNewOrder}
-                      className="self-start text-[11px] font-bold text-amber-300 hover:text-amber-200 underline mt-1"
-                    >
-                      Iniciar una nueva compra con nueva clave
-                    </button>
-                  )}
                 </div>
               )}
 
-              {/* Form: Información del Alumno y Facturación */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                  <User className="h-3.5 w-3.5" />
-                  <span>1. ¿A nombre de quién emitimos tu certificación oficial?</span>
-                </h3>
+              {/* Sección 1: Datos del Alumno y Facturación */}
+              <section className="lx-checkout-section" aria-labelledby="checkout-customer-heading">
+                <div className="lx-section-heading">
+                  <div>
+                    <h3 id="checkout-customer-heading">1. Datos del Alumno y Facturación</h3>
+                    <p>Emisión oficial de diploma directivo y comprobante fiscal SUNAT.</p>
+                  </div>
+                </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Nombres y apellidos completos *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <div className="lx-fields-grid">
+                  <div className="lx-field lx-field-wide">
+                    <label htmlFor="checkout-name">
+                      Nombres y apellidos completos <small>*</small>
+                    </label>
                     <input
+                      id="checkout-name"
                       type="text"
                       required
                       value={nombreCompleto}
                       onChange={(e) => setNombreCompleto(e.target.value)}
                       placeholder="Ej. Carlos Alberto Mendoza Alarcón"
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
                     />
-                  </div>
-                  <p className="mt-1 text-[10px] text-slate-400">
-                    Así figurará exactamente en tu diploma directivo con código QR y verificación en LinkedIn.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Tu correo electrónico principal *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="c.mendoza@empresa.com"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                      />
-                    </div>
-                    <p className="mt-1 text-[10px] text-slate-400">
-                      Aquí te enviaremos tus accesos al aula virtual y tu factura/boleta.
-                    </p>
+                    <small>Así figurará exactamente en tu diploma directivo con código QR y LinkedIn.</small>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Celular o WhatsApp (Recomendado)
+                  <div className="lx-field">
+                    <label htmlFor="checkout-email">
+                      Correo electrónico principal <small>*</small>
                     </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                      <input
-                        type="tel"
-                        value={telefono}
-                        onChange={(e) => setTelefono(e.target.value)}
-                        placeholder="+51 984 567 123"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900/90 pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                      />
-                    </div>
-                    <p className="mt-1 text-[10px] text-slate-400">
-                      Para darte la bienvenida y que tu tutor académico pueda orientarte.
-                    </p>
+                    <input
+                      id="checkout-email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="c.mendoza@empresa.com"
+                    />
+                    <small>Para enviarte tus accesos al campus y comprobante de pago.</small>
+                  </div>
+
+                  <div className="lx-field">
+                    <label htmlFor="checkout-phone">
+                      Celular o WhatsApp <small>(Recomendado)</small>
+                    </label>
+                    <input
+                      id="checkout-phone"
+                      type="tel"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      placeholder="+51 984 567 123"
+                    />
+                    <small>Para acompañamiento académico y tutoría directa.</small>
                   </div>
                 </div>
 
-                {/* Comprobante Fiscal SUNAT */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">
-                    ¿Tu comprobante es a título personal o para tu empresa? *
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <fieldset className="lx-invoice-picker">
+                  <legend>¿Tu comprobante es a título personal o para tu empresa? *</legend>
+                  <div className="lx-invoice-options">
                     <button
                       type="button"
+                      className={tipoComprobante === 'BOLETA' ? 'is-selected' : ''}
                       onClick={() => {
                         setTipoComprobante('BOLETA');
                         setNumeroDocumento('');
                       }}
-                      className={`flex flex-col items-start rounded-xl border p-3 text-xs text-left transition-all ${
-                        tipoComprobante === 'BOLETA'
-                          ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 shadow-sm shadow-cyan-500/20'
-                          : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
-                      }`}
                     >
-                      <div className="flex items-center gap-2 font-bold text-white">
-                        <FileText className="h-4 w-4 text-cyan-400" />
-                        <span>Personal (Boleta con DNI)</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 mt-1">
-                        Para estudiar por tu cuenta o deducir gastos personales.
-                      </span>
+                      <FileText size={16} />
+                      <span>Personal (Boleta)</span>
+                      <small>DNI 8 dígitos</small>
                     </button>
-
                     <button
                       type="button"
+                      className={tipoComprobante === 'FACTURA' ? 'is-selected' : ''}
                       onClick={() => {
                         setTipoComprobante('FACTURA');
                         setNumeroDocumento('');
                       }}
-                      className={`flex flex-col items-start rounded-xl border p-3 text-xs text-left transition-all ${
-                        tipoComprobante === 'FACTURA'
-                          ? 'border-indigo-400 bg-indigo-950/40 text-indigo-200 shadow-sm shadow-indigo-500/20'
-                          : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
-                      }`}
                     >
-                      <div className="flex items-center gap-2 font-bold text-white">
-                        <Building className="h-4 w-4 text-indigo-400" />
-                        <span>Empresa (Factura con RUC)</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 mt-1">
-                        100% deducible de impuestos (Crédito fiscal SUNAT).
-                      </span>
+                      <Building size={16} />
+                      <span>Empresa (Factura)</span>
+                      <small>RUC 11 dígitos deducible</small>
                     </button>
                   </div>
-                </div>
+                </fieldset>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {tipoComprobante === 'BOLETA' ? 'Número de DNI del Estudiante (8 dígitos) *' : 'Número de RUC de la Empresa (11 dígitos) *'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    inputMode="numeric"
-                    value={numeroDocumento}
-                    onChange={handleDocumentoChange}
-                    placeholder={tipoComprobante === 'BOLETA' ? 'Ej. 45892147' : 'Ej. 20609812451'}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs font-mono text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-colors"
-                  />
-                </div>
-
-                {tipoComprobante === 'FACTURA' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-indigo-300 mb-1">
-                      Razón Social de la Empresa *
+                <div className="lx-fields-grid lx-document-fields">
+                  <div className={`lx-field ${tipoComprobante === 'BOLETA' ? 'lx-field-wide' : ''}`}>
+                    <label htmlFor="checkout-doc">
+                      {tipoComprobante === 'BOLETA' ? 'Número de DNI (8 dígitos) *' : 'Número de RUC (11 dígitos) *'}
                     </label>
                     <input
+                      id="checkout-doc"
                       type="text"
                       required
-                      value={razonSocial}
-                      onChange={(e) => setRazonSocial(e.target.value)}
-                      placeholder="Ej. Inversiones Tecnológicas del Perú S.A.C."
-                      className="w-full rounded-xl border border-indigo-500/40 bg-slate-900/90 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-colors"
+                      inputMode="numeric"
+                      value={numeroDocumento}
+                      onChange={handleDocumentoChange}
+                      placeholder={tipoComprobante === 'BOLETA' ? 'Ej. 45892147' : 'Ej. 20609812451'}
                     />
                   </div>
-                )}
-              </div>
 
-              {/* Selector de Métodos de Pago */}
-              <div className="space-y-4 pt-2 border-t border-slate-800">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-fuchsia-400 flex items-center gap-2">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    <span>2. Elige tu método de pago preferido</span>
-                  </h3>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Transacción Protegida
-                  </span>
+                  {tipoComprobante === 'FACTURA' && (
+                    <div className="lx-field">
+                      <label htmlFor="checkout-company">
+                        Razón Social de la Empresa *
+                      </label>
+                      <input
+                        id="checkout-company"
+                        type="text"
+                        required
+                        value={razonSocial}
+                        onChange={(e) => setRazonSocial(e.target.value)}
+                        placeholder="Ej. Inversiones Tecnológicas del Perú S.A.C."
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Sección 2: Métodos de Pago */}
+              <section className="lx-checkout-section" aria-labelledby="checkout-payment-heading">
+                <div className="lx-section-heading">
+                  <div>
+                    <h3 id="checkout-payment-heading">2. Elige tu método de pago preferido</h3>
+                    <p>Selecciona cómo completar tu matrícula con respaldo oficial.</p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {/* Tarjeta Internacional / izipay Online */}
+                <div className="lx-payment-options" role="group" aria-label="Métodos de pago">
                   <button
                     type="button"
+                    aria-pressed={paymentMethod === 'IZIPAY'}
+                    className={paymentMethod === 'IZIPAY' ? 'is-selected' : ''}
                     onClick={() => setPaymentMethod('IZIPAY')}
-                    className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all relative ${
-                      paymentMethod === 'IZIPAY'
-                        ? 'border-fuchsia-400/80 bg-gradient-to-br from-[#1e0d2b] via-[#0f172a] to-slate-900 text-white shadow-lg shadow-fuchsia-500/20'
-                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <CreditCard className={`h-4 w-4 ${paymentMethod === 'IZIPAY' ? 'text-fuchsia-400' : 'text-slate-500'}`} />
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 font-bold">
-                        izipay Online
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-white">Tarjeta Online</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Visa, Mastercard, Amex, Apple/Google Pay</div>
+                    <CreditCard size={18} />
+                    <span>Tarjeta Online</span>
+                    <small>izipay Online</small>
                   </button>
 
-                  {/* Yape / Plin */}
                   <button
                     type="button"
+                    aria-pressed={paymentMethod === 'YAPE_PLIN'}
+                    className={paymentMethod === 'YAPE_PLIN' ? 'is-selected' : ''}
                     onClick={() => setPaymentMethod('YAPE_PLIN')}
-                    className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all relative ${
-                      paymentMethod === 'YAPE_PLIN'
-                        ? 'border-purple-400 bg-gradient-to-br from-purple-950/60 to-slate-900 text-white shadow-lg shadow-purple-500/10'
-                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <Smartphone className={`h-4 w-4 ${paymentMethod === 'YAPE_PLIN' ? 'text-purple-400' : 'text-slate-500'}`} />
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
-                        Móvil
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-white">Yape / Plin</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Pago móvil por QR / Celular</div>
+                    <Smartphone size={18} />
+                    <span>Yape / Plin</span>
+                    <small>Pago móvil</small>
                   </button>
 
-                  {/* Transferencia BCP / Interbank */}
                   <button
                     type="button"
+                    aria-pressed={paymentMethod === 'TRANSFERENCIA'}
+                    className={paymentMethod === 'TRANSFERENCIA' ? 'is-selected' : ''}
                     onClick={() => setPaymentMethod('TRANSFERENCIA')}
-                    className={`flex flex-col items-start p-3.5 rounded-2xl border text-left transition-all relative ${
-                      paymentMethod === 'TRANSFERENCIA'
-                        ? 'border-indigo-400 bg-gradient-to-br from-indigo-950/60 to-slate-900 text-white shadow-lg shadow-indigo-500/10'
-                        : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
                   >
-                    <div className="flex items-center justify-between w-full mb-2">
-                      <Building2 className={`h-4 w-4 ${paymentMethod === 'TRANSFERENCIA' ? 'text-indigo-400' : 'text-slate-500'}`} />
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">
-                        Bancario
-                      </span>
-                    </div>
-                    <div className="text-xs font-bold text-white">Transferencia Bancaria</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">BCP e Interbank Empresarial</div>
+                    <Building2 size={18} />
+                    <span>Transferencia Bancaria</span>
+                    <small>BCP e Interbank</small>
                   </button>
                 </div>
 
-                {/* Contenido según método */}
+                {/* Panel IZIPAY */}
                 {paymentMethod === 'IZIPAY' && (
-                  <div className="rounded-2xl border border-fuchsia-500/35 bg-gradient-to-b from-[#180e29]/70 via-slate-950/80 to-[#0e1628]/70 p-4 sm:p-5 space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-white">
-                        <ShieldCheck className="h-4 w-4 text-fuchsia-400" />
-                        <span>Pasarela Segura izipay Online • Cifrado SSL 3D Secure</span>
+                  <div className="lx-method-panel" key="card">
+                    {izipayData ? (
+                      <div>
+                        <div className="lx-method-intro">
+                          <div>
+                            <h4>Pasarela Oficial izipay Online</h4>
+                            <p>Ingresa los datos de tu tarjeta en el formulario seguro.</p>
+                          </div>
+                          <span className="lx-secure-mark">Conexión Cifrada SSL 3D Secure</span>
+                        </div>
+
+                        <div style={{ marginTop: '12px', display: 'grid', gap: '6px', fontSize: '11px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9eb0bc' }}>Código de Orden:</span>
+                            <strong style={{ color: '#53cbe5', fontFamily: 'monospace' }}>{izipayData.codigoOrden}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#9eb0bc' }}>Total a Pagar:</span>
+                            <strong style={{ color: '#ffffff' }}>{priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}</strong>
+                          </div>
+                        </div>
+
+                        {izipaySdkError && (
+                          <div className="lx-checkout-error" style={{ marginTop: '12px' }}>
+                            <AlertCircle size={18} />
+                            <div style={{ flex: 1 }}>
+                              <p style={{ margin: 0 }}>{izipaySdkError}</p>
+                              <button
+                                type="button"
+                                onClick={initKryptonSdk}
+                                className="lx-checkout-secondary-action"
+                                style={{ marginTop: '8px', minHeight: '32px', fontSize: '11px', width: 'auto', padding: '0 12px' }}
+                              >
+                                Reintentar carga de pasarela
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {izipayVerifying ? (
+                          <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                            <LoaderCircle size={32} className="lx-spinner" style={{ margin: '0 auto 8px', color: '#53cbe5' }} />
+                            <h4 style={{ color: '#ffffff', fontSize: '14px' }}>Verificando transacción de forma segura...</h4>
+                            <p style={{ color: '#9eb0bc', fontSize: '11px', margin: '4px 0 0' }}>Por favor espere mientras confirmamos la operación con el servidor.</p>
+                          </div>
+                        ) : (
+                          <div style={{ margin: '14px 0', padding: '14px', background: '#0b1622', border: '1px dashed #304858', borderRadius: '8px', textAlign: 'center' }}>
+                            <div className="kr-embedded" kr-form-token={izipayData.formToken}>
+                              {izipaySdkLoading && (
+                                <div style={{ padding: '20px 0' }}>
+                                  <LoaderCircle size={28} className="lx-spinner" style={{ margin: '0 auto 8px', color: '#53cbe5' }} />
+                                  <p style={{ fontSize: '12px', color: '#d1e2ec' }}>Cargando pasarela segura izipay Online...</p>
+                                </div>
+                              )}
+                              {izipayFormReady && !izipaySdkError && !izipaySdkLoading && (
+                                <div style={{ padding: '8px 0', color: '#d1e2ec' }}>
+                                  <p style={{ fontSize: '12px', fontWeight: 'bold' }}>Formulario inteligente de pago preparado</p>
+                                  <p style={{ fontSize: '10px', color: '#8da2af', maxWidth: '380px', margin: '4px auto 0' }}>
+                                    Token seguro emitido por el servidor. La transacción se valida directamente con la pasarela mediante notificación segura IPN.
+                                  </p>
+                                </div>
+                              )}
+                              <div className="kr-pan my-2"></div>
+                              <div className="kr-expiry my-2"></div>
+                              <div className="kr-security-code my-2"></div>
+                              {izipayFormReady && !izipaySdkError && !izipaySdkLoading && (
+                                <button className="kr-payment-button w-full mt-3">
+                                  Pagar {priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}
+                                </button>
+                              )}
+                              <div className="kr-form-error text-xs text-rose-400 mt-2"></div>
+                            </div>
+                          </div>
+                        )}
+
+                        <p style={{ fontSize: '11px', color: '#8da2af', margin: '10px 0' }}>
+                          Al completar el pago en el formulario seguro, el backend registrará el cobro y procesará la matrícula en el Campus Virtual.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={handleStartNewOrder}
+                          className="lx-checkout-secondary-action"
+                        >
+                          Volver a opciones de pago
+                        </button>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1 text-[9px] font-mono text-slate-300">
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700">VISA</span>
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700">MC</span>
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700">AMEX</span>
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700">DINERS</span>
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700"> PAY</span>
-                        <span className="bg-slate-800 px-1.5 py-0.5 rounded text-white font-bold border border-slate-700">G PAY</span>
+                    ) : (
+                      <div>
+                        <div className="lx-method-intro">
+                          <div>
+                            <h4>Pago seguro con tarjeta</h4>
+                            <p>Ingresa los datos en la pasarela protegida de izipay Online.</p>
+                          </div>
+                          <span className="lx-secure-mark">256-bit SSL · 3D Secure</span>
+                        </div>
+
+                        <div className="lx-brand-row" aria-label="Tarjetas aceptadas">
+                          <img src={visaLogo} alt="Visa" />
+                          <img src={mastercardLogo} alt="Mastercard" />
+                          <img src={amexLogo} alt="American Express" />
+                          <img src={dinersLogo} alt="Diners Club" />
+                        </div>
+
+                        <p className="lx-payment-note" style={{ marginBottom: '14px' }}>
+                          Tu pago se procesa de forma segura con liquidación bancaria y validación 3D Secure, aprovisionando tus accesos una vez recibida la confirmación IPN de la pasarela.
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={handleSubmitIzipay}
+                          disabled={isSubmitting}
+                          className="lx-checkout-primary-action"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <LoaderCircle size={17} className="lx-spinner" />
+                              <span>Conectando con izipay Online...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock size={16} />
+                              <span>Pagar con izipay Online • {priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}</span>
+                              <ArrowRight size={16} />
+                            </>
+                          )}
+                        </button>
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Panel YAPE_PLIN */}
+                {paymentMethod === 'YAPE_PLIN' && (
+                  <div className="lx-method-panel" key="wallet">
+                    <div className="lx-method-intro">
+                      <div>
+                        <h4>Yape o Plin</h4>
+                        <p>Transfiere desde tu billetera móvil y registra tu comprobante.</p>
+                      </div>
+                      <img className="lx-yape-logo" src={yapeLogo} alt="Yape" />
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Al presionar el botón ingresarás a la pasarela protegida de <strong>izipay Online</strong>. Tu pago se procesa en tiempo real con liquidación bancaria directa a través de Interbank y BCP, habilitando tus accesos al instante sin tiempos de espera.
+                    <div className="lx-account-row">
+                      <div>
+                        <small>Número de celular oficial</small>
+                        <strong>941 238 905</strong>
+                        <small>Titular: LYSANDRI S.A.C. · RUC: 20609812451</small>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy('941238905', 'yape-num')}
+                        aria-label="Copiar número de pago"
+                      >
+                        {copiedKey === 'yape-num' ? <Check size={16} /> : <Copy size={16} />}
+                        <span>{copiedKey === 'yape-num' ? 'Copiado' : 'Copiar'}</span>
+                      </button>
+                    </div>
+
+                    <p className="lx-payment-note">
+                      Monto a abonar: <strong>{priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}</strong>
+                    </p>
+
+                    <p style={{ fontSize: '11px', color: '#8da2af', margin: '10px 0 14px' }}>
+                      Al presionar el botón, el backend registrará tu orden oficial en estado <strong style={{ color: '#fbbf24' }}>PENDIENTE_PAGO</strong> y te asignará un código único para que adjuntes tu voucher. La activación en Moodle se realizará tras la verificación administrativa.
                     </p>
 
                     <button
                       type="button"
-                      onClick={handleSubmitIzipay}
                       disabled={isSubmitting}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-cyan-500 px-6 py-4 text-xs sm:text-sm font-bold text-white shadow-xl shadow-fuchsia-500/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handleManualOrderRegistration('YAPE', 'Yape / Plin')}
+                      className="lx-checkout-primary-action"
                     >
                       {isSubmitting ? (
                         <>
-                          <LoaderCircle className="h-4 w-4 animate-spin" />
-                          <span>Conectando con izipay Online...</span>
+                          <LoaderCircle size={17} className="lx-spinner" />
+                          <span>Registrando orden en el servidor...</span>
                         </>
                       ) : (
                         <>
-                          <Lock className="h-4 w-4" />
-                          <span>Pagar con izipay Online • {priceAmount} {priceCurrency}</span>
-                          <ArrowRight className="h-4 w-4 ml-1" />
+                          <Smartphone size={16} />
+                          <span>Registrar Orden y Continuar con Voucher</span>
+                          <ArrowRight size={16} />
                         </>
                       )}
                     </button>
                   </div>
                 )}
 
-                {paymentMethod === 'YAPE_PLIN' && (
-                  <div className="rounded-2xl border border-purple-500/30 bg-slate-950/70 p-4 sm:p-5 space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-2">
-                          <Smartphone className="h-4 w-4 text-purple-400" />
-                          <span>Billeteras Móviles Yape y Plin</span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
-                          Monto a abonar: <strong className="text-purple-300 font-mono text-sm">{priceAmount} {priceCurrency}</strong>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-                      <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-purple-500/20 bg-purple-950/20 text-center">
-                        <div className="relative p-2.5 rounded-xl bg-white text-slate-950 shadow-md">
-                          <QrCode className="h-28 w-28 text-slate-900" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="bg-purple-600 text-white font-mono text-[9px] font-black px-1.5 py-0.5 rounded shadow">
-                              YAPEAR
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono text-purple-300 mt-2 font-semibold">
-                          Escanea desde tu app Yape o Plin
-                        </span>
-                      </div>
-
-                      <div className="space-y-3 text-xs">
-                        <div>
-                          <span className="text-slate-400 text-[11px]">Número Celular Oficial:</span>
-                          <div className="flex items-center justify-between mt-1 p-2 rounded-lg bg-slate-900 border border-slate-700">
-                            <span className="font-mono font-bold text-sm text-purple-300 tracking-wider">
-                              941 238 905
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopy('941238905', 'yape-num')}
-                              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors"
-                            >
-                              {copiedKey === 'yape-num' ? (
-                                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                              <span>{copiedKey === 'yape-num' ? 'Copiado' : 'Copiar'}</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <span className="text-slate-400 text-[11px]">Titular Registrado:</span>
-                          <div className="font-bold text-slate-200 mt-0.5">
-                            LYSANDRI S.A.C.
-                          </div>
-                          <div className="text-[10px] font-mono text-slate-400">
-                            RUC: 20609812451
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-800">
-                      <p className="text-[11px] text-slate-300 mb-3">
-                        Al presionar el botón, el backend registrará tu orden oficial en estado <strong className="text-amber-300">PENDIENTE_PAGO</strong> y te asignará un código único para que adjuntes tu voucher. La activación en Moodle se realizará tras la verificación administrativa.
-                      </p>
-
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => handleManualOrderRegistration('YAPE', 'Yape / Plin')}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-teal-600 px-6 py-3.5 text-xs font-bold text-white shadow-lg hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            <span>Registrando orden en el servidor...</span>
-                          </>
-                        ) : (
-                          <>
-                            <MessageCircle className="h-4 w-4" />
-                            <span>Registrar Orden y Continuar con Voucher</span>
-                            <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+                {/* Panel TRANSFERENCIA */}
                 {paymentMethod === 'TRANSFERENCIA' && (
-                  <div className="rounded-2xl border border-indigo-500/30 bg-slate-950/70 p-4 sm:p-5 space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="lx-method-panel lx-bank-panel" key="bank">
+                    <div className="lx-method-intro">
                       <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-indigo-400" />
-                          <span>Cuentas Bancarias Oficiales (BCP e Interbank)</span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
-                          Titular: <strong className="text-slate-200">LYSANDRI S.A.C.</strong> · RUC: <strong className="font-mono text-slate-200">20609812451</strong>
-                        </div>
+                        <h4>Transferencia Bancaria Oficial</h4>
+                        <p>Titular: <strong>LYSANDRI S.A.C.</strong> · RUC: <strong>20609812451</strong></p>
                       </div>
-                      <div className="text-right">
-                        <span className="font-mono text-xs font-bold text-indigo-300">
-                          {priceAmount} {priceCurrency}
-                        </span>
-                      </div>
+                      <span className="lx-secure-mark font-mono">
+                        {priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}
+                      </span>
                     </div>
 
                     {cargandoCuentas ? (
-                      <div className="flex items-center justify-center py-6 text-xs text-slate-400 gap-2">
-                        <LoaderCircle className="h-4 w-4 animate-spin text-cyan-400" />
+                      <div style={{ textAlign: 'center', padding: '20px 0', fontSize: '11px', color: '#9eb0bc' }}>
+                        <LoaderCircle size={20} className="lx-spinner" style={{ margin: '0 auto 6px', color: '#53cbe5' }} />
                         <span>Consultando cuentas bancarias oficiales autorizadas...</span>
                       </div>
                     ) : cuentasActivas.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
-                        {cuentasActivas.map((cta) => (
-                          <div
-                            key={cta.id}
-                            className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 space-y-2"
-                          >
-                            <div className="flex items-center justify-between font-sans">
-                              <span className="font-bold text-indigo-400 text-xs">{cta.banco}</span>
-                              <span className="text-[9px] bg-indigo-950 text-indigo-300 px-1.5 py-0.5 rounded font-mono">
-                                {cta.tipoCuenta} ({cta.moneda})
-                              </span>
-                            </div>
-                            <div className="space-y-1.5 text-[11px]">
-                              {cta.numeroCuenta && (
-                                <div>
-                                  <div className="text-slate-500 text-[10px]">N° Cuenta:</div>
-                                  <div className="flex justify-between items-center text-white font-bold">
-                                    <span>{cta.numeroCuenta}</span>
+                      <div className="lx-bank-list">
+                        {cuentasActivas.map((cta) => {
+                          const isBcp = (cta.banco || '').toUpperCase().includes('BCP');
+                          const isIbk = (cta.banco || '').toUpperCase().includes('INTERBANK');
+                          const logo = isBcp ? bcpLogo : isIbk ? interbankLogo : null;
+                          return (
+                            <article className="lx-bank-card" key={cta.id}>
+                              {logo ? (
+                                <img src={logo} alt={cta.banco} />
+                              ) : (
+                                <div style={{ width: '60px', height: '32px', display: 'grid', placeItems: 'center', background: '#1a2f42', borderRadius: '4px' }}>
+                                  <Building2 size={18} style={{ color: '#53cbe5' }} />
+                                </div>
+                              )}
+                              <div className="lx-bank-details">
+                                <strong className="font-bold text-xs">{cta.banco}</strong>
+                                <small>{cta.tipoCuenta} · {cta.moneda}</small>
+                                {cta.numeroCuenta && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                    <strong style={{ fontSize: '11px', color: '#f1f6f8' }}>{cta.numeroCuenta}</strong>
                                     <button
                                       type="button"
                                       onClick={() => handleCopy(cta.numeroCuenta!, `${cta.id}-num`)}
-                                      className="text-slate-400 hover:text-cyan-400 transition-colors"
+                                      aria-label={`Copiar cuenta ${cta.banco}`}
                                     >
-                                      {copiedKey === `${cta.id}-num` ? (
-                                        <Check className="h-3 w-3 text-emerald-400" />
-                                      ) : (
-                                        <Copy className="h-3 w-3" />
-                                      )}
+                                      {copiedKey === `${cta.id}-num` ? <Check size={12} /> : <Copy size={12} />}
                                     </button>
                                   </div>
-                                </div>
-                              )}
-                              {cta.cci && (
-                                <div>
-                                  <div className="text-slate-500 text-[10px]">CCI Interbancario:</div>
-                                  <div className="flex justify-between items-center text-slate-300">
-                                    <span className="text-[10px]">{cta.cci}</span>
+                                )}
+                                {cta.cci && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: '#8da2af' }}>
+                                    <span>CCI {cta.cci}</span>
                                     <button
                                       type="button"
                                       onClick={() => handleCopy(cta.cci!, `${cta.id}-cci`)}
-                                      className="text-slate-400 hover:text-cyan-400 transition-colors"
+                                      aria-label={`Copiar CCI ${cta.banco}`}
                                     >
-                                      {copiedKey === `${cta.id}-cci` ? (
-                                        <Check className="h-3 w-3 text-emerald-400" />
-                                      ) : (
-                                        <Copy className="h-3 w-3" />
-                                      )}
+                                      {copiedKey === `${cta.id}-cci` ? <Check size={12} /> : <Copy size={12} />}
                                     </button>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                                )}
+                              </div>
+                            </article>
+                          );
+                        })}
                       </div>
                     ) : (
-                      <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3.5 text-xs text-amber-300 flex items-start gap-2.5">
-                        <Info className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
-                        <div>
-                          <p className="font-bold text-white">Cuentas Corrientes en Configuración Oficial</p>
-                          <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                            Las cuentas bancarias corporativas para transferencias directas se encuentran en proceso de formalización técnica en este entorno. Puedes registrar tu orden para recibir la orientación de abono verificada por parte de nuestra asesora académica, o pagar con tarjeta mediante izipay Online.
-                          </p>
-                        </div>
+                      <div style={{ padding: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', color: '#fef3c7', fontSize: '11px', marginTop: '12px' }}>
+                        <strong>Cuentas Corrientes en Configuración Oficial</strong>
+                        <p style={{ margin: '4px 0 0', lineHeight: 1.4 }}>
+                          Las cuentas bancarias corporativas para transferencias directas se encuentran en proceso de formalización técnica en este entorno. Puedes registrar tu orden para recibir la orientación de abono verificada por parte de nuestra asesora académica, o pagar con tarjeta mediante izipay Online.
+                        </p>
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-800">
-                      <p className="text-[11px] text-slate-300 mb-3">
-                        Al presionar el botón, el backend registrará formalmente tu orden de compra con método <strong className="text-indigo-300 font-mono">TRANSFERENCIA</strong> en estado <strong className="text-amber-300 font-mono">PENDIENTE_PAGO</strong>. Una vez que tu abono sea verificado por personal administrativo autorizado, se activarán tus accesos en el Campus Virtual.
-                      </p>
+                    <p className="lx-payment-note">
+                      Importe a transferir: <strong>{priceCurrency === 'PEN' ? 'S/' : '$'} {priceAmount} {priceCurrency}</strong>
+                    </p>
 
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => handleManualOrderRegistration('TRANSFERENCIA', 'Transferencia Bancaria')}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 px-6 py-3.5 text-xs font-bold text-white shadow-lg shadow-indigo-600/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            <span>Registrando orden en el servidor...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Building2 className="h-4 w-4" />
-                            <span>Registrar Orden y Coordinar Transferencia</span>
-                            <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <p style={{ fontSize: '11px', color: '#8da2af', margin: '10px 0 14px' }}>
+                      Al presionar el botón, el backend registrará formalmente tu orden de compra con método <strong style={{ color: '#53cbe5', fontFamily: 'monospace' }}>TRANSFERENCIA</strong> en estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PENDIENTE_PAGO</strong>. Una vez que tu abono sea verificado por personal administrativo autorizado, se activarán tus accesos en el Campus Virtual.
+                    </p>
+
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => handleManualOrderRegistration('TRANSFERENCIA', 'Transferencia Bancaria')}
+                      className="lx-checkout-primary-action"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <LoaderCircle size={17} className="lx-spinner" />
+                          <span>Registrando orden en el servidor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Building2 size={16} />
+                          <span>Registrar Orden y Coordinar Transferencia</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
                   </div>
                 )}
-              </div>
+              </section>
             </>
           )}
 
-          {/* Banner inferior de confianza */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5 text-slate-300">
-              <div className="rounded-full bg-emerald-500/10 p-2 text-emerald-400">
-                <HeartHandshake className="h-4 w-4" />
-              </div>
+          {/* Footer con asistencia directa y nota */}
+          <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#0e1a26', border: '1px solid #253a4a', borderRadius: '8px', fontSize: '11px', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <HeartHandshake size={18} style={{ color: '#34d399' }} />
               <div>
-                <p className="font-semibold text-white">¿Deseas atención personalizada o pago corporativo?</p>
-                <p className="text-[11px] text-slate-400">Un asesor académico de Lysandri te atiende en tiempo real por WhatsApp.</p>
+                <strong style={{ color: '#ffffff' }}>¿Deseas atención personalizada o pago corporativo?</strong>
+                <p style={{ margin: 0, color: '#8da2af', fontSize: '10px' }}>Un asesor académico de Lysandri te asiste en tiempo real por WhatsApp.</p>
               </div>
             </div>
             <a
               href="https://wa.me/51941238905?text=Hola%20Lysandri,%20deseo%20asistencia%20con%20mi%20matr%C3%ADcula%20y%20m%C3%A9todos%20de%20pago"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-2 font-bold text-emerald-400 hover:bg-emerald-900/40 transition-colors"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#123d36', border: '1px solid #287c68', borderRadius: '6px', color: '#e7fff6', fontSize: '10px', fontWeight: 'bold', textDecoration: 'none' }}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle size={14} />
               <span>Chatear por WhatsApp</span>
             </a>
           </div>
+
+          <p className="lx-checkout-footnote">
+            Al continuar, confirmas que los datos del comprobante son correctos.
+          </p>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

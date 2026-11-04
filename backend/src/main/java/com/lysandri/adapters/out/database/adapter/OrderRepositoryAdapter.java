@@ -8,16 +8,14 @@ import com.lysandri.domain.model.Orden;
 import com.lysandri.domain.ports.out.OrderRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.transaction.annotation.Transactional;
-
 @Component
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OrderRepositoryAdapter implements OrderRepositoryPort {
 
     private final SpringDataOrderRepository repository;
@@ -27,8 +25,8 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     @Transactional
     public Orden guardar(Orden orden) {
         OrdenEntity entity = toEntity(orden);
-        OrdenEntity saved = repository.save(entity);
-        return toDomain(saved);
+        OrdenEntity guardado = repository.save(entity);
+        return toDomain(guardado);
     }
 
     @Override
@@ -51,6 +49,19 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     @Transactional
     public Optional<Orden> buscarPorIdConBloqueo(Long idOrden) {
         return repository.findByIdWithLock(idOrden).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarOrdenPorIdDetalle(Long idDetalle) {
+        if (idDetalle == null) return Optional.empty();
+        return repository.findByDetalleId(idDetalle).map(this::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Orden> buscarOrdenPorIdDetalleConBloqueo(Long idDetalle) {
+        if (idDetalle == null) return Optional.empty();
+        return repository.findByDetalleIdWithLock(idDetalle).map(this::toDomain);
     }
 
     @Override
@@ -146,8 +157,8 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .fechaOrden(d.getFechaOrden())
                 .estadoOrden(d.getEstadoOrden())
                 .total(d.getTotal())
-                .moneda(d.getMoneda() != null ? d.getMoneda() : "USD")
-                .metodoPago(d.getMetodoPago() != null ? d.getMetodoPago() : "IZIPAY")
+                .moneda(d.getMoneda())
+                .metodoPago(d.getMetodoPago())
                 .stripeSessionId(d.getStripeSessionId())
                 .stripePaymentIntentId(d.getStripePaymentIntentId())
                 .izipayTransactionId(d.getIzipayTransactionId())
@@ -184,6 +195,13 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                         .idDetalle(item.getIdDetalle())
                         .orden(entity)
                         .idPrograma(item.getIdPrograma())
+                        .moodleCourseId(item.getMoodleCourseId())
+                        .origenMoodleCourseId(item.getOrigenMoodleCourseId())
+                        .moodleResolucionAutorizadaPor(item.getMoodleResolucionAutorizadaPor())
+                        .moodleResolucionFecha(item.getMoodleResolucionFecha())
+                        .moodleResolucionMotivo(item.getMoodleResolucionMotivo())
+                        .moodleResolucionEvidencia(item.getMoodleResolucionEvidencia())
+                        .moodleResolucionCursoAnterior(item.getMoodleResolucionCursoAnterior())
                         .precioUnitario(item.getPrecioUnitario())
                         .cantidad(item.getCantidad())
                         .subtotal(item.getSubtotal())
@@ -204,7 +222,14 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                         .idDetalle(item.getIdDetalle())
                         .idOrden(e.getIdOrden())
                         .idPrograma(item.getIdPrograma())
-                        .programa(item.getPrograma() != null ? programAdapter.toDomain(item.getPrograma()) : null)
+                        .moodleCourseId(item.getMoodleCourseId())
+                        .origenMoodleCourseId(item.getOrigenMoodleCourseId())
+                        .moodleResolucionAutorizadaPor(item.getMoodleResolucionAutorizadaPor())
+                        .moodleResolucionFecha(item.getMoodleResolucionFecha())
+                        .moodleResolucionMotivo(item.getMoodleResolucionMotivo())
+                        .moodleResolucionEvidencia(item.getMoodleResolucionEvidencia())
+                        .moodleResolucionCursoAnterior(item.getMoodleResolucionCursoAnterior())
+                        .programa(item.getPrograma() != null && org.hibernate.Hibernate.isInitialized(item.getPrograma()) ? programAdapter.toDomain(item.getPrograma()) : null)
                         .precioUnitario(item.getPrecioUnitario())
                         .cantidad(item.getCantidad())
                         .subtotal(item.getSubtotal())

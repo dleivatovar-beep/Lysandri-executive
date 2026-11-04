@@ -1,0 +1,44 @@
+﻿================================================================================
+PRUEBAS UNITARIAS: Servicios de Contabilidad, Programas y Usuarios
+================================================================================
+Ô£à TEST 1 APROBADO: fetchReporteVentas env├¡a X-Audit-PIN y per├¡odo YYYY-MM
+Ô£à TEST 2 APROBADO: fetchReporteVentas propaga errores 403 de PIN/acceso sin datos ficticios
+Ô£à TEST 3 APROBADO: anularComprobante usa idComprobante real y propaga motivo
+Ô£à TEST 4 APROBADO: anularComprobante propaga errores del servidor sin simular ├®xito
+Ô£à TEST 5 APROBADO: normalizeProgram unifica variantes de nombres y conserva precio/moneda reales
+Ô£à TEST 6 APROBADO: updateUser excluye rol y activo en PUT /usuarios/{id}
+Ô£à TEST 7 APROBADO: updateUserRole utiliza PATCH /usuarios/{id}/rol con motivo de auditor├¡a
+Ô£à TEST 8 APROBADO: deactivateUser utiliza PATCH /usuarios/{id}/desactivar con motivo
+================================================================================
+RESUMEN: 8 de 8 pruebas unitarias frontend aprobadas exitosamente.
+================================================================================
+PRUEBAS DE INTERACCI├ôN REAL: CheckoutModal con React Testing Library + jsdom
+PASS UI a: credencial y clave persistidas antes del POST de creaci├│n.
+PASS UI b: error de guest-session, bot├│n recuperado y cero POST de creaci├│n.
+PASS UI c: retry tras timeout mantiene clave/token y no duplica el registro simulado.
+PASS UI d: remount recupera la orden persistida sin crear otra.
+PASS UI e: 409 visible, sin ├®xito ni WhatsApp, y bot├│n reactivado.
+PASS UI f: cambio de comprador no muestra ni recupera la orden previa.
+PASS UI g: nueva compra expl├¡cita genera otra clave.
+PASS UI h: destino visible y error de carga backend mostrado.
+PASS UI i: error de red no genera ├®xito ni abre WhatsApp.
+PASS UI j: modo demo bloquea creaci├│n real y muestra aviso claro.
+PASS UI k: izipay formToken renderiza contenedor kr-embedded sin redirecci├│n.
+PASS UI l: respuesta incompleta (falta publicKey) bloquea renderizado y muestra aviso claro.
+PASS UI m & n: errores del SDK muestran reintento y reinicio de orden invoca KR.removeForms().
+RESULTADO UI: 14/14 escenarios aprobados (interacciones DOM reales).
+================================================================================
+PRUEBAS AUTOMATIZADAS FRONTEND (C├ôDIGO DE PRODUCCI├ôN REAL: storeService.ts)
+================================================================================
+Ô£à ESCENARIO 1 APROBADO: Intenci├│n persistida correctamente en sessionStorage antes de enviar
+Ô£à ESCENARIO 2 APROBADO: Timeout detectado honestamente y orden recuperada en el reintento
+Ô£à ESCENARIO 3 APROBADO: Deduplicaci├│n exacta con la misma clave y contexto autorizado
+Ô£à ESCENARIO 4 APROBADO: Recuperaci├│n ├¡ntegra de orden confirmada tras recarga
+Ô£à ESCENARIO 5 APROBADO: Conflicto 409 manejado limpiamente sin fuga de informaci├│n
+Ô£à ESCENARIO 6 APROBADO: ├ümbitos aislados y reinicio intencional de compra
+Ô£à ESCENARIO 7 APROBADO: Validaci├│n estricta de destinos y rechazo de combinaciones inv├ílidas
+Ô£à ESCENARIO 8 APROBADO: Ning├║n m├®todo fabrica respuestas ficticias ante errores de red
+================================================================================
+RESUMEN: 8 de 8 escenarios aprobados exitosamente.
+C├ôDIGO DE SALIDA: 0 (EXIT CODE 0)
+================================================================================

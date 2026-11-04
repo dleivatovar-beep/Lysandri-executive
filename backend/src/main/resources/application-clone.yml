@@ -50,6 +50,8 @@ jwt:
 moodle:
   url: ${MOODLE_URL:http://localhost:8081}
   token: ${MOODLE_TOKEN:dev_moodle_wstoken_lysandri}
+  verification:
+    ttl-hours: 168
 
 izipay:
   shop-id: test_shop_lysandri
@@ -71,6 +73,7 @@ llm:
   api-key: mock-key
   model: gpt-4o-mini
   embedding-model: text-embedding-3-small
+  mock-allowed: true
 
 accounting:
   audit-pin: test-accounting-audit-pin

@@ -17,6 +17,10 @@ public interface OrderRepositoryPort {
 
     Optional<Orden> buscarPorIdConBloqueo(Long idOrden);
 
+    Optional<Orden> buscarOrdenPorIdDetalle(Long idDetalle);
+
+    Optional<Orden> buscarOrdenPorIdDetalleConBloqueo(Long idDetalle);
+
     Optional<Orden> buscarPorStripeSessionId(String stripeSessionId);
 
     Optional<Orden> buscarPorStripePaymentIntentId(String stripePaymentIntentId);

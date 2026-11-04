@@ -1,0 +1,210 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-29T02:23:46.514-05:00  INFO 2920 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 2920 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-29T02:23:46.518-05:00  INFO 2920 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-29T02:23:48.018-05:00  INFO 2920 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T02:23:48.275-05:00  INFO 2920 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 243 ms. Found 14 JPA repository interfaces.
+2026-10-29T02:23:49.451-05:00  INFO 2920 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-29T02:23:49.475-05:00  INFO 2920 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-29T02:23:49.476-05:00  INFO 2920 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-29T02:23:49.538-05:00  INFO 2920 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-29T02:23:49.540-05:00  INFO 2920 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2924 ms
+2026-10-29T02:23:50.170-05:00  INFO 2920 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-29T02:23:50.170-05:00  INFO 2920 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-29T02:23:50.170-05:00  INFO 2920 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-29T02:23:50.250-05:00  INFO 2920 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-29T02:23:50.269-05:00  WARN 2920 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-29T02:23:50.331-05:00  INFO 2920 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-10-29T02:23:50.339-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 34 migrations (execution time 00:00.048s)
+2026-10-29T02:23:50.370-05:00  INFO 2920 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-10-29T02:23:50.499-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-10-29T02:23:50.521-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-10-29T02:23:50.559-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "chat_mensajes" does not exist, skipping
+2026-10-29T02:23:50.561-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "progreso_leccion" does not exist, skipping
+2026-10-29T02:23:50.563-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "inscripciones" does not exist, skipping
+2026-10-29T02:23:50.566-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "suscripciones" does not exist, skipping
+2026-10-29T02:23:50.567-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "detalle_ordenes" does not exist, skipping
+2026-10-29T02:23:50.569-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "ordenes" does not exist, skipping
+2026-10-29T02:23:50.571-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "leccion" does not exist, skipping
+2026-10-29T02:23:50.572-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "programa" does not exist, skipping
+2026-10-29T02:23:50.573-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "instructor" does not exist, skipping
+2026-10-29T02:23:50.575-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "usuarios" does not exist, skipping
+2026-10-29T02:23:50.945-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - add leccion fields"
+2026-10-29T02:23:50.949-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:50.951-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "orden" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:50.953-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_leccion_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:50.986-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - add instructor user unique constraint"
+2026-10-29T02:23:51.030-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "4 - create solicitud informacion"
+2026-10-29T02:23:51.109-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "5 - optimize indexes and integrity"
+2026-10-29T02:23:51.174-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "6 - create estructura academica"
+2026-10-29T02:23:51.341-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7 - create vector store"
+2026-10-29T02:23:51.343-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T02:23:51.392-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7.1 - prepare legacy schema for v8"
+2026-10-29T02:23:51.653-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "8 - purge lms and refactor knowledge store"
+2026-10-29T02:23:51.655-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T02:23:51.759-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:51.783-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "detalle_ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:51.923-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "9 - create billing and accounting module"
+2026-10-29T02:23:51.966-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "codigo_hash" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:51.967-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "monto_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:51.970-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "porcentaje_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:51.972-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "medio_pago" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:51.974-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "motivo_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:51.976-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:52.060-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "10 - ensure ai service documento chunks"
+2026-10-29T02:23:52.064-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T02:23:52.065-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "documento_chunks" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:52.066-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_documento_chunks_embedding" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:52.091-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "11 - expand user roles"
+2026-10-29T02:23:52.099-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T02:23:52.123-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "12 - seed founding admins"
+2026-10-29T02:23:52.128-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +--------+
+| setval |
++--------+
+| 1      |
++--------+
+
+2026-10-29T02:23:52.158-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "13 - add manual payment and corporate fields"
+2026-10-29T02:23:52.240-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "14 - add izipay support"
+2026-10-29T02:23:52.289-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "15 - stripe events idempotency"
+2026-10-29T02:23:52.395-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "16 - stripe events lease and recovery"
+2026-10-29T02:23:52.433-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "17 - stripe unique payment intent"
+2026-10-29T02:23:52.481-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "18 - add cancelado to estado orden"
+2026-10-29T02:23:52.483-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "ordenes_estado_orden_check" of relation "ordenes" does not exist, skipping
+2026-10-29T02:23:52.508-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "19 - add provisioning lease and notifications"
+2026-10-29T02:23:52.596-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "20 - create user audit table"
+2026-10-29T02:23:52.669-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "21 - allow all internal user roles"
+2026-10-29T02:23:52.672-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T02:23:52.695-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "22 - atomic receipt counters"
+2026-10-29T02:23:52.743-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "23 - align postgres schema with jpa"
+2026-10-29T02:23:52.753-05:00  INFO 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T02:23:53.227-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "titulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "precio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moneda" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moodle_course_id" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "slug" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "subtitulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_corta" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_detallada" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "imagen_portada_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "syllabus_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_nombre" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_bio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "duracion_horas" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "activo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.228-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_creacion" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T02:23:53.269-05:00  WARN 2920 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "uq_ordenes_codigo_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T02:23:53.296-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "24 - accounting audit log"
+2026-10-29T02:23:53.361-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "25 - least privilege app security"
+2026-10-29T02:23:53.393-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "26 - programa pricing governance and activation tokens"
+2026-10-29T02:23:53.463-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "27 - separate activation and administrative blocking"
+2026-10-29T02:23:53.496-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "28 - invalidate legacy plaintext tokens and outbox"
+2026-10-29T02:23:53.583-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "29 - create whatsapp tables"
+2026-10-29T02:23:53.682-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "30 - add whatsapp outbox and idempotency"
+2026-10-29T02:23:53.730-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "31 - add whatsapp lease and attempt tracking"
+2026-10-29T02:23:53.777-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "32 - add manual payment transfer fields"
+2026-10-29T02:23:53.814-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "33 - add order idempotency"
+2026-10-29T02:23:53.850-05:00  INFO 2920 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 34 migrations to schema "public", now at version v33 (execution time 00:02.546s)
+2026-10-29T02:23:53.979-05:00  INFO 2920 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T02:23:54.088-05:00  INFO 2920 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-29T02:23:54.164-05:00  INFO 2920 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T02:23:54.447-05:00  INFO 2920 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T02:23:54.486-05:00  INFO 2920 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T02:23:54.518-05:00  INFO 2920 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@602c167e
+2026-10-29T02:23:54.522-05:00  INFO 2920 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T02:23:56.312-05:00  INFO 2920 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T02:23:56.380-05:00  INFO 2920 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T02:23:56.912-05:00  INFO 2920 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-29T02:23:58.330-05:00  INFO 2920 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-29T02:23:59.330-05:00  INFO 2920 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-29T02:23:59.333-05:00  INFO 2920 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-29T02:23:59.532-05:00  INFO 2920 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-29T02:23:59.798-05:00  WARN 2920 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T02:24:00.134-05:00  INFO 2920 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@3e491e95, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@57d2623b, org.springframework.security.web.context.SecurityContextHolderFilter@1575c8cc, org.springframework.security.web.header.HeaderWriterFilter@56a6a684, org.springframework.web.filter.CorsFilter@125c79dc, org.springframework.security.web.authentication.logout.LogoutFilter@31b7d7d0, com.lysandri.security.JwtAuthenticationFilter@519f1a7d, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@15999360, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3f1bfe98, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@10463c5, org.springframework.security.web.session.SessionManagementFilter@4a687cba, org.springframework.security.web.access.ExceptionTranslationFilter@3f3fdc07, org.springframework.security.web.access.intercept.AuthorizationFilter@22b9796e]
+2026-10-29T02:24:00.621-05:00  INFO 2920 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-29T02:24:00.638-05:00  INFO 2920 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 14.727 seconds (process running for 15.413)
+2026-10-29T02:24:01.374-05:00  INFO 2920 --- [io-18099-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-29T02:24:01.375-05:00  INFO 2920 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-29T02:24:01.376-05:00  INFO 2920 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-10-29T02:24:01.912-05:00  INFO 2920 --- [io-18099-exec-2] c.l.application.service.AuthService      : Registrando nuevo cliente ejecutivo (solicitud recibida)
+2026-10-29T02:24:02.353-05:00  INFO 2920 --- [io-18099-exec-5] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:02.580-05:00  INFO 2920 --- [io-18099-exec-6] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:02.643-05:00  WARN 2920 --- [io-18099-exec-6] c.l.application.service.AuthService      : Fallo de login: contraseña incorrecta [userId: 4]
+2026-10-29T02:24:02.650-05:00  WARN 2920 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-29T02:24:02.660-05:00  INFO 2920 --- [io-18099-exec-8] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:02.724-05:00  WARN 2920 --- [io-18099-exec-8] c.l.application.service.AuthService      : Fallo de login: usuario no encontrado en base de datos
+2026-10-29T02:24:02.725-05:00  WARN 2920 --- [io-18099-exec-8] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-29T02:24:02.749-05:00  INFO 2920 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T02:24:02.838-05:00  INFO 2920 --- [io-18099-exec-7] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 5 (almacenado como hash SHA-256)
+2026-10-29T02:24:02.928-05:00  INFO 2920 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Orden caec1137-30c8-43fc-beb2-1d1c0c951c2f creada con éxito en pasarela Izipay. Sesión/Tx: izisess_mock_40a3a7272fb042e6b46fccecf2f566bf
+2026-10-29T02:24:02.957-05:00  INFO 2920 --- [io-18099-exec-3] c.l.adapters.in.web.OrderController      : Llamada de confirmación de pago para sesión: izisess_mock_40a3a7272fb042e6b46fccecf2f566bf
+2026-10-29T02:24:03.022-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Confirmando pago y aprovisionando para sesión/transacción: izisess_mock_40a3a7272fb042e6b46fccecf2f566bf
+2026-10-29T02:24:03.036-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación financiera: caec1137-30c8-43fc-beb2-1d1c0c951c2f
+2026-10-29T02:24:03.056-05:00  INFO 2920 --- [io-18099-exec-3] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 5 (almacenado como hash SHA-256)
+2026-10-29T02:24:03.072-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.ActivationOutboxService    : Tarea Outbox de activación persistida duraderamente. ID: 1, Clave: ACTIVACION_ORDEN_1
+2026-10-29T02:24:03.072-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Intención de activación persistida duraderamente en Outbox para orden caec1137-30c8-43fc-beb2-1d1c0c951c2f
+2026-10-29T02:24:03.073-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Orden caec1137-30c8-43fc-beb2-1d1c0c951c2f marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-10-29T02:24:03.074-05:00  WARN 2920 --- [io-18099-exec-3] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T02:24:03.074-05:00  WARN 2920 --- [io-18099-exec-3] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T02:24:03.105-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.ActivationOutboxService    : Reserva exclusiva adquirida para tarea ID: 1 (Intento: attempt-1-fe3b2ba9-8e88-4587-b945-333265be1f3d, Worker: worker-aa58e99d-ba5f-41a0-89cd-56772018da92). Transacción de reserva cerrada.
+2026-10-29T02:24:03.109-05:00  INFO 2920 --- [box-smtp-sender] c.l.a.o.n.EmailNotificationAdapter       : Preparando despacho seguro de correo de activación para intento: attempt-1-fe3b2ba9-8e88-4587-b945-333265be1f3d
+2026-10-29T02:24:03.180-05:00  INFO 2920 --- [box-smtp-sender] c.l.a.o.n.EmailNotificationAdapter       : Correo de activación enviado exitosamente para intento: attempt-1-fe3b2ba9-8e88-4587-b945-333265be1f3d
+2026-10-29T02:24:03.187-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.ActivationOutboxService    : Tarea Outbox ID: 1 marcada exitosamente como ENVIADA (Intento: attempt-1-fe3b2ba9-8e88-4587-b945-333265be1f3d, Worker: worker-aa58e99d-ba5f-41a0-89cd-56772018da92)
+2026-10-29T02:24:03.193-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: caec1137-30c8-43fc-beb2-1d1c0c951c2f
+2026-10-29T02:24:03.206-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden caec1137-30c8-43fc-beb2-1d1c0c951c2f. Token: 1658827f-6b19-4920-9e1c-2467552be7b6, Intento: 1
+2026-10-29T02:24:03.207-05:00  WARN 2920 --- [io-18099-exec-3] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T02:24:03.211-05:00  WARN 2920 --- [io-18099-exec-3] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T02:24:03.221-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 1, código: caec1137-30c8-43fc-beb2-1d1c0c951c2f
+2026-10-29T02:24:03.221-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: estudiante.invitado@lysandri.invalid
+2026-10-29T02:24:03.419-05:00 ERROR 2920 --- [io-18099-exec-3] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T02:24:03.419-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: estudiante.invitado@lysandri.invalid (estudiante.invitadolysandri.invalid)
+2026-10-29T02:24:03.423-05:00 ERROR 2920 --- [io-18099-exec-3] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T02:24:03.424-05:00 ERROR 2920 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden caec1137-30c8-43fc-beb2-1d1c0c951c2f: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T02:24:03.425-05:00 ERROR 2920 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 101 para orden caec1137-30c8-43fc-beb2-1d1c0c951c2f: usuario sin moodleUserId
+2026-10-29T02:24:03.426-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 1
+2026-10-29T02:24:03.481-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=1, Total=150.00, Detracción=0, Cliente=Cliente Invitado
+2026-10-29T02:24:03.489-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden caec1137-30c8-43fc-beb2-1d1c0c951c2f (allEnrolled=false)
+2026-10-29T02:24:03.493-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden caec1137-30c8-43fc-beb2-1d1c0c951c2f persistido como FALLIDO. Lease liberado.
+2026-10-29T02:24:03.502-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_1
+2026-10-29T02:24:03.538-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_1
+2026-10-29T02:24:03.541-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Orden caec1137-30c8-43fc-beb2-1d1c0c951c2f procesada con éxito. Comprobante B001-1 emitido. Sincronización Moodle: false
+2026-10-29T02:24:03.567-05:00  INFO 2920 --- [io-18099-exec-9] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:03.630-05:00  WARN 2920 --- [io-18099-exec-9] c.l.application.service.AuthService      : Fallo de login: contraseña incorrecta [userId: 5]
+2026-10-29T02:24:03.633-05:00  WARN 2920 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-29T02:24:03.646-05:00  INFO 2920 --- [o-18099-exec-10] c.l.application.service.AuthService      : Procesando activación atómica de cuenta...
+2026-10-29T02:24:03.715-05:00  INFO 2920 --- [o-18099-exec-10] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación ID: 2 marcado como utilizado.
+2026-10-29T02:24:03.715-05:00  INFO 2920 --- [o-18099-exec-10] c.l.application.service.AuthService      : Cuenta de usuario ID: 5 activada exitosamente de forma atómica.
+2026-10-29T02:24:03.738-05:00  INFO 2920 --- [io-18099-exec-4] c.l.application.service.AuthService      : Procesando activación atómica de cuenta...
+2026-10-29T02:24:03.743-05:00  WARN 2920 --- [io-18099-exec-4] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El token de activación ya ha sido utilizado
+2026-10-29T02:24:03.751-05:00  INFO 2920 --- [io-18099-exec-1] c.l.application.service.AuthService      : Procesando activación atómica de cuenta...
+2026-10-29T02:24:03.754-05:00  WARN 2920 --- [io-18099-exec-1] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Token de activación inválido o inexistente
+2026-10-29T02:24:03.936-05:00  INFO 2920 --- [io-18099-exec-2] c.l.application.service.AuthService      : Procesando activación atómica de cuenta...
+2026-10-29T02:24:03.940-05:00  WARN 2920 --- [io-18099-exec-2] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Token de activación inválido o inexistente
+2026-10-29T02:24:03.963-05:00  INFO 2920 --- [io-18099-exec-5] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:04.115-05:00  INFO 2920 --- [io-18099-exec-6] c.l.application.service.AuthService      : Registrando nuevo cliente ejecutivo (solicitud recibida)
+2026-10-29T02:24:04.647-05:00  INFO 2920 --- [io-18099-exec-7] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T02:24:04.708-05:00  WARN 2920 --- [io-18099-exec-7] c.l.application.service.AuthService      : Fallo de login: cuenta bloqueada por administración [userId: 6]
+2026-10-29T02:24:04.711-05:00  WARN 2920 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-29T02:24:04.732-05:00 ERROR 2920 --- [io-18099-exec-9] c.l.security.JwtAuthenticationFilter     : No se pudo autenticar con el token JWT provisto: JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.
+2026-10-29T02:24:04.758-05:00 ERROR 2920 --- [o-18099-exec-10] c.l.security.JwtAuthenticationFilter     : No se pudo autenticar con el token JWT provisto: JWT signature does not match locally computed signature. JWT validity cannot be asserted and should not be trusted.
+2026-10-29T02:24:04.849-05:00  WARN 2920 --- [io-18099-exec-5] c.l.adapters.in.web.UsuarioController    : Usuario estudiante.invitado@lysandri.invalid intentó acceder a los datos del usuario ID 6 sin autorización
+2026-10-29T02:24:04.849-05:00  WARN 2920 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Acceso denegado: No tiene permisos para consultar información de otros usuarios
+2026-10-29T02:24:04.867-05:00  INFO 2920 --- [io-18099-exec-6] c.l.adapters.in.web.UsuarioController    : Actualizando usuario ID: 6 por usuario estudiante.invitado@lysandri.invalid
+2026-10-29T02:24:04.872-05:00  WARN 2920 --- [io-18099-exec-6] c.l.adapters.in.web.UsuarioController    : Usuario estudiante.invitado@lysandri.invalid intentó modificar el perfil del usuario ID 6 sin autorización
+2026-10-29T02:24:04.872-05:00  WARN 2920 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Acceso denegado: No tiene permisos para modificar la información de otro usuario
+2026-10-29T02:24:05.297-05:00  INFO 2920 --- [io-18099-exec-7] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Lease de envío WhatsApp adquirido exclusivamente para solicitud req-test-live-1793258645 [tokenIntento: cc335c33, intento: 1]
+2026-10-29T02:24:05.304-05:00  INFO 2920 --- [io-18099-exec-7] c.l.application.service.WhatsAppService  : Operador danny@lysandri.invalid enviando mensaje a WhatsApp destinatario 5199****8777 [solicitud: req-test-live-1793258645, tokenIntento: cc335c33]
+2026-10-29T02:24:05.333-05:00  INFO 2920 --- [io-18099-exec-7] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Envío confirmado por proveedor [solicitud: req-test-live-1793258645, wamid: wamid.test_live_jar_1]
+2026-10-29T02:24:05.366-05:00  INFO 2920 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-test-live-1793258645 ya finalizada o incierta (estado: ENVIADO). No autoriza despacho redundante.
+2026-10-29T02:24:05.371-05:00  INFO 2920 --- [io-18099-exec-3] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-test-live-1793258645 no autorizada para nuevo despacho de red (estado: ENVIADO). Retornando estado actual.
+2026-10-29T02:24:05.390-05:00  WARN 2920 --- [io-18099-exec-9] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Rechazo de solicitud WhatsApp req-test-live-1793258645: intento de reutilizar idSolicitud con datos diferentes.
+2026-10-29T02:24:05.392-05:00  WARN 2920 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La identificación de solicitud 'req-test-live-1793258645' ya fue registrada previamente con un destinatario o contenido diferente.
+2026-10-29T02:24:05.415-05:00  INFO 2920 --- [o-18099-exec-10] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Lease de envío WhatsApp adquirido exclusivamente para solicitud req-restart-1793258645 [tokenIntento: 4e85763c, intento: 1]
+2026-10-29T02:24:05.420-05:00  INFO 2920 --- [o-18099-exec-10] c.l.application.service.WhatsAppService  : Operador danny@lysandri.invalid enviando mensaje a WhatsApp destinatario 5199****8999 [solicitud: req-restart-1793258645, tokenIntento: 4e85763c]

@@ -411,9 +411,9 @@ public class OrderFinancialTransactionService {
             return ClasificacionDestino.MISMO_DESTINO;
         }
 
-        return cuentaHistorica.matches("[0-9]{12,20}")
-                ? ClasificacionDestino.DESTINO_DIFERENTE
-                : ClasificacionDestino.DESTINO_INCIERTO;
+        // La longitud no demuestra que una cuenta historica sea otro destino.
+        // Si no se puede confirmar su equivalencia, requiere revision.
+        return ClasificacionDestino.DESTINO_INCIERTO;
     }
 
     private String entidadCanonicaConocida(String bancoNormalizado) {

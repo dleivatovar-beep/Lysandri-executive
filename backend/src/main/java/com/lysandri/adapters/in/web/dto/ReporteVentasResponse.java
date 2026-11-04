@@ -20,6 +20,20 @@ public class ReporteVentasResponse {
     private BigDecimal totalBaseImponible;
     private BigDecimal totalIgvRecaudado;
     private BigDecimal totalDetracciones;
+
+    private BigDecimal totalVentasPen;
+    private BigDecimal totalBaseImponiblePen;
+    private BigDecimal totalIgvRecaudadoPen;
+    private BigDecimal totalDetraccionesPen;
+
+    private BigDecimal totalVentasUsd;
+    private BigDecimal totalBaseImponibleUsd;
+    private BigDecimal totalIgvRecaudadoUsd;
+    private BigDecimal totalDetraccionesUsd;
+
+    private int cantidadPendientesSinComprobante;
+    private String periodoSeleccionado;
+
     private int cantidadComprobantes;
     private int cantidadBoletas;
     private int cantidadFacturas;
@@ -50,6 +64,7 @@ public class ReporteVentasResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class VentaConsolidadaDto {
+        private Long idComprobante;
         private Long idOrden;
         private String codigoOrden;
         private String cliente;

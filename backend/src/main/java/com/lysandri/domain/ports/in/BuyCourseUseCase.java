@@ -164,4 +164,17 @@ public interface BuyCourseUseCase {
      * Reintenta de forma segura la matrícula en Moodle para una orden ya pagada que falló previamente.
      */
     Orden reintentarMatricula(Long idOrden);
+
+    /**
+     * Resolución administrativa autorizada para un detalle de orden histórico o pendiente de resolución.
+     * Exige curso Moodle verificado, justificación y referencia a la evidencia que respalda la correspondencia.
+     */
+    Orden resolverDestinoMoodleDetalle(Long idDetalle, ResolverDestinoMoodleCommand command);
+
+    record ResolverDestinoMoodleCommand(
+            Long moodleCourseId,
+            String motivo,
+            String referenciaEvidencia,
+            String autorizador
+    ) {}
 }

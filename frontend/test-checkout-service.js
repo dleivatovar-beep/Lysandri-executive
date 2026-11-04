@@ -86,6 +86,7 @@ const transpiled = esbuild.buildSync({
   format: 'esm',
   platform: 'node',
   write: false,
+  loader: { '.css': 'empty', '.svg': 'text', '.png': 'empty' },
   external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext']
 });
 

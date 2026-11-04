@@ -45,18 +45,22 @@ RUN_ID = f"run-{RUN_STAMP}-{RUN_SUFFIX}"
 
 # Carpeta de evidencias única para esta ejecución (sin guiones bajos)
 RUN_EVIDENCIAS_DIR = os.path.join(
-    BASE_DIR, "backend", "evidencias-auth", f"ejecucion-20261029-cierre-checkout-estable-fase5-{RUN_SUFFIX}"
+    BASE_DIR, "backend", "evidencias-auth", f"ejecucion-{RUN_STAMP}-cierre-moodle-fase6-{RUN_SUFFIX}"
 )
 LATEST_EVIDENCIAS_DIR = os.path.join(
-    BASE_DIR, "backend", "evidencias-auth", "ejecucion-20261029-cierre-checkout-estable-fase5"
+    BASE_DIR, "backend", "evidencias-auth", "ejecucion-cierre-moodle-fase6-latest"
 )
 DELIVERY_EVIDENCIAS_DIR = os.path.join(
-    BASE_DIR, "backend", "evidencias-auth", "ejecucion-20261029-cierre-checkout-estable-fase5"
+    BASE_DIR, "backend", "evidencias-auth", "ejecucion-cierre-moodle-fase6-latest"
+)
+CIERRE_EVIDENCIAS_DIR = os.path.join(
+    BASE_DIR, "backend", "evidencias-auth", "ejecucion-20261103-cierre-revision-tres-problemas"
 )
 
 os.makedirs(RUN_EVIDENCIAS_DIR, exist_ok=True)
 os.makedirs(LATEST_EVIDENCIAS_DIR, exist_ok=True)
 os.makedirs(DELIVERY_EVIDENCIAS_DIR, exist_ok=True)
+os.makedirs(CIERRE_EVIDENCIAS_DIR, exist_ok=True)
 
 LOG_FILE_PATH = os.path.join(RUN_EVIDENCIAS_DIR, "registro-ejecucion-validar-jar.log")
 JSON_RESULTS_PATH = os.path.join(RUN_EVIDENCIAS_DIR, "recorrido-http-jar-real.json")
@@ -94,6 +98,7 @@ DISPOSABLE_PORT = find_available_port(15445)
 APP_HTTP_PORT = find_available_port(18099)
 SMTP_MOCK_PORT = find_available_port(1025)
 WHATSAPP_MOCK_PORT = find_available_port(19099)
+MOODLE_MOCK_PORT = find_available_port(18081)
 
 DISPOSABLE_CONTAINER = f"lysandri-pg-{RUN_SUFFIX}"
 DISPOSABLE_DB = "lysandri_disposable_jar_db"
@@ -126,8 +131,16 @@ def docker_exec_psql(sql: str) -> str:
         "psql", "-U", DISPOSABLE_USER, "-d", DISPOSABLE_DB,
         "-t", "-A", "-c", sql
     ]
-    p = run_cmd(cmd, timeout=30)
-    return p.stdout.strip()
+    for attempt in range(12):
+        try:
+            p = run_cmd(cmd, timeout=30)
+            return p.stdout.strip()
+        except RuntimeError as e:
+            err_str = str(e).lower()
+            if ("shutting down" in err_str or "starting up" in err_str or "recovery" in err_str or "connection" in err_str) and attempt < 11:
+                time.sleep(1)
+                continue
+            raise
 
 # ==============================================================================
 # SERVIDOR SMTP SIMULADO (PUERTO AISLADO)
@@ -314,6 +327,79 @@ class MockWhatsAppServer(threading.Thread):
             pass
 
 # ==============================================================================
+# SERVIDOR SIMULADO DE MOODLE LMS REST API (PUERTO AISLADO)
+# ==============================================================================
+moodle_users_store = {}
+moodle_user_counter = [9900]
+moodle_lock = threading.Lock()
+
+class MockMoodleHandler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len).decode("utf-8", errors="replace")
+        params = urllib.parse.parse_qs(body)
+        wsfunction = params.get("wsfunction", [""])[0]
+
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.end_headers()
+
+        if wsfunction == "core_course_get_courses_by_field":
+            val = params.get("value", [""])[0]
+            if val in ["101", "102"]:
+                res = {"courses": [{"id": int(val), "fullname": f"Curso Moodle {val}", "shortname": f"CM-{val}", "visible": 1}]}
+            else:
+                res = {"courses": []}
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+        elif wsfunction == "core_user_get_users_by_field":
+            val = params.get("values[0]", [""])[0]
+            with moodle_lock:
+                if val and val in moodle_users_store:
+                    res = [{"id": moodle_users_store[val], "email": val}]
+                else:
+                    res = []
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+        elif wsfunction == "core_user_create_users":
+            email = params.get("users[0][email]", [""])[0]
+            username = params.get("users[0][username]", ["usuario_creado"])[0]
+            with moodle_lock:
+                if email and email in moodle_users_store:
+                    uid = moodle_users_store[email]
+                else:
+                    moodle_user_counter[0] += 1
+                    uid = moodle_user_counter[0]
+                    if email:
+                        moodle_users_store[email] = uid
+            res = [{"id": uid, "username": username}]
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+        elif wsfunction == "enrol_manual_enrol_users":
+            self.wfile.write(b"null")
+        elif wsfunction == "core_enrol_get_users_courses":
+            res = [{"id": 101, "shortname": "CM-101"}]
+            self.wfile.write(json.dumps(res).encode("utf-8"))
+        else:
+            self.wfile.write(b"{}")
+
+    def log_message(self, format, *args):
+        pass
+
+class MockMoodleServer(threading.Thread):
+    def __init__(self, port):
+        super().__init__(daemon=True)
+        self.port = port
+        self.httpd = http.server.HTTPServer(("127.0.0.1", port), MockMoodleHandler)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        try:
+            self.httpd.shutdown()
+            self.httpd.server_close()
+        except Exception:
+            pass
+
+# ==============================================================================
 # CLIENTE HTTP PARA PRUEBAS
 # ==============================================================================
 def make_http_request(url: str, method="GET", payload=None, token=None, extra_headers=None) -> tuple[int, dict]:
@@ -335,18 +421,24 @@ def make_http_request(url: str, method="GET", payload=None, token=None, extra_he
         with urllib.request.urlopen(req, timeout=10) as resp:
             status = resp.status
             body_str = resp.read().decode("utf-8", errors="replace")
+            resp_headers = dict(resp.headers)
             try:
                 body_json = json.loads(body_str) if body_str else {}
             except Exception:
                 body_json = {"raw": body_str}
+            if isinstance(body_json, dict):
+                body_json["_headers"] = resp_headers
             return status, body_json
     except urllib.error.HTTPError as ex:
         status = ex.code
         body_str = ex.read().decode("utf-8", errors="replace")
+        resp_headers = dict(ex.headers)
         try:
             body_json = json.loads(body_str) if body_str else {}
         except Exception:
             body_json = {"raw": body_str}
+        if isinstance(body_json, dict):
+            body_json["_headers"] = resp_headers
         return status, body_json
 
 # ==============================================================================
@@ -399,8 +491,24 @@ PLANNED_STEPS = [
     "Seguridad de Pasarela: Rechazo de aprobación manual sobre orden de pasarela en línea (HTTP 400)",
     "Anti-reuso Variantes: Bloqueo de abono con variante de nombre de banco o CCI (HTTP 409)",
     "Compatibilidad Método/Destino: Rechazo de método y destino incompatibles o banco no aprobado (HTTP 400)",
+    "Abono Histórico Incierto: Bloqueo de abono con destino histórico ambiguo para revisión (HTTP 409)",
     "Contexto Invitado: Validación de token criptográfico y rechazo 403 ante ausencia o manipulación",
-    "Contexto Invitado Reinicio: Recuperación de orden de invitado tras reinicio real de JVM (DB count=1)"
+    "Contexto Invitado Reinicio: Recuperación de orden de invitado tras reinicio real de JVM (DB count=1)",
+    "Moodle Catálogo Público: Sólo programas activos y con vinculación verificada vigente son visibles (HTTP 200)",
+    "Moodle Regla Checkout: Rechazo de compra para programa sin vinculación verificada o con verificación expirada (HTTP 400)",
+    "Moodle Congelamiento Checkout: moodleCourseId y origen congelados inmutablemente en detalle_ordenes (HTTP 200)",
+    "Moodle Resolución Administrativa: Auditoría documental completa y habilitación de reintento de aprovisionamiento (HTTP 200)",
+    "Moodle Desvinculación Programa: Limpieza de datos LMS, desactivación comercial y retiro automático del catálogo público (HTTP 200)",
+    "Contabilidad Autorización: Rechazo de acceso a contabilidad sin PIN o con PIN inválido (HTTP 401/403)",
+    "Contabilidad Reporte: Administrador consulta reporte general consolidado con PIN oficial y período TODOS (HTTP 200)",
+    "Contabilidad SIRE Validación Período: Rechazo de exportación sin período o con período TODOS (HTTP 400)",
+    "Contabilidad SIRE Validación Integridad: Rechazo con HTTP 422 si existen comprobantes incompletos identificando idComprobante e idOrden",
+    "Contabilidad SIRE Validación Divisa: Rechazo con HTTP 422 ante transacciones en USD sin tipo de cambio oficial verificado",
+    "Contabilidad Integridad Transaccional: Comprobación de que las solicitudes 400 y 422 no mutaron registros ni causaron inconsistencias",
+    "Contabilidad Emisión y Anulación: Anulación formal mediante idComprobante persistente y motivo auditado (HTTP 200)",
+    "Contabilidad Persistencia Auditoría: Verificación en BD del estado ANULADO y registro inmutable en auditoria_contable",
+    "Contabilidad SIRE Exportación Exitosa: Exportación con período YYYY-MM, Content-Disposition y CUO determinista CP%08d (HTTP 200)",
+    "Administración Usuarios: Separación estricta entre actualización de perfil (PUT) y modificación de rol auditada (PATCH) (HTTP 200)",
 ]
 
 def launch_jar_backend(port: int, log_file_path: str):
@@ -453,6 +561,10 @@ def launch_jar_backend(port: int, log_file_path: str):
         "-Dapp.bancos.plin.moneda=PEN",
         "-Dapp.bancos.plin.telefono=987654322",
         "-Dapp.bancos.plin.activo=true",
+        f"-Dmoodle.url=http://127.0.0.1:{MOODLE_MOCK_PORT}",
+        "-Dmoodle.token=mock_moodle_token_valido",
+        "-Daccounting.audit-pin=test-accounting-audit-pin",
+        "-DACCOUNTING_AUDIT_PIN=test-accounting-audit-pin",
         "-jar", JAR_PATH
     ]
     proc = subprocess.Popen(
@@ -538,6 +650,11 @@ def main():
         whatsapp_server = MockWhatsAppServer(WHATSAPP_MOCK_PORT)
         whatsapp_server.start()
 
+        # 3b. Levantar servidor Mock Moodle LMS en puerto aislado
+        log(f"[INFRAESTRUCTURA] Iniciando servidor Mock Moodle LMS en puerto {MOODLE_MOCK_PORT}...")
+        moodle_server = MockMoodleServer(MOODLE_MOCK_PORT)
+        moodle_server.start()
+
         # 4. Iniciar PostgreSQL desechable aislado y etiquetado
         log(f"[INFRAESTRUCTURA] Lanzando contenedor PostgreSQL desechable ({DISPOSABLE_CONTAINER}) en puerto {DISPOSABLE_PORT}...")
         docker_res = run_cmd([
@@ -555,14 +672,19 @@ def main():
 
         log("[INFRAESTRUCTURA] Esperando a que PostgreSQL desechable esté listo...")
         ready = False
-        for _ in range(35):
+        consecutive_ok = 0
+        for _ in range(50):
             res = subprocess.run(
-                ["docker", "exec", created_container_id, "pg_isready", "-U", DISPOSABLE_USER, "-d", DISPOSABLE_DB],
+                ["docker", "exec", created_container_id, "psql", "-U", DISPOSABLE_USER, "-d", DISPOSABLE_DB, "-t", "-c", "SELECT 1;"],
                 capture_output=True, text=True
             )
-            if res.returncode == 0:
-                ready = True
-                break
+            if res.returncode == 0 and "1" in res.stdout:
+                consecutive_ok += 1
+                if consecutive_ok >= 3:
+                    ready = True
+                    break
+            else:
+                consecutive_ok = 0
             time.sleep(1)
         if not ready:
             raise RuntimeError("PostgreSQL desechable no respondió dentro del tiempo límite.")
@@ -579,17 +701,27 @@ def main():
         jar_proc, jar_log_file = launch_jar_backend(APP_HTTP_PORT, JAR_CONSOLE_LOG_PATH)
         log("[JAR] Backend JAR completamente inicializado y aceptando peticiones HTTP.")
 
-        # Inicialización de catálogo académico mínimo para compras
+                # Inicialización de catálogo académico mínimo para compras
         log("[DB] Configurando datos base en base desechable...")
         docker_exec_psql(
-            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado) "
-            "VALUES (101, 101, 'Curso Ejecutivo de Alta Dirección', 'curso-ejecutivo-alta-direccion', 150.00, 'PEN', true, true) "
-            "ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true;"
+            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion, moodle_course_nombre) "
+            "VALUES (101, 101, 'Curso Ejecutivo de Alta Dirección', 'curso-ejecutivo-alta-direccion', 150.00, 'PEN', true, true, true, NOW(), 'VERIFICADO', 'Curso Moodle 101') "
+            "ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, moodle_verificado = true, moodle_verificado_en = NOW(), moodle_estado_verificacion = 'VERIFICADO', moodle_course_nombre = 'Curso Moodle 101';"
         )
         docker_exec_psql(
-            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado) "
-            "VALUES (102, 102, 'Programa Internacional Ejecutivo', 'programa-internacional-ejecutivo', 200.00, 'USD', true, true) "
-            "ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true;"
+            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion, moodle_course_nombre) "
+            "VALUES (102, 102, 'Programa Internacional Ejecutivo', 'programa-internacional-ejecutivo', 200.00, 'USD', true, true, true, NOW(), 'VERIFICADO', 'Curso Moodle 102') "
+            "ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, moodle_verificado = true, moodle_verificado_en = NOW(), moodle_estado_verificacion = 'VERIFICADO', moodle_course_nombre = 'Curso Moodle 102';"
+        )
+        docker_exec_psql(
+            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion) "
+            "VALUES (103, null, 'Programa Borrador Sin Moodle', 'programa-borrador-sin-moodle', 180.00, 'USD', true, true, false, null, 'SIN_VINCULACION') "
+            "ON CONFLICT (id_programa) DO UPDATE SET moodle_course_id = null, activo = true, moodle_verificado = false, moodle_verificado_en = null, moodle_estado_verificacion = 'SIN_VINCULACION';"
+        )
+        docker_exec_psql(
+            "INSERT INTO programa (id_programa, moodle_course_id, titulo, slug, precio, moneda, activo, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion) "
+            "VALUES (104, 104, 'Programa Con Moodle Expirado', 'programa-moodle-expirado', 190.00, 'USD', true, true, true, NOW() - INTERVAL '30 days', 'VERIFICADO') "
+            "ON CONFLICT (id_programa) DO UPDATE SET moodle_course_id = 104, activo = true, moodle_verificado = true, moodle_verificado_en = NOW() - INTERVAL '30 days', moodle_estado_verificacion = 'VERIFICADO';"
         )
 
         base_url = f"http://127.0.0.1:{APP_HTTP_PORT}"
@@ -1751,6 +1883,41 @@ def main():
         )
 
         # ----------------------------------------------------------------------
+        # PASO 47: Abono Histórico Incierto: Bloqueo de abono con destino histórico ambiguo para revisión (HTTP 409)
+        # ----------------------------------------------------------------------
+        log("[TRANSFERENCIAS] Verificando rechazo de abono histórico con destino ambiguo/incierto...")
+        op_ambigua = f"OP-AMBIGUO-{RUN_SUFFIX}"
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, id_user, codigo_orden, estado_orden, estado_aprovisionamiento, total, moneda, metodo_pago, banco_destino, cuenta_destino, numero_operacion, moodle_matricula_sincronizada, fecha_orden) "
+            f"VALUES (nextval('ordenes_id_orden_seq'), (SELECT id_user FROM usuario WHERE email = '{admin_email}'), 'ORD-HIST-AMB-{RUN_SUFFIX}', 'PAGADO', 'PENDIENTE', 200.00, 'USD', 'TRANSFERENCIA', 'BANCO SIN IDENTIFICAR', '12345', '{op_ambigua}', false, NOW());"
+        )
+        ambiguous_deposit_payload = {
+            "numeroOperacion": op_ambigua,
+            "bancoDestino": "BCP",
+            "cuentaDestino": "193-98218491-0-28",
+            "montoVerificado": 200.00,
+            "monedaVerificada": "USD",
+            "fechaAbono": past_deposit_time,
+            "metodoPago": "TRANSFERENCIA",
+            "notasAdmin": "Intento de aprobar abono que colisiona con registro histórico incierto"
+        }
+        st_amb, res_amb = make_http_request(
+            f"{base_url}/api/v1/orders/{order2_id}/confirmar-pago-manual",
+            method="POST",
+            payload=ambiguous_deposit_payload,
+            token=admin_token
+        )
+        order2_status_after_amb = docker_exec_psql(f"SELECT estado_orden FROM ordenes WHERE id_orden = {order2_id};")
+        comprobantes_after_amb = int(docker_exec_psql(f"SELECT count(*) FROM comprobante_pago WHERE id_orden = {order2_id};"))
+        record_step(
+            "Abono Histórico Incierto: Bloqueo de abono con destino histórico ambiguo para revisión (HTTP 409)",
+            "HTTP",
+            409, st_amb,
+            st_amb == 409 and "requiere revisión administrativa" in str(res_amb.get("message", "")) and "PENDIENTE" in order2_status_after_amb and comprobantes_after_amb == 0,
+            f"Rechazado con HTTP 409: '{res_amb.get('message')}', orden permanece {order2_status_after_amb}, comprobantes emitidos={comprobantes_after_amb}"
+        )
+
+        # ----------------------------------------------------------------------
         # PASO 51: Contexto Invitado: Validación de token criptográfico y rechazo 403 ante ausencia o manipulación
         # ----------------------------------------------------------------------
         log("[INVITADOS] Probando autorización de recuperación con token criptográfico seguro...")
@@ -1905,6 +2072,475 @@ def main():
             f"Mismo código '{post_restart_code}' recuperado en JVM 3 (PID {pid_after_restart}, previo PID {pid_before_restart}), sin token HTTP 403, conteo en BD={count_guest_orders}"
         )
 
+        # ----------------------------------------------------------------------
+        # PASO 50: Moodle Catálogo Público: Sólo programas activos y con vinculación verificada vigente son visibles (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[MOODLE 1] Verificando catálogo público filtrado exclusivamente por programas verificados y vigentes...")
+        st_cat, res_cat = make_http_request(f"{base_url}/api/v1/programas", method="GET")
+        cat_programas = res_cat if isinstance(res_cat, list) else []
+        cat_ids = [p.get("idPrograma") for p in cat_programas]
+        cat_ok = (101 in cat_ids) and (102 in cat_ids) and (103 not in cat_ids) and (104 not in cat_ids)
+        record_step(
+            "Moodle Catálogo Público: Sólo programas activos y con vinculación verificada vigente son visibles (HTTP 200)",
+            "HTTP",
+            200, st_cat,
+            st_cat == 200 and cat_ok,
+            f"Catálogo público retornó {len(cat_programas)} programas (IDs visibles: {cat_ids}). Programas 103 (sin vincular) y 104 (expirado) excluidos correctamente."
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 51: Moodle Regla Checkout: Rechazo de compra para programa sin vinculación verificada o con verificación expirada (HTTP 400)
+        # ----------------------------------------------------------------------
+        log("[MOODLE 2] Verificando bloqueo en checkout de programas con vinculación inválida o expirada...")
+        chk_sin_vinc = {
+            "nombres": "Cliente",
+            "apellidos": "Moodle Test",
+            "nombreCompleto": "Cliente Moodle Test",
+            "email": f"moodle.test.{RUN_SUFFIX}@empresa.pe",
+            "telefono": "+51999888999",
+            "tipoComprobante": "BOLETA",
+            "numeroDocumento": "71819101",
+            "programaIds": [103],
+            "metodoPago": "TRANSFERENCIA"
+        }
+        st_chk_103, res_chk_103 = make_http_request(f"{base_url}/api/v1/orders/checkout", method="POST", payload=chk_sin_vinc)
+        
+        chk_exp = dict(chk_sin_vinc)
+        chk_exp["programaIds"] = [104]
+        st_chk_104, res_chk_104 = make_http_request(f"{base_url}/api/v1/orders/checkout", method="POST", payload=chk_exp)
+
+        msg_103 = res_chk_103.get("message", "")
+        msg_104 = res_chk_104.get("message", "")
+        chk_rejected = (st_chk_103 == 400 and ("vinculaci" in msg_103 or "Moodle" in msg_103)) and \
+                       (st_chk_104 == 400 and ("expirado" in msg_104 or "revalidaci" in msg_104 or "Moodle" in msg_104))
+        record_step(
+            "Moodle Regla Checkout: Rechazo de compra para programa sin vinculación verificada o con verificación expirada (HTTP 400)",
+            "HTTP",
+            400, st_chk_103,
+            chk_rejected,
+            f"Rechazo HTTP 400 para programa sin vinculación (ID 103: '{msg_103}') y para programa con verificación expirada (ID 104: '{msg_104}')"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 52: Moodle Congelamiento Checkout: moodleCourseId y origen congelados inmutablemente en detalle_ordenes (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[MOODLE 3] Verificando congelamiento inmutable de moodleCourseId en detalle_ordenes...")
+        freeze_email = f"moodle.freeze.{RUN_SUFFIX}@empresa.pe"
+        freeze_idemp_key = f"idemp-moodle-freeze-{RUN_SUFFIX}"
+
+        # Obtener token seguro de invitado requerido para checkout de invitado
+        st_gs_freeze, res_gs_freeze = make_http_request(
+            f"{base_url}/api/v1/orders/guest-session",
+            method="POST",
+            payload={"email": freeze_email}
+        )
+        freeze_guest_token = res_gs_freeze.get("guestSessionToken") if st_gs_freeze == 200 else ""
+
+        chk_ok_payload = {
+            "nombres": "Cliente",
+            "apellidos": "Moodle Congelado",
+            "nombreCompleto": "Cliente Moodle Congelado",
+            "email": freeze_email,
+            "telefono": "+51999888999",
+            "tipoComprobante": "BOLETA",
+            "numeroDocumento": "71819101",
+            "programaIds": [101],
+            "metodoPago": "TRANSFERENCIA",
+            "claveIdempotencia": freeze_idemp_key,
+            "guestSessionToken": freeze_guest_token
+        }
+        st_chk_ok, res_chk_ok = make_http_request(
+            f"{base_url}/api/v1/orders/checkout",
+            method="POST",
+            payload=chk_ok_payload,
+            extra_headers={
+                "X-Idempotency-Key": freeze_idemp_key,
+                "X-Guest-Session-Token": freeze_guest_token
+            }
+        )
+        freeze_order_code = res_chk_ok.get("codigoOrden")
+
+        freeze_db = docker_exec_psql(
+            f"SELECT det.moodle_course_id, det.origen_moodle_course_id "
+            f"FROM detalle_ordenes det JOIN ordenes o ON det.id_orden = o.id_orden "
+            f"WHERE o.codigo_orden = '{freeze_order_code}';"
+        )
+        course_id_frozen, origen_frozen = (freeze_db.split("|") + [""])[:2]
+        is_frozen_ok = (st_chk_ok == 200 and course_id_frozen == "101" and origen_frozen == "CHECKOUT_CONGELADO")
+        record_step(
+            "Moodle Congelamiento Checkout: moodleCourseId y origen congelados inmutablemente en detalle_ordenes (HTTP 200)",
+            "HTTP",
+            200, st_chk_ok,
+            is_frozen_ok,
+            f"Orden '{freeze_order_code}' congeló moodle_course_id={course_id_frozen} con origen='{origen_frozen}' en base de datos"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 53: Moodle Resolución Administrativa: Auditoría documental completa y habilitación de reintento de aprovisionamiento (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[MOODLE 4] Verificando resolución administrativa de orden histórica y reintento de matrícula...")
+        hist_order_code = f"ORD-HIST-RES-{RUN_SUFFIX}"
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, codigo_orden, id_user, estado_orden, estado_aprovisionamiento, moodle_matricula_sincronizada, fecha_orden, total, moneda, metodo_pago, clave_idempotencia) "
+            f"VALUES (9999, '{hist_order_code}', (SELECT id_user FROM usuario WHERE email = '{admin_email}'), 'PAGADO', 'PENDIENTE', false, NOW() - INTERVAL '10 days', 150.00, 'PEN', 'STRIPE', 'idemp-hist-res-{RUN_SUFFIX}') "
+            f"ON CONFLICT (id_orden) DO NOTHING;"
+        )
+        docker_exec_psql(
+            "INSERT INTO detalle_ordenes (id_detalle, id_orden, id_programa, precio_unitario, cantidad, subtotal, moodle_matriculado, moodle_course_id, origen_moodle_course_id) "
+            "VALUES (9999, 9999, 101, 150.00, 1, 150.00, false, null, 'PENDIENTE_RESOLUCION_ADMINISTRATIVA') "
+            "ON CONFLICT (id_detalle) DO NOTHING;"
+        )
+
+        resolucion_payload = {
+            "moodleCourseId": 101,
+            "motivo": "Revisión documental de matrícula histórica conforme a comprobante físico auditado",
+            "referenciaEvidencia": f"EXP-RESOLUCION-2026-{RUN_SUFFIX}"
+        }
+        st_res_admin, res_res_admin = make_http_request(
+            f"{base_url}/api/v1/orders/detalles/9999/resolver-moodle",
+            method="POST",
+            payload=resolucion_payload,
+            token=admin_token
+        )
+
+        audit_db = docker_exec_psql(
+            "SELECT moodle_course_id, origen_moodle_course_id, moodle_resolucion_autorizada_por, moodle_resolucion_motivo, moodle_resolucion_evidencia "
+            "FROM detalle_ordenes WHERE id_detalle = 9999;"
+        )
+        audit_parts = audit_db.split("|")
+        res_course = audit_parts[0] if len(audit_parts) > 0 else ""
+        res_origen = audit_parts[1] if len(audit_parts) > 1 else ""
+        res_autor = audit_parts[2] if len(audit_parts) > 2 else ""
+
+        st_retry, res_retry = make_http_request(
+            f"{base_url}/api/v1/orders/9999/reintentar-matricula",
+            method="POST",
+            token=admin_token
+        )
+
+        post_retry_db = docker_exec_psql(
+            "SELECT estado_aprovisionamiento, moodle_matricula_sincronizada FROM ordenes WHERE id_orden = 9999;"
+        )
+        aprov_estado, sync_mat = (post_retry_db.split("|") + [""])[:2]
+        is_res_ok = (st_res_admin == 200 and res_course == "101" and res_origen == "RESOLUCION_ADMINISTRATIVA" and
+                     res_autor == admin_email and st_retry == 200 and aprov_estado == "COMPLETADO" and sync_mat == "t")
+
+        record_step(
+            "Moodle Resolución Administrativa: Auditoría documental completa y habilitación de reintento de aprovisionamiento (HTTP 200)",
+            "HTTP",
+            200, st_res_admin,
+            is_res_ok,
+            f"Resolución HTTP {st_res_admin} (moodleCourseId={res_course}, origen='{res_origen}', autor='{res_autor}'); Reintento HTTP {st_retry} completó aprovisionamiento (estado={aprov_estado}, sync={sync_mat})"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 54: Moodle Desvinculación Programa: Limpieza de datos LMS, desactivación comercial y retiro automático del catálogo público (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[MOODLE 5] Verificando desvinculación administrativa de programa, desactivación y exclusión del catálogo...")
+        st_desv, res_desv = make_http_request(
+            f"{base_url}/api/v1/programas/admin/102/desvincular-moodle",
+            method="POST",
+            token=admin_token
+        )
+
+        prog_db_after = docker_exec_psql(
+            "SELECT moodle_course_id, activo, moodle_verificado, moodle_estado_verificacion FROM programa WHERE id_programa = 102;"
+        )
+        p_course, p_activo, p_verif, p_status = (prog_db_after.split("|") + ["", "", ""])[:4]
+
+        st_cat2, res_cat2 = make_http_request(f"{base_url}/api/v1/programas", method="GET")
+        cat2_ids = [p.get("idPrograma") for p in (res_cat2 if isinstance(res_cat2, list) else [])]
+        is_desv_ok = (st_desv == 200 and p_course == "" and p_activo == "f" and p_verif == "f" and
+                      p_status == "SIN_VINCULACION" and 102 not in cat2_ids)
+
+        record_step(
+            "Moodle Desvinculación Programa: Limpieza de datos LMS, desactivación comercial y retiro automático del catálogo público (HTTP 200)",
+            "HTTP",
+            200, st_desv,
+            is_desv_ok,
+            f"Desvinculación HTTP {st_desv}: programa 102 desactivado (activo={p_activo}, verif={p_verif}, estado={p_status}, courseId={p_course or 'null'}). Retirado del catálogo público: 102 not in {cat2_ids}"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 55: Contabilidad Autorización: Rechazo de acceso a contabilidad sin PIN o con PIN inválido (HTTP 401/403)
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 1] Verificando rechazo de acceso sin PIN o con PIN de auditoría inválido...")
+        st_no_pin, res_no_pin = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas",
+            method="GET",
+            token=admin_token
+        )
+        st_bad_pin, res_bad_pin = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "PIN_INCORRECTO_9999"}
+        )
+        is_pin_sec_ok = (st_no_pin == 401 and res_no_pin.get("codigo") == "AUDIT_PIN_INVALID" and
+                         st_bad_pin == 401 and res_bad_pin.get("codigo") == "AUDIT_PIN_INVALID")
+        record_step(
+            "Contabilidad Autorización: Rechazo de acceso a contabilidad sin PIN o con PIN inválido (HTTP 401/403)",
+            "HTTP",
+            401, st_no_pin,
+            is_pin_sec_ok,
+            f"Sin PIN: HTTP {st_no_pin} (código={res_no_pin.get('codigo')}); Con PIN incorrecto: HTTP {st_bad_pin} (código={res_bad_pin.get('codigo')})"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 56: Contabilidad Reporte: Administrador consulta reporte general consolidado con PIN oficial y período TODOS (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 2] Consultando reporte consolidado de ventas con PIN válido y período TODOS...")
+        st_rep, res_rep = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin"}
+        )
+        is_rep_ok = (st_rep == 200 and res_rep.get("periodoSeleccionado") == "TODOS" and
+                     "totalVentasPen" in res_rep and "totalVentasUsd" in res_rep and
+                     isinstance(res_rep.get("ventasConsolidadas"), list))
+        record_step(
+            "Contabilidad Reporte: Administrador consulta reporte general consolidado con PIN oficial y período TODOS (HTTP 200)",
+            "HTTP",
+            200, st_rep,
+            is_rep_ok,
+            f"Reporte HTTP {st_rep}: período={res_rep.get('periodoSeleccionado')}, ventasPen={res_rep.get('totalVentasPen')}, ventasUsd={res_rep.get('totalVentasUsd')}, comprobantes={res_rep.get('cantidadComprobantes')}"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 57: Contabilidad SIRE Validación Período: Rechazo de exportación sin período o con período TODOS (HTTP 400)
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 3] Verificando rechazo de exportación SIRE sin período y con período 'TODOS'...")
+        st_sire_no_p, res_sire_no_p = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas/export-sire",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin", "Accept": "*/*"}
+        )
+        st_sire_todos, res_sire_todos = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas/export-sire?periodo=TODOS",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin", "Accept": "*/*"}
+        )
+        is_sire_p_ok = (st_sire_no_p == 400 and res_sire_no_p.get("codigo") == "PERIODO_REQUERIDO_SIRE" and
+                        st_sire_todos == 400 and res_sire_todos.get("codigo") == "PERIODO_REQUERIDO_SIRE")
+        record_step(
+            "Contabilidad SIRE Validación Período: Rechazo de exportación sin período o con período TODOS (HTTP 400)",
+            "HTTP",
+            400, st_sire_no_p,
+            is_sire_p_ok,
+            f"Sin período: HTTP {st_sire_no_p} (código={res_sire_no_p.get('codigo')}); Con período TODOS: HTTP {st_sire_todos} (código={res_sire_todos.get('codigo')})"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 58: Contabilidad SIRE Validación Integridad: Rechazo con HTTP 422 si existen comprobantes incompletos identificando idComprobante e idOrden
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 4] Registrando comprobante incompleto para 2026-09 y comprobando rechazo HTTP 422...")
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, id_user, codigo_orden, total, moneda, estado_orden, metodo_pago, fecha_orden) "
+            f"VALUES (9101, {user1_id}, 'ORD-TEST-9101', 118.00, 'PEN', 'PAGADO', 'IZIPAY', '2026-09-15 10:00:00') "
+            f"ON CONFLICT (id_orden) DO NOTHING;"
+        )
+        docker_exec_psql(
+            "INSERT INTO comprobante_pago (id_comprobante, id_orden, tipo, serie, correlativo, fecha_emision, tipo_documento_identidad, numero_documento_identidad, razon_social_o_nombre, monto_subtotal, monto_igv, monto_total, moneda, estado) "
+            "VALUES (9501, 9101, 'BOLETA', '', 1, '2026-09-15 10:00:00', 'DNI', '', '', 100.00, 18.00, 118.00, 'PEN', 'EMITIDO') "
+            "ON CONFLICT (id_comprobante) DO NOTHING;"
+        )
+        st_incomp, res_incomp = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas/export-sire?periodo=2026-09",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin", "Accept": "*/*"}
+        )
+        incomp_det = res_incomp.get("registrosIncompletos", []) if isinstance(res_incomp, dict) else []
+        has_expected_ids = any(r.get("idComprobante") == 9501 and r.get("idOrden") == 9101 for r in incomp_det)
+        is_incomp_ok = (st_incomp == 422 and res_incomp.get("codigo") == "COMPROBANTES_INCOMPLETOS" and has_expected_ids)
+        record_step(
+            "Contabilidad SIRE Validación Integridad: Rechazo con HTTP 422 si existen comprobantes incompletos identificando idComprobante e idOrden",
+            "HTTP",
+            422, st_incomp,
+            is_incomp_ok,
+            f"Comprobante incompleto rechazado HTTP {st_incomp}: código={res_incomp.get('codigo')}, detalles={incomp_det}"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 59: Contabilidad SIRE Validación Divisa: Rechazo con HTTP 422 ante transacciones en USD sin tipo de cambio oficial verificado
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 5] Registrando transacción USD sin paridad oficial verificada y comprobando rechazo HTTP 422...")
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, id_user, codigo_orden, total, moneda, estado_orden, metodo_pago, fecha_orden) "
+            f"VALUES (9102, {user1_id}, 'ORD-TEST-9102', 118.00, 'USD', 'PAGADO', 'STRIPE', '2026-08-10 10:00:00') "
+            f"ON CONFLICT (id_orden) DO NOTHING;"
+        )
+        docker_exec_psql(
+            "INSERT INTO comprobante_pago (id_comprobante, id_orden, tipo, serie, correlativo, fecha_emision, tipo_documento_identidad, numero_documento_identidad, razon_social_o_nombre, monto_subtotal, monto_igv, monto_total, moneda, estado) "
+            "VALUES (9502, 9102, 'FACTURA', 'F001', 1, '2026-08-10 10:00:00', 'RUC', '20123456789', 'EMPRESA USD S.A.C.', 100.00, 18.00, 118.00, 'USD', 'EMITIDO') "
+            "ON CONFLICT (id_comprobante) DO NOTHING;"
+        )
+        st_usd_err, res_usd_err = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas/export-sire?periodo=2026-08",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin", "Accept": "*/*"}
+        )
+        usd_det = res_usd_err.get("registrosSinTipoCambio", []) if isinstance(res_usd_err, dict) else []
+        has_usd_id = any(r.get("idComprobante") == 9502 for r in usd_det)
+        is_usd_ok = (st_usd_err == 422 and res_usd_err.get("codigo") == "TIPO_CAMBIO_USD_NO_VERIFICADO" and has_usd_id)
+        record_step(
+            "Contabilidad SIRE Validación Divisa: Rechazo con HTTP 422 ante transacciones en USD sin tipo de cambio oficial verificado",
+            "HTTP",
+            422, st_usd_err,
+            is_usd_ok,
+            f"Transacción USD sin tipo de cambio oficial rechazada HTTP {st_usd_err}: código={res_usd_err.get('codigo')}, detalles={usd_det}"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 60: Contabilidad Integridad Transaccional: Comprobación de que las solicitudes 400 y 422 no mutaron registros ni causaron inconsistencias
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 6] Comprobando que los rechazos HTTP 400 y 422 preservaron la integridad de la base sin mutaciones no autorizadas...")
+        db_incomp = docker_exec_psql("SELECT serie, correlativo, estado FROM comprobante_pago WHERE id_comprobante = 9501;")
+        db_usd = docker_exec_psql("SELECT serie, correlativo, estado, moneda FROM comprobante_pago WHERE id_comprobante = 9502;")
+        is_integ_ok = (db_incomp == "|1|EMITIDO" and db_usd == "F001|1|EMITIDO|USD")
+        record_step(
+            "Contabilidad Integridad Transaccional: Comprobación de que las solicitudes 400 y 422 no mutaron registros ni causaron inconsistencias",
+            "DB",
+            "NO_MUTADO", "NO_MUTADO" if is_integ_ok else "MUTADO",
+            is_integ_ok,
+            f"Registros en BD intactos tras intentos fallidos: 9501='{db_incomp}', 9502='{db_usd}'"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 61: Contabilidad Emisión y Anulación: Anulación formal mediante idComprobante persistente y motivo auditado (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 7] Emitiendo comprobante 9503 (orden 9103) y ejecutando anulación contable oficial...")
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, id_user, codigo_orden, total, moneda, estado_orden, metodo_pago, fecha_orden) "
+            f"VALUES (9103, {user1_id}, 'ORD-TEST-9103', 118.00, 'PEN', 'PAGADO', 'IZIPAY', '2026-10-15 12:00:00') "
+            f"ON CONFLICT (id_orden) DO NOTHING;"
+        )
+        docker_exec_psql(
+            "INSERT INTO comprobante_pago (id_comprobante, id_orden, tipo, serie, correlativo, fecha_emision, tipo_documento_identidad, numero_documento_identidad, razon_social_o_nombre, monto_subtotal, monto_igv, monto_total, moneda, estado) "
+            "VALUES (9503, 9103, 'BOLETA', 'B001', 9503, '2026-10-15 12:00:00', 'DNI', '44556677', 'JUAN PEREZ', 100.00, 18.00, 118.00, 'PEN', 'EMITIDO') "
+            "ON CONFLICT (id_comprobante) DO NOTHING;"
+        )
+        st_anul, res_anul = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/comprobantes/9503/anular",
+            method="POST",
+            payload={"motivo": "Anulación fiscal por comprobante emitido por error"},
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin"}
+        )
+        is_anul_ok = (st_anul == 200 and res_anul.get("estado") == "ANULADO" and res_anul.get("idComprobante") == 9503)
+        record_step(
+            "Contabilidad Emisión y Anulación: Anulación formal mediante idComprobante persistente y motivo auditado (HTTP 200)",
+            "HTTP",
+            200, st_anul,
+            is_anul_ok,
+            f"Anulación HTTP {st_anul}: idComprobante={res_anul.get('idComprobante')}, estado={res_anul.get('estado')}, motivo='{res_anul.get('motivoAnulacion')}'"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 62: Contabilidad Persistencia Auditoría: Verificación en BD del estado ANULADO y registro inmutable en auditoria_contable
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 8] Verificando persistencia del comprobante anulado y pista inmutable en auditoria_contable...")
+        db_anul = docker_exec_psql("SELECT estado, motivo_anulacion FROM comprobante_pago WHERE id_comprobante = 9503;")
+        db_audit = docker_exec_psql("SELECT accion, entidad, entidad_id, motivo FROM auditoria_contable WHERE entidad_id = 9503 ORDER BY id_auditoria DESC LIMIT 1;")
+        is_audit_ok = ("ANULADO" in db_anul and "COMPROBANTE_ANULADO" in db_audit and "9503" in db_audit)
+        record_step(
+            "Contabilidad Persistencia Auditoría: Verificación en BD del estado ANULADO y registro inmutable en auditoria_contable",
+            "DB",
+            "ANULADO_AUDITADO", "ANULADO_AUDITADO" if is_audit_ok else "NO_AUDITADO",
+            is_audit_ok,
+            f"BD comprobante 9503: '{db_anul}'; Auditoría contable: '{db_audit}'"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 63: Contabilidad SIRE Exportación Exitosa: Exportación con período YYYY-MM, Content-Disposition y CUO determinista CP%08d (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[CONTABILIDAD 9] Insertando comprobante 9504 activo para 2026-10 y descargando archivo SIRE oficial...")
+        docker_exec_psql(
+            f"INSERT INTO ordenes (id_orden, id_user, codigo_orden, total, moneda, estado_orden, metodo_pago, fecha_orden) "
+            f"VALUES (9104, {user1_id}, 'ORD-TEST-9104', 236.00, 'PEN', 'PAGADO', 'IZIPAY', '2026-10-16 14:00:00') "
+            f"ON CONFLICT (id_orden) DO NOTHING;"
+        )
+        docker_exec_psql(
+            "INSERT INTO comprobante_pago (id_comprobante, id_orden, tipo, serie, correlativo, fecha_emision, tipo_documento_identidad, numero_documento_identidad, razon_social_o_nombre, monto_subtotal, monto_igv, monto_total, moneda, estado) "
+            "VALUES (9504, 9104, 'FACTURA', 'F001', 9504, '2026-10-16 14:00:00', 'RUC', '20601234567', 'CLIENTE AUDITADO S.A.C.', 200.00, 36.00, 236.00, 'PEN', 'EMITIDO') "
+            "ON CONFLICT (id_comprobante) DO NOTHING;"
+        )
+        st_sire_ok, res_sire_ok = make_http_request(
+            f"{base_url}/api/v1/internal/accounting/ventas/export-sire?periodo=2026-10",
+            method="GET",
+            token=admin_token,
+            extra_headers={"X-Audit-PIN": "test-accounting-audit-pin", "Accept": "*/*"}
+        )
+        sire_raw = res_sire_ok.get("raw", "") if isinstance(res_sire_ok, dict) else ""
+        sire_headers = res_sire_ok.get("_headers", {}) if isinstance(res_sire_ok, dict) else {}
+        disposition = sire_headers.get("content-disposition", "") or sire_headers.get("Content-Disposition", "")
+        has_file_name = "LE2060981245120261000140100001111.txt" in disposition
+        has_cuo_9503 = "CP00009503" in sire_raw
+        has_cuo_9504 = "CP00009504" in sire_raw
+        is_sire_export_ok = (st_sire_ok == 200 and has_file_name and has_cuo_9503 and has_cuo_9504)
+        record_step(
+            "Contabilidad SIRE Exportación Exitosa: Exportación con período YYYY-MM, Content-Disposition y CUO determinista CP%08d (HTTP 200)",
+            "HTTP",
+            200, st_sire_ok,
+            is_sire_export_ok,
+            f"SIRE HTTP {st_sire_ok}: Content-Disposition='{disposition}', CUO 9503 presente={has_cuo_9503}, CUO 9504 presente={has_cuo_9504}, tamaño={len(sire_raw)} bytes"
+        )
+
+        # ----------------------------------------------------------------------
+        # PASO 64: Administración Usuarios: Separación estricta entre actualización de perfil (PUT) y modificación de rol auditada (PATCH) (HTTP 200)
+        # ----------------------------------------------------------------------
+        log("[ADMIN 1] Verificando que PUT /usuarios/{id} rechaza cambios no auditados de rol/activo (HTTP 403), actualiza perfil limpio (HTTP 200) y PATCH /usuarios/{id}/rol audita rol...")
+        # 1. Intento no auditado de alterar rol mediante PUT -> rechazado con HTTP 403
+        st_put_err, res_put_err = make_http_request(
+            f"{base_url}/api/v1/usuarios/{user2_id}",
+            method="PUT",
+            payload={
+                "nombres": "Usuario Dos",
+                "apellidos": "Segundo",
+                "email": "usuario2.segundo@lysandri.invalid",
+                "telefono": "+51999888999",
+                "rol": "ADMIN",
+                "activo": True
+            },
+            token=admin_token
+        )
+        # 2. Actualización legítima de perfil sin campos restringidos
+        st_put_ok, res_put_ok = make_http_request(
+            f"{base_url}/api/v1/usuarios/{user2_id}",
+            method="PUT",
+            payload={
+                "nombres": "Usuario Dos Actualizado",
+                "apellidos": "Segundo",
+                "email": "usuario2.segundo@lysandri.invalid",
+                "telefono": "+51999888999"
+            },
+            token=admin_token
+        )
+        db_user2_after_put = docker_exec_psql(f"SELECT rol, activo, nombres FROM usuario WHERE id_user = {user2_id};")
+        u2_rol_put, u2_act_put, u2_nom_put = db_user2_after_put.split("|")
+        put_safe = (st_put_err == 403 and st_put_ok == 200 and u2_nom_put == "Usuario Dos Actualizado" and u2_rol_put != "ADMIN" and u2_act_put == "f")
+
+        # 3. Modificación oficial de rol con auditoría mediante PATCH
+        st_patch_r, res_patch_r = make_http_request(
+            f"{base_url}/api/v1/usuarios/{user2_id}/rol?rol=CONTABILIDAD&motivo=Asignacion_oficial_auditoria",
+            method="PATCH",
+            token=admin_token
+        )
+        db_user2_after_patch = docker_exec_psql(f"SELECT rol FROM usuario WHERE id_user = {user2_id};")
+        is_admin_u_ok = (put_safe and st_patch_r == 200 and db_user2_after_patch == "CONTABILIDAD")
+        record_step(
+            "Administración Usuarios: Separación estricta entre actualización de perfil (PUT) y modificación de rol auditada (PATCH) (HTTP 200)",
+            "HTTP",
+            200, st_patch_r,
+            is_admin_u_ok,
+            f"PUT con rol rechazado HTTP {st_put_err}; PUT perfil HTTP {st_put_ok} (nombre='{u2_nom_put}', rol='{u2_rol_put}'); PATCH rol a CONTABILIDAD (HTTP {st_patch_r}): nuevo rol='{db_user2_after_patch}'"
+        )
+
+
         log("================================================================================")
         log(f"VALIDACIÓN COMPLETADA EXITOSAMENTE: {len(test_results)} PASOS APROBADOS DE {len(test_results)}")
         log("================================================================================")
@@ -1966,23 +2602,43 @@ def main():
             if 'jar_log_path_3' in locals() and os.path.isfile(jar_log_path_3):
                 shutil.copy2(jar_log_path_3, os.path.join(DELIVERY_EVIDENCIAS_DIR, "jar-ejecucion-consola-proceso3.log"))
             
-            # Guardar reporte sha256-jar.txt en DELIVERY_EVIDENCIAS_DIR
+            # Guardar reporte sha256-jar.txt en DELIVERY_EVIDENCIAS_DIR y CIERRE_EVIDENCIAS_DIR
             sha_file = os.path.join(DELIVERY_EVIDENCIAS_DIR, "sha256-jar.txt")
             with open(sha_file, "w", encoding="utf-8") as f:
                 f.write(f"{jar_sha256}  lysandri-backend-1.0.0-SNAPSHOT.jar\n")
             log(f"[EVIDENCIA] Checksum SHA-256 guardado en: {sha_file}")
 
-            # Copiar reportes de Surefire XML en DELIVERY_EVIDENCIAS_DIR/surefire-reports/
+            sha_cierre = os.path.join(CIERRE_EVIDENCIAS_DIR, "sha256-jar.txt")
+            with open(sha_cierre, "w", encoding="utf-8") as f:
+                f.write(f"{jar_sha256}  lysandri-backend-1.0.0-SNAPSHOT.jar\n")
+
+            # Guardar reporte estructurado y logs en CIERRE_EVIDENCIAS_DIR
+            cierre_json = os.path.join(CIERRE_EVIDENCIAS_DIR, "recorrido-http-jar-real.json")
+            cierre_log = os.path.join(CIERRE_EVIDENCIAS_DIR, "registro-ejecucion-validar-jar.log")
+            with open(cierre_json, "w", encoding="utf-8") as jf:
+                json.dump(summary, jf, indent=2, ensure_ascii=False)
+            shutil.copy2(LOG_FILE_PATH, cierre_log)
+            if os.path.isfile(JAR_CONSOLE_LOG_PATH):
+                shutil.copy2(JAR_CONSOLE_LOG_PATH, os.path.join(CIERRE_EVIDENCIAS_DIR, "jar-ejecucion-consola.log"))
+            if 'jar_log_path_2' in locals() and os.path.isfile(jar_log_path_2):
+                shutil.copy2(jar_log_path_2, os.path.join(CIERRE_EVIDENCIAS_DIR, "jar-ejecucion-consola-proceso2.log"))
+            if 'jar_log_path_3' in locals() and os.path.isfile(jar_log_path_3):
+                shutil.copy2(jar_log_path_3, os.path.join(CIERRE_EVIDENCIAS_DIR, "jar-ejecucion-consola-proceso3.log"))
+
+            # Copiar reportes de Surefire XML en DELIVERY_EVIDENCIAS_DIR/surefire-reports/ y CIERRE_EVIDENCIAS_DIR/surefire-reports/
             surefire_src = os.path.join(BASE_DIR, "backend", "target", "surefire-reports")
             surefire_dst = os.path.join(DELIVERY_EVIDENCIAS_DIR, "surefire-reports")
+            surefire_cierre_dst = os.path.join(CIERRE_EVIDENCIAS_DIR, "surefire-reports")
             os.makedirs(surefire_dst, exist_ok=True)
+            os.makedirs(surefire_cierre_dst, exist_ok=True)
             if os.path.isdir(surefire_src):
                 copied_xmls = 0
                 for f_name in os.listdir(surefire_src):
                     if f_name.startswith("TEST-") and f_name.endswith(".xml"):
                         shutil.copy2(os.path.join(surefire_src, f_name), os.path.join(surefire_dst, f_name))
+                        shutil.copy2(os.path.join(surefire_src, f_name), os.path.join(surefire_cierre_dst, f_name))
                         copied_xmls += 1
-                log(f"[EVIDENCIA] Copiados {copied_xmls} reportes XML de Surefire a: {surefire_dst}")
+                log(f"[EVIDENCIA] Copiados {copied_xmls} reportes XML de Surefire a: {surefire_dst} y {surefire_cierre_dst}")
         except Exception as e:
             log(f"[WARN] Error guardando evidencias complementarias: {e}")
 
@@ -2011,6 +2667,8 @@ def main():
             smtp_server.stop()
         if whatsapp_server:
             whatsapp_server.stop()
+        if 'moodle_server' in locals() and moodle_server:
+            moodle_server.stop()
 
         target_container = created_container_id if created_container_id else DISPOSABLE_CONTAINER
         log(f"[LIMPIEZA] Destruyendo contenedor PostgreSQL desechable creado en esta corrida ({target_container})...")

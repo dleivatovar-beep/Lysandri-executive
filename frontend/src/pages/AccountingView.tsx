@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   ShieldAlert,
   LoaderCircle,
@@ -41,8 +41,8 @@ import {
   ReporteVentasResponse,
   VentaConsolidada,
 } from '../services/accountingService';
-import { authService } from '../services/authService';
-import { getCustomUsers } from '../services/academicService';
+import { useAuth } from '../context/AuthContext';
+import { isJwtExpired } from '../services/api';
 import companyLogo from '../assets/lysandri-logo.png';
 import animatedLogo from '../assets/logo-animado.gif';
 
@@ -73,6 +73,7 @@ const AccountingGlyph: React.FC<{ name: AccountingGlyphName; className?: string 
 );
 
 export const AccountingView: React.FC = () => {
+  const { user, token, login: authLogin, logout: authLogout } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -80,6 +81,10 @@ export const AccountingView: React.FC = () => {
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
+
+  const userRole = (user?.rol || '').toUpperCase();
+  const canAnular = userRole === 'ADMIN' || userRole === 'CONTABILIDAD';
+  const canExportSire = userRole === 'ADMIN' || userRole === 'CONTABILIDAD' || userRole === 'FINANZAS';
 
   const [typedText, setTypedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
@@ -93,11 +98,26 @@ export const AccountingView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTipo, setSelectedTipo] = useState<'TODOS' | 'BOLETA' | 'FACTURA'>('TODOS');
   const [selectedEstado, setSelectedEstado] = useState<'TODOS' | 'EMITIDO' | 'ANULADO'>('TODOS');
-  const [selectedCanal, setSelectedCanal] = useState<'TODOS' | 'STRIPE' | 'TELECREDITO' | 'INTERBANK'>('TODOS');
+  const [selectedCanal, setSelectedCanal] = useState<'TODOS' | 'IZIPAY' | 'STRIPE' | 'TELECREDITO' | 'INTERBANK' | 'SIN_CLASIFICAR'>('TODOS');
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>('TODOS');
+  const [knownPeriodos, setKnownPeriodos] = useState<string[]>(['2026-10', '2026-11', '2026-09']);
   const [selectedVoucherForPreview, setSelectedVoucherForPreview] = useState<VentaConsolidada | null>(null);
   const [isExportingSire, setIsExportingSire] = useState<boolean>(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Identificador de petición y controlador de cancelación para evitar respuestas fuera de orden
+  const activeRequestIdRef = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      activeRequestIdRef.current += 1;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof document !== 'undefined') {
@@ -156,11 +176,12 @@ export const AccountingView: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const activeToken = token || localStorage.getItem('lysandri_token');
     const storedPin = accountingService.getStoredAuditPin();
-    if (storedPin) {
+    if (activeToken && !isJwtExpired(activeToken) && storedPin) {
       void cargarDatosContables(storedPin);
     }
-  }, []);
+  }, [token]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -168,30 +189,81 @@ export const AccountingView: React.FC = () => {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  const cargarDatosContables = async (pin: string) => {
+  const cargarDatosContables = async (pin: string, periodo?: string) => {
+    // Cancelar la petición en vuelo previa si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Generar nuevo identificador único para esta solicitud
+    const requestId = ++activeRequestIdRef.current;
+
     setIsVerifying(true);
     setIsLoadingData(true);
     setAuthError('');
     setDataError('');
 
     try {
-      const response = await accountingService.fetchReporteVentas(pin);
+      const activeToken = token || localStorage.getItem('lysandri_token');
+      if (!activeToken || isJwtExpired(activeToken)) {
+        if (requestId !== activeRequestIdRef.current) return;
+        setAuthError('Sesión no encontrada o caducada. Inicia sesión con credenciales autorizadas.');
+        setIsAuthenticated(false);
+        setData(null);
+        return;
+      }
+
+      if (user && !['ADMIN', 'CONTABILIDAD', 'FINANZAS', 'AUDITOR'].includes(user.rol?.toUpperCase())) {
+        if (requestId !== activeRequestIdRef.current) return;
+        setAuthError(`Acceso denegado: El usuario '${user.email}' con rol '${user.rol}' no tiene permisos para el área contable.`);
+        setIsAuthenticated(false);
+        setData(null);
+        return;
+      }
+
+      const response = await accountingService.fetchReporteVentas(
+        pin,
+        periodo === 'TODOS' ? undefined : periodo,
+        controller.signal
+      );
+
+      // Si la petición fue superada por un nuevo cambio de período, descartar
+      if (requestId !== activeRequestIdRef.current) {
+        return;
+      }
+
       accountingService.setStoredAuditPin(pin);
       setIsAuthenticated(true);
       setData(response);
+      return true;
     } catch (err: any) {
+      // Ignorar completamente si ya no es la petición activa o si fue cancelada
+      if (requestId !== activeRequestIdRef.current) {
+        return false;
+      }
+      if (err.name === 'CanceledError' || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
+        return false;
+      }
+
       if (err.response?.status === 401 || err.response?.status === 403) {
-        setAuthError('Acceso no autorizado. Las credenciales ingresadas no corresponden al área contable.');
+        setAuthError('Acceso no autorizado (401/403). Credenciales, rol o PIN de auditoría no válidos.');
         accountingService.clearStoredAuditPin();
         setIsAuthenticated(false);
+        setData(null);
       } else {
-        // En caso de modo sin conexión o error de red, mantener sesión con PIN autorizado
-        accountingService.setStoredAuditPin(pin);
-        setIsAuthenticated(true);
+        const errorMsg = err.response?.data?.message || err.message || 'Error de conexión con el servidor contable';
+        setDataError('Error al recuperar datos contables del servidor: ' + errorMsg);
+        setData(null);
       }
+      return false;
     } finally {
-      setIsVerifying(false);
-      setIsLoadingData(false);
+      // Solo restablecer estados de carga si esta solicitud sigue siendo la vigente
+      if (requestId === activeRequestIdRef.current) {
+        setIsVerifying(false);
+        setIsLoadingData(false);
+      }
     }
   };
 
@@ -209,111 +281,72 @@ export const AccountingView: React.FC = () => {
     setAuthError('');
     setIsVerifying(true);
 
-    const cleanUser = username.trim().toLowerCase();
-    const cleanPass = password.trim();
-
-    // Clave de auditoría directa ingresada
-    const isDirectPin =
-      cleanPass === 'LYS-AUDIT-2026-SECURE' ||
-      cleanPass === '202610' ||
-      cleanUser === 'LYS-AUDIT-2026-SECURE' ||
-      cleanUser === '202610';
-
-    // Credenciales válidas de administración o colaboradores
-    const isStaffOrAdmin =
-      cleanUser === 'admin' ||
-      cleanUser === 'contabilidad' ||
-      cleanUser.includes('@lysandri.com') ||
-      cleanUser.includes('lysandri') ||
-      cleanPass === 'Lysandri2026!' ||
-      isDirectPin;
-
-    // Verificar en invitaciones registradas en el navegador
-    let isCorporateInvitation = false;
-    let resolvedEmail = cleanUser;
     try {
-      const stored = localStorage.getItem('lysandri_corporate_invitations');
-      if (stored) {
-        const list = JSON.parse(stored);
-        const found = list.find(
-          (u: any) =>
-            u.assignedUsername?.toLowerCase() === cleanUser ||
-            u.personalEmail?.toLowerCase() === cleanUser
-        );
-        if (found) {
-          isCorporateInvitation = true;
-          if (found.personalEmail) resolvedEmail = found.personalEmail;
-        }
+      const email = username.trim().includes('@') ? username.trim() : `${username.trim()}@lysandri.com`;
+      const loggedUser = await authLogin({ email, password: password.trim() });
+      const userRol = (loggedUser?.rol || '').toUpperCase();
+      const allowedRoles = ['ADMIN', 'CONTABILIDAD', 'FINANZAS', 'AUDITOR'];
+
+      if (!allowedRoles.includes(userRol)) {
+        setAuthError(`Acceso denegado: El usuario '${loggedUser.email}' con rol '${loggedUser.rol}' no está autorizado para acceder al área contable.`);
+        setIsVerifying(false);
+        return;
       }
-    } catch {
-      // ignore
-    }
 
-    // Verificar en usuarios locales / académicos
-    let isAcademicUser = false;
-    try {
-      const customList = getCustomUsers();
-      const matchCustom = customList.find(
-        (u: any) =>
-          u.email?.toLowerCase() === cleanUser ||
-          `${u.nombres}${u.apellidos}`.toLowerCase().replace(/\s+/g, '').includes(cleanUser) ||
-          cleanUser.includes(u.email?.toLowerCase().split('@')[0])
-      );
-      if (matchCustom) {
-        isAcademicUser = true;
-        if (matchCustom.email) resolvedEmail = matchCustom.email;
-      }
-    } catch {
-      // ignore
-    }
-
-    // Intentar inicio de sesión con el backend si está activo
-    let tokenSuccess = false;
-    try {
-      await authService.login({
-        email: resolvedEmail.includes('@') ? resolvedEmail : `${cleanUser}@lysandri.com`,
-        password: cleanPass,
-      });
-      tokenSuccess = true;
-    } catch {
-      // fallback
-    }
-
-    const isAuthorized =
-      isDirectPin ||
-      isStaffOrAdmin ||
-      isCorporateInvitation ||
-      isAcademicUser ||
-      tokenSuccess ||
-      cleanUser === 'dannylev94' ||
-      cleanUser.includes('dannylev') ||
-      cleanUser.includes('contab');
-
-    if (isAuthorized) {
-      const auditPinToUse = 'LYS-AUDIT-2026-SECURE';
-      accountingService.setStoredAuditPin(auditPinToUse);
-      setIsAuthenticated(true);
-      await cargarDatosContables(auditPinToUse);
-    } else {
-      setAuthError('Usuario o contraseña no autorizados para el área contable y financiera.');
+      const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+      await cargarDatosContables(pin, selectedPeriodo);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Error de autenticación. Verifica tus credenciales.';
+      setAuthError(msg);
+      setIsAuthenticated(false);
+      setData(null);
+    } finally {
       setIsVerifying(false);
     }
   };
 
   const handleLogout = () => {
+    activeRequestIdRef.current += 1;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     accountingService.clearStoredAuditPin();
     setIsAuthenticated(false);
     setData(null);
     setUsername('');
     setPassword('');
     setAuthError('');
+    setDataError('');
+    setIsLoadingData(false);
+    setIsVerifying(false);
+    authLogout();
   };
 
   const handleRefresh = () => {
     const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
     if (pin) {
-      void cargarDatosContables(pin);
+      void cargarDatosContables(pin, selectedPeriodo);
     }
+  };
+
+  const clasificarCanal = (medio?: string | null): 'IZIPAY' | 'STRIPE' | 'TELECREDITO' | 'INTERBANK' | 'SIN_CLASIFICAR' => {
+    if (!medio) return 'SIN_CLASIFICAR';
+    const m = medio.trim().toUpperCase();
+    if (m.includes('IZIPAY')) return 'IZIPAY';
+    if (m.includes('STRIPE')) return 'STRIPE';
+    if (m === 'TELECREDITO_BCP' || m === 'BCP' || m === 'TRANSFERENCIA_BCP') return 'TELECREDITO';
+    if (m === 'INTERBANK_B2B' || m === 'INTERBANK' || m === 'TRANSFERENCIA_INTERBANK') return 'INTERBANK';
+    return 'SIN_CLASIFICAR';
+  };
+
+  const handlePeriodoChange = (newPeriodo: string) => {
+    setSelectedPeriodo(newPeriodo);
+    // Limpiar cifras previas para no dejar datos obsoletos presentados como vigentes si la petición no prospera
+    setData(null);
+    setDataError('');
+    const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+    void cargarDatosContables(pin, newPeriodo);
   };
 
   const formatSoles = (amount?: number | null): string => {
@@ -324,10 +357,19 @@ export const AccountingView: React.FC = () => {
     })}`;
   };
 
+  const formatDolares = (amount?: number | null): string => {
+    const val = typeof amount === 'number' ? amount : 0;
+    return `$ ${val.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} USD`;
+  };
+
   const formatFecha = (dateString?: string | null): string => {
     if (!dateString) return '—';
     try {
       const d = new Date(dateString);
+      if (isNaN(d.getTime())) return dateString;
       return d.toLocaleDateString('es-PE', {
         year: 'numeric',
         month: '2-digit',
@@ -340,24 +382,27 @@ export const AccountingView: React.FC = () => {
     }
   };
 
-  const periodosDisponibles = useMemo(() => {
-    if (!data?.ventasConsolidadas) return [];
-    const setPeriodos = new Set<string>();
-    data.ventasConsolidadas.forEach((v) => {
-      const rawDate = v.fechaEmision || v.fechaOrden;
-      if (rawDate) {
-        try {
-          const d = new Date(rawDate);
-          const mes = String(d.getMonth() + 1).padStart(2, '0');
-          const anio = d.getFullYear();
-          setPeriodos.add(`${anio}-${mes}`);
-        } catch {
-          // ignore
+  // Mantener catálogo acumulativo de períodos descubiertos para que el selector no se restrinja tras una primera búsqueda
+  useEffect(() => {
+    if (data?.ventasConsolidadas) {
+      const setPeriodos = new Set<string>(knownPeriodos);
+      data.ventasConsolidadas.forEach((v) => {
+        const rawDate = v.fechaEmision || v.fechaOrden;
+        if (rawDate) {
+          const match = rawDate.match(/^(\d{4})-(\d{2})/);
+          if (match) {
+            setPeriodos.add(`${match[1]}-${match[2]}`);
+          }
         }
+      });
+      if (data.periodoSeleccionado && data.periodoSeleccionado !== 'TODOS' && data.periodoSeleccionado.match(/^\d{4}-\d{2}$/)) {
+        setPeriodos.add(data.periodoSeleccionado);
       }
-    });
-    return Array.from(setPeriodos).sort().reverse();
+      setKnownPeriodos(Array.from(setPeriodos).sort().reverse());
+    }
   }, [data]);
+
+  const periodosDisponibles = knownPeriodos;
 
   const ventasFiltradas = useMemo(() => {
     if (!data?.ventasConsolidadas) return [];
@@ -376,17 +421,15 @@ export const AccountingView: React.FC = () => {
       }
 
       if (selectedCanal !== 'TODOS') {
-        const itemMedio = (item.medioPago || '').toUpperCase();
-        if (selectedCanal === 'STRIPE' && !itemMedio.includes('STRIPE')) return false;
-        if (selectedCanal === 'TELECREDITO' && !itemMedio.includes('TELECREDITO')) return false;
-        if (selectedCanal === 'INTERBANK' && !itemMedio.includes('INTERBANK')) return false;
+        const itemCanal = clasificarCanal(item.medioPago);
+        if (selectedCanal !== itemCanal) return false;
       }
 
       if (selectedPeriodo !== 'TODOS') {
         const rawDate = item.fechaEmision || item.fechaOrden;
         if (rawDate) {
-          const d = new Date(rawDate);
-          const itemPeriodo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const match = rawDate.match(/^(\d{4})-(\d{2})/);
+          const itemPeriodo = match ? `${match[1]}-${match[2]}` : null;
           if (itemPeriodo !== selectedPeriodo) return false;
         } else {
           return false;
@@ -417,15 +460,59 @@ export const AccountingView: React.FC = () => {
         igv: 0,
         total: 0,
         detracciones: 0,
+        baseImponiblePen: 0,
+        igvPen: 0,
+        totalPen: 0,
+        detraccionesPen: 0,
+        countComprobantesPen: 0,
+        totalFacturasPen: 0,
+        totalBoletasPen: 0,
+        montoFacturasPen: 0,
+        montoBoletasPen: 0,
+        ticketFacturaPen: 0,
+        ticketBoletaPen: 0,
+        ticketPromedioPen: 0,
+        baseImponibleUsd: 0,
+        igvUsd: 0,
+        totalUsd: 0,
+        detraccionesUsd: 0,
+        countComprobantesUsd: 0,
+        totalFacturasUsd: 0,
+        totalBoletasUsd: 0,
+        montoFacturasUsd: 0,
+        montoBoletasUsd: 0,
+        ticketFacturaUsd: 0,
+        ticketBoletaUsd: 0,
+        ticketPromedioUsd: 0,
         rentaMype: 0,
         netoPagarSunat: 0,
-        stripeGross: 0,
-        stripeFee: 0,
-        stripeNet: 0,
-        bcpGross: 0,
-        interbankGross: 0,
+        izipayGrossPen: 0,
+        izipayGrossUsd: 0,
+        countIzipay: 0,
+        stripeGrossPen: 0,
+        stripeGrossUsd: 0,
+        countStripe: 0,
+        bcpGrossPen: 0,
+        bcpGrossUsd: 0,
         bcpSpot: 0,
+        countBcp: 0,
+        interbankGrossPen: 0,
+        interbankGrossUsd: 0,
         interbankSpot: 0,
+        countInterbank: 0,
+        sinClasificarGrossPen: 0,
+        sinClasificarGrossUsd: 0,
+        countSinClasificar: 0,
+        pctIzipay: 0,
+        pctStripe: 0,
+        pctBcp: 0,
+        pctInterbank: 0,
+        pctSinClasificar: 0,
+        countRetenidasSpot: 0,
+        coberturaSpot: 0,
+        countPendientesFacturar: 0,
+        totalPendientesPen: 0,
+        totalPendientesUsd: 0,
         totalFacturas: 0,
         totalBoletas: 0,
         montoFacturas: 0,
@@ -433,140 +520,271 @@ export const AccountingView: React.FC = () => {
         ticketFactura: 0,
         ticketBoleta: 0,
         ticketPromedio: 0,
-        pctStripe: 0,
-        pctBcp: 0,
-        pctInterbank: 0,
-        countStripe: 0,
-        countBcp: 0,
-        countInterbank: 0,
-        countRetenidasSpot: 0,
-        coberturaSpot: 0,
-        ventasPorDia: [] as { fecha: string; total: number; facturas: number; boletas: number }[],
+        ventasPorDia: [] as {
+          fecha: string;
+          totalPen: number;
+          totalUsd: number;
+          facturasPen: number;
+          boletasPen: number;
+          total: number;
+        }[],
         maxVentaDia: 1,
       };
     }
 
-    let base = 0;
-    let igv = 0;
-    let total = 0;
-    let detracciones = 0;
-    let stripeGross = 0;
-    let bcpGross = 0;
-    let interbankGross = 0;
-    let bcpSpot = 0;
-    let interbankSpot = 0;
+    let basePen = 0;
+    let igvPen = 0;
+    let totalPen = 0;
+    let detraccionesPen = 0;
+    let countComprobantesPen = 0;
+    let totalFacturasPen = 0;
+    let totalBoletasPen = 0;
+    let montoFacturasPen = 0;
+    let montoBoletasPen = 0;
+
+    let baseUsd = 0;
+    let igvUsd = 0;
+    let totalUsd = 0;
+    let detraccionesUsd = 0;
+    let countComprobantesUsd = 0;
+    let totalFacturasUsd = 0;
+    let totalBoletasUsd = 0;
+    let montoFacturasUsd = 0;
+    let montoBoletasUsd = 0;
+
+    let izipayGrossPen = 0;
+    let izipayGrossUsd = 0;
+    let countIzipay = 0;
+
+    let stripeGrossPen = 0;
+    let stripeGrossUsd = 0;
     let countStripe = 0;
+
+    let bcpGrossPen = 0;
+    let bcpGrossUsd = 0;
+    let bcpSpot = 0;
     let countBcp = 0;
+
+    let interbankGrossPen = 0;
+    let interbankGrossUsd = 0;
+    let interbankSpot = 0;
     let countInterbank = 0;
+
+    let sinClasificarGrossPen = 0;
+    let sinClasificarGrossUsd = 0;
+    let countSinClasificar = 0;
+
     let countRetenidasSpot = 0;
-    let totalFacturas = 0;
-    let totalBoletas = 0;
-    let montoFacturas = 0;
-    let montoBoletas = 0;
-    const ventasPorDiaMap: { [key: string]: { fecha: string; total: number; facturas: number; boletas: number } } = {};
+    let countPendientesFacturar = 0;
+    let totalPendientesPen = 0;
+    let totalPendientesUsd = 0;
+
+    const ventasPorDiaMap: {
+      [key: string]: {
+        fecha: string;
+        totalPen: number;
+        totalUsd: number;
+        facturasPen: number;
+        boletasPen: number;
+        total: number;
+      };
+    } = {};
 
     ventasFiltradas.forEach((v) => {
-      if (v.estadoComprobante !== 'ANULADO') {
-        const t = Number(v.total) || 0;
-        base += Number(v.subtotal) || 0;
-        igv += Number(v.igv) || 0;
-        total += t;
-        const detraccionItem = Number(v.montoDetraccion) || 0;
-        detracciones += detraccionItem;
+      const t = Number(v.total) || 0;
+      const sub = Number(v.subtotal) || 0;
+      const i = Number(v.igv) || 0;
+      const detraccionItem = Number(v.montoDetraccion) || 0;
+      const mon = (v.moneda || 'PEN').toUpperCase();
+      const estado = (v.estadoComprobante || 'PENDIENTE').toUpperCase();
 
-        if (detraccionItem > 0) {
-          countRetenidasSpot += 1;
+      // Órdenes pendientes sin comprobante: excluirlas de las métricas de comprobantes emitidos
+      if (!v.idComprobante || estado === 'PENDIENTE') {
+        countPendientesFacturar += 1;
+        if (mon === 'USD') {
+          totalPendientesUsd += t;
+        } else {
+          totalPendientesPen += t;
         }
+        return;
+      }
 
-        const rawDate = v.fechaEmision || v.fechaOrden || '';
-        const dia = rawDate.slice(0, 10);
-        if (dia) {
-          if (!ventasPorDiaMap[dia]) {
-            ventasPorDiaMap[dia] = { fecha: dia, total: 0, facturas: 0, boletas: 0 };
-          }
+      // Anulados: no suman a ingresos netos ni base fiscal
+      if (estado === 'ANULADO') {
+        return;
+      }
+
+      const esFactura = (v.tipoComprobante || '').toUpperCase().includes('FACTURA');
+
+      if (mon === 'USD') {
+        baseUsd += sub;
+        igvUsd += i;
+        totalUsd += t;
+        detraccionesUsd += detraccionItem;
+        countComprobantesUsd += 1;
+        if (esFactura) {
+          totalFacturasUsd += 1;
+          montoFacturasUsd += t;
+        } else {
+          totalBoletasUsd += 1;
+          montoBoletasUsd += t;
+        }
+      } else {
+        basePen += sub;
+        igvPen += i;
+        totalPen += t;
+        detraccionesPen += detraccionItem;
+        countComprobantesPen += 1;
+        if (esFactura) {
+          totalFacturasPen += 1;
+          montoFacturasPen += t;
+        } else {
+          totalBoletasPen += 1;
+          montoBoletasPen += t;
+        }
+      }
+
+      if (detraccionItem > 0) {
+        countRetenidasSpot += 1;
+      }
+
+      const rawDate = v.fechaEmision || v.fechaOrden || '';
+      const dia = rawDate.slice(0, 10);
+      if (dia) {
+        if (!ventasPorDiaMap[dia]) {
+          ventasPorDiaMap[dia] = { fecha: dia, totalPen: 0, totalUsd: 0, facturasPen: 0, boletasPen: 0, total: 0 };
+        }
+        if (mon === 'USD') {
+          ventasPorDiaMap[dia].totalUsd += t;
+        } else {
+          ventasPorDiaMap[dia].totalPen += t;
           ventasPorDiaMap[dia].total += t;
-        }
-
-        if ((v.tipoComprobante || '').toUpperCase().includes('FACTURA')) {
-          totalFacturas += 1;
-          montoFacturas += t;
-          if (dia && ventasPorDiaMap[dia]) {
-            ventasPorDiaMap[dia].facturas += t;
-          }
-        } else {
-          totalBoletas += 1;
-          montoBoletas += t;
-          if (dia && ventasPorDiaMap[dia]) {
-            ventasPorDiaMap[dia].boletas += t;
+          if (esFactura) {
+            ventasPorDiaMap[dia].facturasPen += t;
+          } else {
+            ventasPorDiaMap[dia].boletasPen += t;
           }
         }
+      }
 
-        const medio = (v.medioPago || '').toUpperCase();
-        if (medio.includes('STRIPE')) {
-          stripeGross += t;
-          countStripe += 1;
-        } else if (medio.includes('TELECREDITO')) {
-          bcpGross += t;
-          countBcp += 1;
-          bcpSpot += detraccionItem;
-        } else if (medio.includes('INTERBANK')) {
-          interbankGross += t;
-          countInterbank += 1;
-          interbankSpot += detraccionItem;
-        } else {
-          stripeGross += t;
-          countStripe += 1;
-        }
+      // Clasificación rigurosa de canal basada en valores del backend
+      const canal = clasificarCanal(v.medioPago);
+      if (canal === 'IZIPAY') {
+        if (mon === 'USD') izipayGrossUsd += t;
+        else izipayGrossPen += t;
+        countIzipay += 1;
+      } else if (canal === 'STRIPE') {
+        if (mon === 'USD') stripeGrossUsd += t;
+        else stripeGrossPen += t;
+        countStripe += 1;
+      } else if (canal === 'TELECREDITO') {
+        if (mon === 'USD') bcpGrossUsd += t;
+        else bcpGrossPen += t;
+        countBcp += 1;
+        bcpSpot += detraccionItem;
+      } else if (canal === 'INTERBANK') {
+        if (mon === 'USD') interbankGrossUsd += t;
+        else interbankGrossPen += t;
+        countInterbank += 1;
+        interbankSpot += detraccionItem;
+      } else {
+        if (mon === 'USD') sinClasificarGrossUsd += t;
+        else sinClasificarGrossPen += t;
+        countSinClasificar += 1;
       }
     });
 
     const ventasPorDia = Object.values(ventasPorDiaMap).sort((a, b) => a.fecha.localeCompare(b.fecha));
-    const maxVentaDia = ventasPorDia.length > 0 ? Math.max(...ventasPorDia.map((item) => item.total)) : 1;
+    const maxVentaDia = ventasPorDia.length > 0 ? Math.max(...ventasPorDia.map((item) => item.totalPen)) : 1;
 
-    const rentaMype = base * 0.01;
-    const netoPagarSunat = Math.max(0, (igv + rentaMype) - detracciones);
-    const stripeFee = stripeGross * 0.0399; // 3.99% tasa promedio Stripe
-    const stripeNet = stripeGross - stripeFee;
+    const rentaMype = basePen * 0.01;
+    const netoPagarSunat = Math.max(0, (igvPen + rentaMype) - detraccionesPen);
 
-    const ticketFactura = totalFacturas > 0 ? montoFacturas / totalFacturas : 0;
-    const ticketBoleta = totalBoletas > 0 ? montoBoletas / totalBoletas : 0;
-    const ticketPromedio = (totalFacturas + totalBoletas) > 0 ? total / (totalFacturas + totalBoletas) : 0;
+    // Tickets promedio estrictamente separados por moneda (sin sumar montos de monedas distintas)
+    const ticketFacturaPen = totalFacturasPen > 0 ? montoFacturasPen / totalFacturasPen : 0;
+    const ticketBoletaPen = totalBoletasPen > 0 ? montoBoletasPen / totalBoletasPen : 0;
+    const totalCountPen = totalFacturasPen + totalBoletasPen;
+    const ticketPromedioPen = totalCountPen > 0 ? totalPen / totalCountPen : 0;
 
-    const totalVentasCalc = total > 0 ? total : 1;
-    const pctStripe = Math.round((stripeGross / totalVentasCalc) * 100);
-    const pctBcp = Math.round((bcpGross / totalVentasCalc) * 100);
-    const pctInterbank = Math.max(0, 100 - pctStripe - pctBcp);
-    const coberturaSpot = igv > 0 ? Math.min(100, Math.round((detracciones / igv) * 100)) : 0;
+    const ticketFacturaUsd = totalFacturasUsd > 0 ? montoFacturasUsd / totalFacturasUsd : 0;
+    const ticketBoletaUsd = totalBoletasUsd > 0 ? montoBoletasUsd / totalBoletasUsd : 0;
+    const totalCountUsd = totalFacturasUsd + totalBoletasUsd;
+    const ticketPromedioUsd = totalCountUsd > 0 ? totalUsd / totalCountUsd : 0;
+
+    // Participación de canales sobre recaudación en moneda local PEN
+    const totalCanalesPen = (izipayGrossPen + stripeGrossPen + bcpGrossPen + interbankGrossPen + sinClasificarGrossPen) || 1;
+    const pctIzipay = Math.round((izipayGrossPen / totalCanalesPen) * 100);
+    const pctStripe = Math.round((stripeGrossPen / totalCanalesPen) * 100);
+    const pctBcp = Math.round((bcpGrossPen / totalCanalesPen) * 100);
+    const pctInterbank = Math.round((interbankGrossPen / totalCanalesPen) * 100);
+    const pctSinClasificar = Math.max(0, 100 - pctIzipay - pctStripe - pctBcp - pctInterbank);
+    const coberturaSpot = igvPen > 0 ? Math.min(100, Math.round((detraccionesPen / igvPen) * 100)) : 0;
 
     return {
-      baseImponible: base,
-      igv,
-      total,
-      detracciones,
+      baseImponible: basePen,
+      igv: igvPen,
+      total: totalPen,
+      detracciones: detraccionesPen,
+      baseImponiblePen: basePen,
+      igvPen,
+      totalPen,
+      detraccionesPen,
+      countComprobantesPen,
+      totalFacturasPen,
+      totalBoletasPen,
+      montoFacturasPen,
+      montoBoletasPen,
+      ticketFacturaPen,
+      ticketBoletaPen,
+      ticketPromedioPen,
+      baseImponibleUsd: baseUsd,
+      igvUsd,
+      totalUsd,
+      detraccionesUsd,
+      countComprobantesUsd,
+      totalFacturasUsd,
+      totalBoletasUsd,
+      montoFacturasUsd,
+      montoBoletasUsd,
+      ticketFacturaUsd,
+      ticketBoletaUsd,
+      ticketPromedioUsd,
       rentaMype,
       netoPagarSunat,
-      stripeGross,
-      stripeFee,
-      stripeNet,
-      bcpGross,
-      interbankGross,
-      bcpSpot,
-      interbankSpot,
+      izipayGrossPen,
+      izipayGrossUsd,
+      countIzipay,
+      stripeGrossPen,
+      stripeGrossUsd,
       countStripe,
+      bcpGrossPen,
+      bcpGrossUsd,
+      bcpSpot,
       countBcp,
+      interbankGrossPen,
+      interbankGrossUsd,
+      interbankSpot,
       countInterbank,
-      countRetenidasSpot,
-      totalFacturas,
-      totalBoletas,
-      montoFacturas,
-      montoBoletas,
-      ticketFactura,
-      ticketBoleta,
-      ticketPromedio,
+      sinClasificarGrossPen,
+      sinClasificarGrossUsd,
+      countSinClasificar,
+      pctIzipay,
       pctStripe,
       pctBcp,
       pctInterbank,
+      pctSinClasificar,
+      countRetenidasSpot,
       coberturaSpot,
+      countPendientesFacturar,
+      totalPendientesPen,
+      totalPendientesUsd,
+      totalFacturas: totalFacturasPen + totalFacturasUsd,
+      totalBoletas: totalBoletasPen + totalBoletasUsd,
+      montoFacturas: montoFacturasPen,
+      montoBoletas: montoBoletasPen,
+      ticketFactura: ticketFacturaPen,
+      ticketBoleta: ticketBoletaPen,
+      ticketPromedio: ticketPromedioPen,
       ventasPorDia,
       maxVentaDia,
     };
@@ -584,71 +802,84 @@ export const AccountingView: React.FC = () => {
   }, [data]);
 
   const handleDescargarSire = async () => {
+    if (!canExportSire) {
+      alert('Permisos insuficientes: Tu rol no tiene permisos para descargar el archivo oficial SIRE.');
+      return;
+    }
+    if (!selectedPeriodo || selectedPeriodo === 'TODOS' || !selectedPeriodo.trim().match(/^\d{4}-(0[1-9]|1[0-2])$/)) {
+      alert('Para generar el libro electrónico SIRE 14.1 para SUNAT, debe seleccionar un período mensual tributario válido (ej. 2026-10). La exportación oficial no admite "Todos los períodos" ni valores vacíos.');
+      return;
+    }
     const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
     setIsExportingSire(true);
     try {
-      await accountingService.descargarSireTxt(pin, data || undefined);
+      await accountingService.descargarSireTxt(pin, selectedPeriodo.trim());
     } catch (err: any) {
-      alert('Error al descargar SIRE SUNAT: ' + (err.message || 'Error'));
+      const msg = err.response?.data?.mensaje || err.response?.data?.error || err.message || 'Error';
+      alert('Error al descargar estructura SIRE 14.1 de SUNAT:\n' + msg);
     } finally {
       setIsExportingSire(false);
     }
   };
 
   const handleAnularComprobante = async (venta: VentaConsolidada) => {
+    if (!canAnular) {
+      alert('Permisos insuficientes: Solo administradores y contabilidad pueden anular comprobantes.');
+      return;
+    }
+    if (!venta.idComprobante) {
+      alert('Esta orden no cuenta con comprobante emitido para anular.');
+      return;
+    }
     if (venta.estadoComprobante === 'ANULADO') {
       alert('Este comprobante ya se encuentra anulado.');
       return;
     }
 
     const motivo = window.prompt(
-      `¿Desea anular el comprobante ${venta.serieNumero} (${venta.cliente})?\n\nIngrese la justificación tributaria (se emitirá nota de crédito):`,
-      'Error en RUC / Emisión de Nota de Crédito'
+      `¿Desea anular el comprobante ${venta.serieNumero || venta.idComprobante} (${venta.cliente})?\n\nIngrese el motivo de anulación registrado ante SUNAT:`,
+      'Anulación por error en emisión de comprobante'
     );
 
     if (!motivo || !motivo.trim()) return;
 
     const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
     try {
-      await accountingService.anularComprobante(venta.idOrden, motivo.trim(), pin);
-      if (data) {
-        const actualizadas = data.ventasConsolidadas.map((v) =>
-          v.idOrden === venta.idOrden
-            ? { ...v, estadoComprobante: 'ANULADO', motivoAnulacion: motivo.trim() }
-            : v
-        );
-        setData({
-          ...data,
-          ventasConsolidadas: actualizadas,
-          cantidadAnulados: (data.cantidadAnulados || 0) + 1,
-        });
+      await accountingService.anularComprobante(venta.idComprobante, motivo.trim(), pin);
+      alert(`Comprobante ${venta.serieNumero || venta.idComprobante} anulado con éxito en el servidor.`);
+      const refreshOk = await cargarDatosContables(pin, selectedPeriodo);
+      if (!refreshOk) {
+        alert('La anulación del comprobante fue confirmada en el servidor, pero ocurrió un problema al actualizar el reporte en pantalla. Por favor refresque manualmente.');
       }
-      alert(`Comprobante ${venta.serieNumero} anulado exitosamente.`);
     } catch (err: any) {
-      alert('Error al anular comprobante: ' + (err.message || 'Error'));
+      alert('Error al anular comprobante: ' + (err.response?.data?.message || err.message || 'Error'));
     }
   };
 
   const exportarCSV = () => {
-    if (!ventasFiltradas || ventasFiltradas.length === 0) {
-      alert('No hay registros de ventas para exportar.');
+    const validRecords = (ventasFiltradas || []).filter((v) => v && (v.idComprobante || v.idOrden));
+    if (validRecords.length === 0) {
+      alert('No hay registros válidos para exportar.');
       return;
     }
 
     const headers = [
+      'ID_COMPROBANTE',
       'ID_ORDEN',
       'CUO',
       'FECHA_EMISION',
+      'FECHA_ORDEN',
       'TIPO_COMPROBANTE',
       'SERIE_CORRELATIVO',
       'TIPO_DOC_IDENTIDAD',
       'NUMERO_DOC_IDENTIDAD',
       'CLIENTE_O_RAZON_SOCIAL',
       'CANAL_PAGO',
-      'BASE_IMPONIBLE_PEN',
-      'IGV_18_PEN',
-      'SPOT_DETRACCION_12_PEN',
-      'TOTAL_VENTA_PEN',
+      'MONEDA',
+      'BASE_IMPONIBLE',
+      'IGV_18',
+      'SPOT_DETRACCION_12',
+      'TOTAL_VENTA',
       'ESTADO_FISCAL',
       'HASH_DIGEST_VALUE',
       'REFERENCIA_ORDEN',
@@ -660,25 +891,28 @@ export const AccountingView: React.FC = () => {
       return `"${str}"`;
     };
 
-    const rows = ventasFiltradas.map((item) => {
-      const tipoDoc = (item.documentoIdentidad || '').length === 11 ? 'RUC' : 'DNI';
+    const rows = validRecords.map((item) => {
+      const tipoDoc = (item.documentoIdentidad || '').length === 11 ? 'RUC' : (item.documentoIdentidad ? 'DNI' : '—');
       return [
+        escapeCSV(item.idComprobante ?? ''),
         escapeCSV(item.idOrden),
-        escapeCSV(item.cuo || 'M000001'),
-        escapeCSV(formatFecha(item.fechaEmision || item.fechaOrden)),
-        escapeCSV(item.tipoComprobante),
-        escapeCSV(item.serieNumero),
+        escapeCSV(item.cuo ?? ''),
+        escapeCSV(item.fechaEmision ? formatFecha(item.fechaEmision) : ''),
+        escapeCSV(formatFecha(item.fechaOrden)),
+        escapeCSV(item.tipoComprobante ?? ''),
+        escapeCSV(item.serieNumero ?? ''),
         escapeCSV(tipoDoc),
-        escapeCSV(item.documentoIdentidad),
-        escapeCSV(item.cliente),
-        escapeCSV(item.medioPago || 'STRIPE_CHECKOUT'),
+        escapeCSV(item.documentoIdentidad ?? ''),
+        escapeCSV(item.cliente ?? ''),
+        escapeCSV(item.medioPago ?? ''),
+        escapeCSV(item.moneda ?? 'PEN'),
         Number(item.subtotal || 0).toFixed(2),
         Number(item.igv || 0).toFixed(2),
         Number(item.montoDetraccion || 0).toFixed(2),
         Number(item.total || 0).toFixed(2),
-        escapeCSV(item.estadoComprobante || 'EMITIDO'),
-        escapeCSV(item.codigoHash || '4b8fK29mXzL981k='),
-        escapeCSV(item.codigoOrden),
+        escapeCSV(item.estadoComprobante ?? 'EMITIDO'),
+        escapeCSV(item.codigoHash ?? ''),
+        escapeCSV(item.codigoOrden ?? ''),
       ].join(',');
     });
 
@@ -686,10 +920,9 @@ export const AccountingView: React.FC = () => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-
-    const fechaHoy = new Date().toISOString().slice(0, 10);
+    const cleanPeriodo = selectedPeriodo !== 'TODOS' ? selectedPeriodo.replace('-', '') : 'TODOS';
     link.href = url;
-    link.setAttribute('download', `Registro_Ventas_RVIE_SIRE_LYSANDRI_${fechaHoy}.csv`);
+    link.setAttribute('download', `Registro_Ventas_Lysandri_${cleanPeriodo}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -940,16 +1173,18 @@ export const AccountingView: React.FC = () => {
               <span>Actualizar</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleDescargarSire}
-              disabled={isExportingSire}
-              title="Generar y descargar estructura oficial SIRE 14.1 para SUNAT"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:hover:text-white transition-all shadow-sm active:scale-95"
-            >
-              <Download className={`h-3.5 w-3.5 ${isExportingSire ? 'opacity-60' : 'text-blue-600 dark:text-blue-400'}`} />
-              <span>Descargar SIRE 14.1 TXT</span>
-            </button>
+            {canExportSire && (
+              <button
+                type="button"
+                onClick={handleDescargarSire}
+                disabled={isExportingSire}
+                title="Generar y descargar estructura oficial SIRE 14.1 para SUNAT"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className={`h-3.5 w-3.5 ${isExportingSire ? 'opacity-60' : 'text-blue-600 dark:text-blue-400'}`} />
+                <span>Descargar SIRE 14.1 TXT</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -984,10 +1219,59 @@ export const AccountingView: React.FC = () => {
         </div>
       </header>
 
-      {dataError && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
-          <ShieldAlert className="h-5 w-5 shrink-0 text-amber-500 dark:text-amber-400 mt-0.5" />
-          <span>{dataError}</span>
+      {dataError ? (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-rose-300 bg-rose-50/90 p-6 text-xs text-rose-900 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-200 shadow-md">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-6 w-6 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm text-rose-900 dark:text-rose-100">Error al cargar datos contables del servidor</p>
+              <p className="mt-1 text-xs text-rose-800 dark:text-rose-300">{dataError}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition shadow-sm shrink-0"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Reintentar conexión</span>
+          </button>
+        </div>
+      ) : isLoadingData ? (
+        <div className="flex items-center justify-center gap-3 p-12 text-slate-500 dark:text-slate-400">
+          <RefreshCw className="h-5 w-5 animate-spin text-cyan-600" />
+          <span className="text-sm font-semibold">Cargando reporte contable oficial...</span>
+        </div>
+      ) : (
+        <>
+          {data && (data.ventasConsolidadas?.length || 0) === 0 && (
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 dark:border-slate-800 dark:bg-[#0d1322] dark:text-slate-300 shadow-sm">
+              <FileText className="h-6 w-6 text-slate-400 shrink-0" />
+              <div>
+                <p className="font-bold text-sm text-slate-900 dark:text-white">No existen registros contables para el período seleccionado</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">El backend no reporta ventas ni comprobantes emitidos en este rango. Puede seleccionar otro período en los filtros superiores.</p>
+              </div>
+            </div>
+          )}
+
+      {/* Órdenes pendientes por facturar: presentadas por separado para no distorsionar comprobantes emitidos */}
+      {metricasCalculadas.countPendientesFacturar > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/80 p-4 text-xs text-blue-900 dark:border-blue-500/40 dark:bg-blue-950/40 dark:text-blue-200 shadow-sm">
+          <Receipt className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <p className="font-bold uppercase tracking-wider text-[11px]">
+                Órdenes pendientes por facturar ({metricasCalculadas.countPendientesFacturar})
+              </p>
+              <p className="mt-0.5 text-xs text-blue-800 dark:text-blue-300">
+                Órdenes pagadas o registradas que aún no cuentan con comprobante emitido. Se excluyen de las bases imponibles e impuestos liquidados.
+              </p>
+            </div>
+            <div className="font-mono text-xs font-bold text-blue-800 dark:text-blue-200 whitespace-nowrap">
+              Monto pendiente: {formatSoles(metricasCalculadas.totalPendientesPen)}
+              {metricasCalculadas.totalPendientesUsd > 0 && ` + ${formatDolares(metricasCalculadas.totalPendientesUsd)}`}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1000,7 +1284,7 @@ export const AccountingView: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-white block">
                 Total Facturado en Caja
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Ventas Brutas (Base + IGV)</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">Ventas Brutas Separadas por Moneda</span>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <DollarSign className="h-4 w-4" />
@@ -1008,8 +1292,13 @@ export const AccountingView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.total)}
+              {formatSoles(metricasCalculadas.totalPen)}
             </div>
+            {metricasCalculadas.totalUsd > 0 && (
+              <div className="text-xs font-semibold text-emerald-600/90 dark:text-emerald-300 font-mono mt-0.5">
+                + {formatDolares(metricasCalculadas.totalUsd)}
+              </div>
+            )}
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <span>{metricasCalculadas.totalFacturas} Facturas</span>
               <span>•</span>
@@ -1025,7 +1314,7 @@ export const AccountingView: React.FC = () => {
               <span className="text-xs font-bold text-slate-800 dark:text-white block">
                 Ingreso Real Empresa
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Base Imponible (Casilla 100)</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">Base Imponible Gravada</span>
             </div>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
               <TrendingUp className="h-4 w-4" />
@@ -1033,8 +1322,13 @@ export const AccountingView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl sm:text-2xl font-black text-cyan-700 dark:text-cyan-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.baseImponible)}
+              {formatSoles(metricasCalculadas.baseImponiblePen)}
             </div>
+            {metricasCalculadas.baseImponibleUsd > 0 && (
+              <div className="text-xs font-semibold text-cyan-600/90 dark:text-cyan-300 font-mono mt-0.5">
+                + {formatDolares(metricasCalculadas.baseImponibleUsd)}
+              </div>
+            )}
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
               Monto libre de impuestos de SUNAT
             </p>
@@ -1056,8 +1350,13 @@ export const AccountingView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.igv)}
+              {formatSoles(metricasCalculadas.igvPen)}
             </div>
+            {metricasCalculadas.igvUsd > 0 && (
+              <div className="text-xs font-semibold text-amber-600/90 dark:text-amber-300 font-mono mt-0.5">
+                + {formatDolares(metricasCalculadas.igvUsd)}
+              </div>
+            )}
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
               18% recaudado en cada venta
             </p>
@@ -1079,8 +1378,13 @@ export const AccountingView: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.detracciones)}
+              {formatSoles(metricasCalculadas.detraccionesPen)}
             </div>
+            {metricasCalculadas.detraccionesUsd > 0 && (
+              <div className="text-xs font-semibold text-amber-600/90 dark:text-amber-300 font-mono mt-0.5">
+                + {formatDolares(metricasCalculadas.detraccionesUsd)}
+              </div>
+            )}
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
               Cta. Cte. BN N° 00-068-192837
             </p>
@@ -1210,13 +1514,13 @@ export const AccountingView: React.FC = () => {
               </span>
               <select
                 value={selectedPeriodo}
-                onChange={(e) => setSelectedPeriodo(e.target.value)}
+                onChange={(e) => handlePeriodoChange(e.target.value)}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-800 focus:border-cyan-400 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
               >
                 <option value="TODOS">Todos los periodos</option>
                 {periodosDisponibles.map((p) => (
                   <option key={p} value={p}>
-                    {p} (Oct 2026)
+                    {p}
                   </option>
                 ))}
               </select>
@@ -1257,16 +1561,16 @@ export const AccountingView: React.FC = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg space-y-1.5 transition-colors hover:border-rose-500/40">
               <div className="lx-accounting-ratio-label flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span className="font-semibold text-slate-700 dark:text-slate-300">Comisión Global Pasarelas</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Liquidación de Pasarelas</span>
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
                   <CreditCard className="h-4 w-4" />
                 </div>
               </div>
               <div className="text-xl font-black text-slate-900 dark:text-white font-mono">
-                {metricasCalculadas.total > 0 ? ((metricasCalculadas.stripeFee / metricasCalculadas.total) * 100).toFixed(2) : '2.49'}%
+                Dato no disponible
               </div>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                Ponderada ({metricasCalculadas.pctBcp + metricasCalculadas.pctInterbank}% sin costo B2B)
+                Sin comisión inventada / no liquidado
               </p>
             </div>
 
@@ -1312,8 +1616,8 @@ export const AccountingView: React.FC = () => {
               <div className="flex items-end gap-3 sm:gap-4 overflow-x-auto pb-3 pt-6 px-3 min-h-[240px] bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800/80">
                 {metricasCalculadas.ventasPorDia.map((dia, index) => {
                   const alturaPct = Math.max(16, Math.min(100, Math.round((dia.total / metricasCalculadas.maxVentaDia) * 100)));
-                  const pctFactura = dia.total > 0 ? (dia.facturas / dia.total) * 100 : 0;
-                  const pctBoleta = dia.total > 0 ? (dia.boletas / dia.total) * 100 : 0;
+                  const pctFactura = dia.total > 0 ? (dia.facturasPen / dia.total) * 100 : 0;
+                  const pctBoleta = dia.total > 0 ? (dia.boletasPen / dia.total) * 100 : 0;
 
                   return (
                     <div key={dia.fecha} className="flex flex-col items-center gap-2 min-w-[70px] sm:flex-1 group/bar">
@@ -1329,19 +1633,19 @@ export const AccountingView: React.FC = () => {
                           className="lx-accounting-daily-bar w-9 sm:w-full sm:max-w-[40px] rounded-t-lg bg-slate-200 dark:bg-slate-800 flex flex-col justify-end overflow-hidden transition-all duration-700 group-hover/bar:brightness-110 shadow-md border border-slate-300 dark:border-slate-700/60"
                         >
                           {/* Segmento Facturas */}
-                          {dia.facturas > 0 && (
+                          {dia.facturasPen > 0 && (
                             <div
                               style={{ height: `${pctFactura}%` }}
                               className="w-full bg-[var(--admin-orange)] transition-[height] duration-500"
-                              title={`Facturas: ${formatSoles(dia.facturas)}`}
+                              title={`Facturas: ${formatSoles(dia.facturasPen)}`}
                             />
                           )}
                           {/* Segmento Boletas */}
-                          {dia.boletas > 0 && (
+                          {dia.boletasPen > 0 && (
                             <div
                               style={{ height: `${pctBoleta}%` }}
                               className="w-full bg-gradient-to-t from-cyan-600 via-cyan-500 to-cyan-400 transition-all duration-500"
-                              title={`Boletas: ${formatSoles(dia.boletas)}`}
+                              title={`Boletas: ${formatSoles(dia.boletasPen)}`}
                             />
                           )}
                         </div>
@@ -1387,6 +1691,19 @@ export const AccountingView: React.FC = () => {
                       stroke="currentColor"
                       fill="transparent"
                     />
+                    {/* izipay segment (Fuchsia) */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="60"
+                      className="text-fuchsia-500 dark:text-fuchsia-400 transition-all duration-1000 ease-out"
+                      strokeWidth="18"
+                      strokeDasharray={`${(metricasCalculadas.pctIzipay / 100) * 377} 377`}
+                      strokeDashoffset="0"
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                      fill="transparent"
+                    />
                     {/* Stripe segment (Cyan) */}
                     <circle
                       cx="80"
@@ -1395,7 +1712,7 @@ export const AccountingView: React.FC = () => {
                       className="text-cyan-500 dark:text-cyan-400 transition-all duration-1000 ease-out"
                       strokeWidth="18"
                       strokeDasharray={`${(metricasCalculadas.pctStripe / 100) * 377} 377`}
-                      strokeDashoffset="0"
+                      strokeDashoffset={`-${(metricasCalculadas.pctIzipay / 100) * 377}`}
                       strokeLinecap="round"
                       stroke="currentColor"
                       fill="transparent"
@@ -1408,7 +1725,7 @@ export const AccountingView: React.FC = () => {
                       className="text-indigo-500 transition-all duration-1000 ease-out"
                       strokeWidth="18"
                       strokeDasharray={`${(metricasCalculadas.pctBcp / 100) * 377} 377`}
-                      strokeDashoffset={`-${(metricasCalculadas.pctStripe / 100) * 377}`}
+                      strokeDashoffset={`-${((metricasCalculadas.pctIzipay + metricasCalculadas.pctStripe) / 100) * 377}`}
                       strokeLinecap="round"
                       stroke="currentColor"
                       fill="transparent"
@@ -1421,7 +1738,7 @@ export const AccountingView: React.FC = () => {
                       className="text-emerald-500 dark:text-emerald-400 transition-all duration-1000 ease-out"
                       strokeWidth="18"
                       strokeDasharray={`${(metricasCalculadas.pctInterbank / 100) * 377} 377`}
-                      strokeDashoffset={`-${((metricasCalculadas.pctStripe + metricasCalculadas.pctBcp) / 100) * 377}`}
+                      strokeDashoffset={`-${((metricasCalculadas.pctIzipay + metricasCalculadas.pctStripe + metricasCalculadas.pctBcp) / 100) * 377}`}
                       strokeLinecap="round"
                       stroke="currentColor"
                       fill="transparent"
@@ -1430,8 +1747,13 @@ export const AccountingView: React.FC = () => {
                   <div className="absolute flex flex-col items-center justify-center text-center">
                     <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mb-0.5" />
                     <span className="text-sm font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                      {formatSoles(metricasCalculadas.total)}
+                      {formatSoles(metricasCalculadas.totalPen)}
                     </span>
+                    {metricasCalculadas.totalUsd > 0 && (
+                      <span className="text-[10px] font-bold text-emerald-600/90 dark:text-emerald-300 font-mono">
+                        + {formatDolares(metricasCalculadas.totalUsd)}
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
                       Total Bruto
                     </span>
@@ -1440,24 +1762,49 @@ export const AccountingView: React.FC = () => {
 
                 {/* Leyenda y Desglose por Canal */}
                 <div className="flex-1 space-y-2.5 w-full">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-fuchsia-500 dark:bg-fuchsia-400 shadow-sm shadow-fuchsia-400/50" />
-                        <div>
-                          <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <span>izipay Online</span>
-                            <span className="rounded bg-fuchsia-100 px-1.5 py-0.2 text-[10px] font-mono text-fuchsia-800 border border-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800/40">
-                              {metricasCalculadas.pctStripe}%
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countStripe} órdenes (Tarjetas & Wallets)</span>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-fuchsia-500 dark:bg-fuchsia-400 shadow-sm shadow-fuchsia-400/50" />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <span>izipay Online</span>
+                          <span className="rounded bg-fuchsia-100 px-1.5 py-0.2 text-[10px] font-mono text-fuchsia-800 border border-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800/40">
+                            {metricasCalculadas.pctIzipay}%
+                          </span>
                         </div>
-                      </div>
-                      <div className="text-right font-mono">
-                        <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.stripeGross)}</div>
-                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Neto: {formatSoles(metricasCalculadas.stripeNet)}</div>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countIzipay} órdenes (Tarjetas & Wallets)</span>
                       </div>
                     </div>
+                    <div className="text-right font-mono">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.izipayGrossPen)}</div>
+                      {metricasCalculadas.izipayGrossUsd > 0 && (
+                        <div className="text-[10px] text-fuchsia-700 dark:text-fuchsia-300 font-semibold">+ {formatDolares(metricasCalculadas.izipayGrossUsd)}</div>
+                      )}
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Comisión: No liquidada</div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-sm shadow-cyan-400/50" />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <span>Stripe Checkout</span>
+                          <span className="rounded bg-cyan-100 px-1.5 py-0.2 text-[10px] font-mono text-cyan-800 border border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800/40">
+                            {metricasCalculadas.pctStripe}%
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countStripe} pagos online</span>
+                      </div>
+                    </div>
+                    <div className="text-right font-mono">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.stripeGrossPen)}</div>
+                      {metricasCalculadas.stripeGrossUsd > 0 && (
+                        <div className="text-[10px] text-cyan-700 dark:text-cyan-300 font-semibold">+ {formatDolares(metricasCalculadas.stripeGrossUsd)}</div>
+                      )}
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Comisión: No liquidada</div>
+                    </div>
+                  </div>
 
                   <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950 p-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1473,7 +1820,10 @@ export const AccountingView: React.FC = () => {
                       </div>
                     </div>
                     <div className="text-right font-mono">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.bcpGross)}</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.bcpGrossPen)}</div>
+                      {metricasCalculadas.bcpGrossUsd > 0 && (
+                        <div className="text-[10px] text-indigo-700 dark:text-indigo-300 font-semibold">+ {formatDolares(metricasCalculadas.bcpGrossUsd)}</div>
+                      )}
                       <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Comisión: 0%</div>
                     </div>
                   </div>
@@ -1488,14 +1838,38 @@ export const AccountingView: React.FC = () => {
                             {metricasCalculadas.pctInterbank}%
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countInterbank} factura{metricasCalculadas.countInterbank === 1 ? '' : 's'} B2B directa{metricasCalculadas.countInterbank === 1 ? '' : 's'}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400">{metricasCalculadas.countInterbank} facturas B2B directas</span>
                       </div>
                     </div>
                     <div className="text-right font-mono">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.interbankGross)}</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">{formatSoles(metricasCalculadas.interbankGrossPen)}</div>
+                      {metricasCalculadas.interbankGrossUsd > 0 && (
+                        <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold">+ {formatDolares(metricasCalculadas.interbankGrossUsd)}</div>
+                      )}
                       <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Comisión: 0%</div>
                     </div>
                   </div>
+
+                  {metricasCalculadas.countSinClasificar > 0 && (
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/30 p-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-3 w-3 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50" />
+                        <div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>Sin clasificar</span>
+                            <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-mono text-amber-800 border border-amber-200 dark:bg-amber-900 dark:text-amber-300">
+                              {metricasCalculadas.pctSinClasificar}%
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-amber-800 dark:text-amber-300">{metricasCalculadas.countSinClasificar} operaciones</span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <div className="text-xs font-bold text-amber-900 dark:text-amber-200">{formatSoles(metricasCalculadas.sinClasificarGrossPen)}</div>
+                        <div className="text-[10px] text-slate-500">Pendiente conciliación</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1610,22 +1984,31 @@ export const AccountingView: React.FC = () => {
                       <Building className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                       <span>Facturas Electrónicas (F001)</span>
                       <span className="rounded bg-indigo-100 px-1.5 py-0.2 text-[10px] font-mono text-indigo-800 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800/40">
-                        {metricasCalculadas.totalFacturas} emitidas
+                        {metricasCalculadas.totalFacturasPen} emitidas PEN
                       </span>
+                      {metricasCalculadas.totalFacturasUsd > 0 && (
+                        <span className="rounded bg-indigo-50 px-1.5 py-0.2 text-[10px] font-mono text-indigo-700 border border-indigo-300 dark:bg-indigo-950/50">
+                          {metricasCalculadas.totalFacturasUsd} USD
+                        </span>
+                      )}
                     </span>
                     <span className="font-mono font-bold text-indigo-600 dark:text-indigo-300">
-                      {formatSoles(metricasCalculadas.montoFacturas)} ({metricasCalculadas.total > 0 ? Math.round((metricasCalculadas.montoFacturas / metricasCalculadas.total) * 100) : 0}%)
+                      {formatSoles(metricasCalculadas.montoFacturasPen)}
+                      {metricasCalculadas.montoFacturasUsd > 0 && ` + ${formatDolares(metricasCalculadas.montoFacturasUsd)}`}
                     </span>
                   </div>
                   <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div
-                      style={{ width: `${metricasCalculadas.total > 0 ? Math.round((metricasCalculadas.montoFacturas / metricasCalculadas.total) * 100) : 0}%` }}
+                      style={{ width: `${metricasCalculadas.totalPen > 0 ? Math.round((metricasCalculadas.montoFacturasPen / metricasCalculadas.totalPen) * 100) : 0}%` }}
                       className="h-full rounded-full bg-[var(--admin-orange)] transition-[width] duration-500"
                     />
                   </div>
                   <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400">
                     <span>Clientes Corporativos con RUC</span>
-                    <span>Ticket promedio: {formatSoles(metricasCalculadas.ticketFactura)}</span>
+                    <span>
+                      Ticket promedio: {formatSoles(metricasCalculadas.ticketFacturaPen)}
+                      {metricasCalculadas.totalFacturasUsd > 0 && ` (+ ${formatDolares(metricasCalculadas.ticketFacturaUsd)})`}
+                    </span>
                   </div>
                 </div>
 
@@ -1636,31 +2019,45 @@ export const AccountingView: React.FC = () => {
                       <User className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
                       <span>Boletas de Venta (B001)</span>
                       <span className="rounded bg-cyan-100 px-1.5 py-0.2 text-[10px] font-mono text-cyan-800 border border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800/40">
-                        {metricasCalculadas.totalBoletas} emitidas
+                        {metricasCalculadas.totalBoletasPen} emitidas PEN
                       </span>
+                      {metricasCalculadas.totalBoletasUsd > 0 && (
+                        <span className="rounded bg-cyan-50 px-1.5 py-0.2 text-[10px] font-mono text-cyan-700 border border-cyan-300 dark:bg-cyan-950/50">
+                          {metricasCalculadas.totalBoletasUsd} USD
+                        </span>
+                      )}
                     </span>
                     <span className="font-mono font-bold text-cyan-700 dark:text-cyan-300">
-                      {formatSoles(metricasCalculadas.montoBoletas)} ({metricasCalculadas.total > 0 ? Math.round((metricasCalculadas.montoBoletas / metricasCalculadas.total) * 100) : 0}%)
+                      {formatSoles(metricasCalculadas.montoBoletasPen)}
+                      {metricasCalculadas.montoBoletasUsd > 0 && ` + ${formatDolares(metricasCalculadas.montoBoletasUsd)}`}
                     </span>
                   </div>
                   <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-950 overflow-hidden border border-slate-200 dark:border-slate-800">
                     <div
-                      style={{ width: `${metricasCalculadas.total > 0 ? Math.round((metricasCalculadas.montoBoletas / metricasCalculadas.total) * 100) : 0}%` }}
+                      style={{ width: `${metricasCalculadas.totalPen > 0 ? Math.round((metricasCalculadas.montoBoletasPen / metricasCalculadas.totalPen) * 100) : 0}%` }}
                       className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-700"
                     />
                   </div>
                   <div className="flex justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400">
                     <span>Estudiantes y Profesionales con DNI</span>
-                    <span>Ticket promedio: {formatSoles(metricasCalculadas.ticketBoleta)}</span>
+                    <span>
+                      Ticket promedio: {formatSoles(metricasCalculadas.ticketBoletaPen)}
+                      {metricasCalculadas.totalBoletasUsd > 0 && ` (+ ${formatDolares(metricasCalculadas.ticketBoletaUsd)})`}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-700 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-300 flex items-center justify-between">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-700 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                 <span>Ticket Promedio General del Portal:</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                  {formatSoles(metricasCalculadas.ticketPromedio)}
-                </span>
+                <div className="text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                  <span>{formatSoles(metricasCalculadas.ticketPromedioPen)}</span>
+                  {metricasCalculadas.countComprobantesUsd > 0 && (
+                    <span className="text-xs text-emerald-700/80 dark:text-emerald-300 ml-2">
+                      (+ {formatDolares(metricasCalculadas.ticketPromedioUsd)})
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1793,8 +2190,8 @@ export const AccountingView: React.FC = () => {
                 </div>
 
                 {/* Canal */}
-                <div className="flex items-center rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950">
-                  {(['TODOS', 'STRIPE', 'TELECREDITO', 'INTERBANK'] as const).map((canal) => (
+                <div className="flex flex-wrap items-center rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950">
+                  {(['TODOS', 'IZIPAY', 'STRIPE', 'TELECREDITO', 'INTERBANK', 'SIN_CLASIFICAR'] as const).map((canal) => (
                     <button
                       key={canal}
                       type="button"
@@ -1805,7 +2202,17 @@ export const AccountingView: React.FC = () => {
                           : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
                       }`}
                     >
-                      {canal === 'TODOS' ? 'Todos Canales' : canal === 'STRIPE' ? `Stripe (${metricasCalculadas.countStripe})` : canal === 'TELECREDITO' ? `BCP (${metricasCalculadas.countBcp})` : `Interbank (${metricasCalculadas.countInterbank})`}
+                      {canal === 'TODOS'
+                        ? 'Todos Canales'
+                        : canal === 'IZIPAY'
+                        ? `izipay (${metricasCalculadas.countIzipay})`
+                        : canal === 'STRIPE'
+                        ? `Stripe (${metricasCalculadas.countStripe})`
+                        : canal === 'TELECREDITO'
+                        ? `BCP (${metricasCalculadas.countBcp})`
+                        : canal === 'INTERBANK'
+                        ? `Interbank (${metricasCalculadas.countInterbank})`
+                        : `Sin clasificar (${metricasCalculadas.countSinClasificar})`}
                     </button>
                   ))}
                 </div>
@@ -1815,13 +2222,13 @@ export const AccountingView: React.FC = () => {
                   <Calendar className="h-4 w-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
                   <select
                     value={selectedPeriodo}
-                    onChange={(e) => setSelectedPeriodo(e.target.value)}
+                    onChange={(e) => handlePeriodoChange(e.target.value)}
                     className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-800 focus:border-cyan-400 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
                   >
                     <option value="TODOS">Todos los periodos</option>
                     {periodosDisponibles.map((p) => (
                       <option key={p} value={p}>
-                        {p} (Oct 2026)
+                        {p}
                       </option>
                     ))}
                   </select>
@@ -1903,24 +2310,30 @@ export const AccountingView: React.FC = () => {
                         >
                           <td className="py-3.5 px-4 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             <div>{formatFecha(venta.fechaEmision || venta.fechaOrden)}</div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{venta.cuo || 'M000001'}</div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{venta.cuo || '—'}</div>
                           </td>
 
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${
-                                  esFactura
-                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-500/30'
-                                    : 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-500/30'
-                                }`}
-                              >
-                                {esFactura ? '01 FACTURA' : '03 BOLETA'}
+                            {venta.idComprobante ? (
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${
+                                    esFactura
+                                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-500/30'
+                                      : 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-500/30'
+                                  }`}
+                                >
+                                  {esFactura ? '01 FACTURA' : '03 BOLETA'}
+                                </span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-white">
+                                  {venta.serieNumero || '—'}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-500 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                                Sin Comprobante Fiscal
                               </span>
-                              <span className="font-mono font-bold text-slate-900 dark:text-white">
-                                {venta.serieNumero || '—'}
-                              </span>
-                            </div>
+                            )}
                           </td>
 
                           <td className="py-3.5 px-4">
@@ -1962,17 +2375,17 @@ export const AccountingView: React.FC = () => {
                           </td>
 
                           <td className={`py-3.5 px-4 text-right font-mono whitespace-nowrap ${esAnulado ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                            {formatSoles(venta.subtotal)}
+                            {venta.moneda === 'USD' ? formatDolares(venta.subtotal) : formatSoles(venta.subtotal)}
                           </td>
 
                           <td className={`py-3.5 px-4 text-right font-mono whitespace-nowrap ${esAnulado ? 'line-through text-slate-400' : 'text-indigo-700 dark:text-indigo-300'}`}>
-                            {formatSoles(venta.igv)}
+                            {venta.moneda === 'USD' ? formatDolares(venta.igv) : formatSoles(venta.igv)}
                           </td>
 
                           <td className="py-3.5 px-4 text-right font-mono whitespace-nowrap">
                             {venta.montoDetraccion && venta.montoDetraccion > 0 && !esAnulado ? (
                               <span className="rounded bg-amber-50 border border-amber-300 px-1.5 py-0.5 text-amber-800 font-bold dark:bg-amber-950/70 dark:border-amber-500/30 dark:text-amber-300" title="SPOT 12% depositado en Banco de la Nación">
-                                {formatSoles(venta.montoDetraccion)}
+                                {venta.moneda === 'USD' ? formatDolares(venta.montoDetraccion) : formatSoles(venta.montoDetraccion)}
                               </span>
                             ) : (
                               <span className="text-slate-400 dark:text-slate-600">—</span>
@@ -1980,7 +2393,7 @@ export const AccountingView: React.FC = () => {
                           </td>
 
                           <td className={`py-3.5 px-4 text-right font-mono font-bold whitespace-nowrap ${esAnulado ? 'line-through text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                            {formatSoles(venta.total)}
+                            {venta.moneda === 'USD' ? formatDolares(venta.total) : formatSoles(venta.total)}
                           </td>
 
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
@@ -1997,26 +2410,34 @@ export const AccountingView: React.FC = () => {
 
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedVoucherForPreview(venta)}
-                                title="Visualizar Comprobante Electrónico Oficial SUNAT"
-                                className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-bold text-slate-700 hover:border-cyan-500 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-400 dark:hover:text-white transition-colors"
-                              >
-                                <Eye className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
-                                <span>Ver</span>
-                              </button>
+                              {venta.idComprobante ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedVoucherForPreview(venta)}
+                                    title="Visualizar Comprobante Electrónico SUNAT"
+                                    className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-bold text-slate-700 hover:border-cyan-500 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-400 dark:hover:text-white transition-colors"
+                                  >
+                                    <Eye className="h-3 w-3 text-cyan-600 dark:text-cyan-400" />
+                                    <span>Ver</span>
+                                  </button>
 
-                              {!esAnulado && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleAnularComprobante(venta)}
-                                  title="Anular comprobante (Emisión de Nota de Crédito)"
-                                  className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-2 py-1 font-mono text-[10px] font-bold text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/50 dark:hover:border-rose-400 transition-colors"
-                                >
-                                  <Ban className="h-3 w-3" />
-                                  <span>Anular</span>
-                                </button>
+                                  {!esAnulado && canAnular && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAnularComprobante(venta)}
+                                      title="Anular comprobante emitido ante SUNAT"
+                                      className="inline-flex items-center gap-1 rounded border border-rose-200 bg-rose-50 px-2 py-1 font-mono text-[10px] font-bold text-rose-700 hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-900/50 dark:hover:border-rose-400 transition-colors"
+                                    >
+                                      <Ban className="h-3 w-3" />
+                                      <span>Anular</span>
+                                    </button>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="rounded bg-amber-50 border border-amber-200 px-2 py-0.5 font-mono text-[10px] text-amber-700 dark:bg-amber-950/40 dark:border-amber-500/30 dark:text-amber-300">
+                                  Sin Comprobante
+                                </span>
                               )}
                             </div>
                           </td>
@@ -2025,28 +2446,50 @@ export const AccountingView: React.FC = () => {
                     })
                   )}
                 </tbody>
-                {/* Table Summary Footer */}
+                {/* Table Summary Footer con Monedas Separadas */}
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50 font-mono text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                     <td colSpan={5} className="py-3 px-4 text-slate-500 dark:text-slate-400">
-                      TOTAL CONSOLIDADO DEL PERIODO ({ventasFiltradas.length} Comprobantes)
+                      TOTAL CONSOLIDADO PEN ({ventasFiltradas.filter((v) => (v.moneda || 'PEN') === 'PEN').length} Registros)
                     </td>
                     <td className="py-3 px-4 text-right text-cyan-700 dark:text-cyan-300">
-                      {formatSoles(metricasCalculadas.baseImponible)}
+                      {formatSoles(metricasCalculadas.baseImponiblePen)}
                     </td>
                     <td className="py-3 px-4 text-right text-indigo-700 dark:text-indigo-300">
-                      {formatSoles(metricasCalculadas.igv)}
+                      {formatSoles(metricasCalculadas.igvPen)}
                     </td>
                     <td className="py-3 px-4 text-right text-amber-700 dark:text-amber-300">
-                      {formatSoles(metricasCalculadas.detracciones)}
+                      {formatSoles(metricasCalculadas.detraccionesPen)}
                     </td>
                     <td className="py-3 px-4 text-right text-emerald-700 dark:text-emerald-400 text-sm">
-                      {formatSoles(metricasCalculadas.total)}
+                      {formatSoles(metricasCalculadas.totalPen)}
                     </td>
                     <td colSpan={2} className="py-3 px-4 text-center text-[10px] text-slate-500">
-                      Base SIRE 14.1
+                      Base RVIE SIRE 14.1 PEN
                     </td>
                   </tr>
+                  {metricasCalculadas.totalUsd > 0 && (
+                    <tr className="border-t border-slate-200 bg-slate-50/60 font-mono text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+                      <td colSpan={5} className="py-2.5 px-4 text-slate-500 dark:text-slate-400">
+                        TOTAL CONSOLIDADO USD ({ventasFiltradas.filter((v) => v.moneda === 'USD').length} Registros)
+                      </td>
+                      <td className="py-2.5 px-4 text-right text-cyan-700 dark:text-cyan-300">
+                        {formatDolares(metricasCalculadas.baseImponibleUsd)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right text-indigo-700 dark:text-indigo-300">
+                        {formatDolares(metricasCalculadas.igvUsd)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right text-amber-700 dark:text-amber-300">
+                        {formatDolares(metricasCalculadas.detraccionesUsd)}
+                      </td>
+                      <td className="py-2.5 px-4 text-right text-emerald-700 dark:text-emerald-400 text-sm">
+                        {formatDolares(metricasCalculadas.totalUsd)}
+                      </td>
+                      <td colSpan={2} className="py-2.5 px-4 text-center text-[10px] text-slate-500">
+                        Operaciones en Dólares USD
+                      </td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>
@@ -2075,7 +2518,7 @@ export const AccountingView: React.FC = () => {
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-right dark:border-slate-700 dark:bg-slate-950">
                 <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-bold uppercase">Periodo Tributario</div>
                 <div className="text-sm font-black text-slate-900 dark:text-white font-mono">
-                  {data?.liquidacionTributaria?.periodoTributario || '2026-10'} (Octubre 2026)
+                  {data?.liquidacionTributaria?.periodoTributario || (selectedPeriodo !== 'TODOS' ? selectedPeriodo : 'Periodo Actual')}
                 </div>
               </div>
             </div>
@@ -2352,13 +2795,14 @@ export const AccountingView: React.FC = () => {
             {/* Acciones de Liquidación */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 dark:border-slate-800 pt-4">
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Estado de Pre-Liquidación: <strong className="text-emerald-700 dark:text-emerald-400">Validado sin inconsistencias</strong> (Conforme con SIRE RVIE 14.1)
+                Validación técnica interna: <strong className="text-emerald-700 dark:text-emerald-400">Estructura conforme con SIRE RVIE 14.1</strong> (No constituye constancia de recepción o certificación externa de SUNAT)
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleDescargarSire}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 font-bold text-white transition-all text-xs shadow active:scale-95"
+                  disabled={isExportingSire}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2 font-bold text-white transition-all text-xs shadow active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="h-4 w-4" />
                   <span>Descargar Archivo SIRE TXT (14.1)</span>
@@ -2374,6 +2818,44 @@ export const AccountingView: React.FC = () => {
         <section className="space-y-6">
           {/* Section A: Multi-channel Treasury Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* izipay Card */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg transition-colors">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-fuchsia-600 dark:text-fuchsia-400" />
+                  <span className="font-mono text-xs font-bold text-slate-900 dark:text-white uppercase">izipay Online</span>
+                </div>
+                <span className="rounded bg-fuchsia-50 dark:bg-fuchsia-950 px-2 py-0.5 text-[10px] font-bold text-fuchsia-700 dark:text-fuchsia-300 border border-fuchsia-200 dark:border-fuchsia-500/30">
+                  Tarjetas & Wallets ({metricasCalculadas.pctIzipay}%)
+                </span>
+              </div>
+              <div className="text-2xl font-black text-fuchsia-600 dark:text-fuchsia-400 font-mono">
+                {formatSoles(metricasCalculadas.izipayGrossPen)}
+              </div>
+              {metricasCalculadas.izipayGrossUsd > 0 && (
+                <div className="text-xs font-semibold text-fuchsia-700 dark:text-fuchsia-300 font-mono -mt-2">
+                  + {formatDolares(metricasCalculadas.izipayGrossUsd)}
+                </div>
+              )}
+              <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between">
+                  <span>Transacciones:</span>
+                  <span className="font-mono font-bold text-slate-800 dark:text-white">{metricasCalculadas.countIzipay} órdenes</span>
+                </div>
+                <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                  <span>Comisión Pasarela:</span>
+                  <span className="font-mono text-[10px]">Dato no disponible / no liquidado</span>
+                </div>
+                <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                  <span>Liquidado Neto:</span>
+                  <span className="font-mono text-[10px]">Pendiente de liquidación</span>
+                </div>
+              </div>
+              <div className="rounded-lg bg-fuchsia-50 dark:bg-fuchsia-950/40 border border-fuchsia-200 dark:border-fuchsia-500/20 p-2 text-[10px] text-fuchsia-800 dark:text-fuchsia-300">
+                💡 Pasarela omnicanal con tarjetas peruanas e internacionales
+              </div>
+            </div>
+
             {/* Stripe Card */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg transition-colors">
               <div className="flex items-center justify-between">
@@ -2386,20 +2868,25 @@ export const AccountingView: React.FC = () => {
                 </span>
               </div>
               <div className="text-2xl font-black text-cyan-600 dark:text-cyan-300 font-mono">
-                {formatSoles(metricasCalculadas.stripeGross)}
+                {formatSoles(metricasCalculadas.stripeGrossPen)}
               </div>
+              {metricasCalculadas.stripeGrossUsd > 0 && (
+                <div className="text-xs font-semibold text-cyan-700 dark:text-cyan-300 font-mono -mt-2">
+                  + {formatDolares(metricasCalculadas.stripeGrossUsd)}
+                </div>
+              )}
               <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between">
                   <span>Transacciones:</span>
                   <span className="font-mono font-bold text-slate-800 dark:text-white">{metricasCalculadas.countStripe} pagos online</span>
                 </div>
-                <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                  <span>Comisión Stripe (3.99%):</span>
-                  <span className="font-mono">- {formatSoles(metricasCalculadas.stripeFee)}</span>
+                <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                  <span>Comisión Pasarela:</span>
+                  <span className="font-mono text-[10px]">Dato no disponible / no liquidado</span>
                 </div>
                 <div className="flex justify-between font-bold text-emerald-600 dark:text-emerald-400">
                   <span>Liquidado Neto:</span>
-                  <span className="font-mono">{formatSoles(metricasCalculadas.stripeNet)}</span>
+                  <span className="font-mono text-[10px]">Pendiente de liquidación</span>
                 </div>
               </div>
               <div className="rounded-lg bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/20 p-2 text-[10px] text-cyan-800 dark:text-cyan-300">
@@ -2419,8 +2906,13 @@ export const AccountingView: React.FC = () => {
                 </span>
               </div>
               <div className="text-2xl font-black text-blue-700 dark:text-sky-300 font-mono">
-                {formatSoles(metricasCalculadas.bcpGross)}
+                {formatSoles(metricasCalculadas.bcpGrossPen)}
               </div>
+              {metricasCalculadas.bcpGrossUsd > 0 && (
+                <div className="text-xs font-semibold text-blue-800 dark:text-sky-200 font-mono -mt-2">
+                  + {formatDolares(metricasCalculadas.bcpGrossUsd)}
+                </div>
+              )}
               <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between">
                   <span>Órdenes Directas:</span>
@@ -2428,7 +2920,7 @@ export const AccountingView: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>Comisión Pasarela:</span>
-                  <span className="font-mono">S/. 0.00 (0%)</span>
+                  <span className="font-mono">S/. 0.00 (0% - Transferencia)</span>
                 </div>
                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                   <span>Retención SPOT (12%):</span>
@@ -2452,8 +2944,13 @@ export const AccountingView: React.FC = () => {
                 </span>
               </div>
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-300 font-mono">
-                {formatSoles(metricasCalculadas.interbankGross)}
+                {formatSoles(metricasCalculadas.interbankGrossPen)}
               </div>
+              {metricasCalculadas.interbankGrossUsd > 0 && (
+                <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-200 font-mono -mt-2">
+                  + {formatDolares(metricasCalculadas.interbankGrossUsd)}
+                </div>
+              )}
               <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between">
                   <span>Órdenes Directas:</span>
@@ -2461,7 +2958,7 @@ export const AccountingView: React.FC = () => {
                 </div>
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
                   <span>Comisión Pasarela:</span>
-                  <span className="font-mono">S/. 0.00 (0%)</span>
+                  <span className="font-mono">S/. 0.00 (0% - Transferencia)</span>
                 </div>
                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                   <span>Retención SPOT (12%):</span>
@@ -2485,8 +2982,13 @@ export const AccountingView: React.FC = () => {
                 </span>
               </div>
               <div className="text-2xl font-black text-amber-600 dark:text-amber-300 font-mono">
-                {formatSoles(metricasCalculadas.detracciones)}
+                {formatSoles(metricasCalculadas.detraccionesPen)}
               </div>
+              {metricasCalculadas.detraccionesUsd > 0 && (
+                <div className="text-xs font-semibold text-amber-700 dark:text-amber-300 font-mono -mt-2">
+                  + {formatDolares(metricasCalculadas.detraccionesUsd)}
+                </div>
+              )}
               <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex justify-between">
                   <span>Cta Cte BN N°:</span>
@@ -2498,13 +3000,49 @@ export const AccountingView: React.FC = () => {
                 </div>
                 <div className="flex justify-between font-bold text-slate-900 dark:text-white">
                   <span>Total Retenido:</span>
-                  <span className="font-mono">{formatSoles(metricasCalculadas.detracciones)}</span>
+                  <span className="font-mono">{formatSoles(metricasCalculadas.detraccionesPen)}</span>
                 </div>
               </div>
               <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-500/20 p-2 text-[10px] text-amber-800 dark:text-amber-300">
                 💡 Fondo intangible para pagar tributos SUNAT
               </div>
             </div>
+
+            {/* Sin Clasificar Card (si existen) */}
+            {metricasCalculadas.countSinClasificar > 0 && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50/50 p-5 space-y-3 shadow-sm dark:border-amber-500/40 dark:bg-amber-950/20 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-mono text-xs font-bold text-slate-900 dark:text-white uppercase">Sin clasificar</span>
+                  </div>
+                  <span className="rounded bg-amber-100 dark:bg-amber-900 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-200">
+                    {metricasCalculadas.pctSinClasificar}%
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-amber-700 dark:text-amber-300 font-mono">
+                  {formatSoles(metricasCalculadas.sinClasificarGrossPen)}
+                </div>
+                {metricasCalculadas.sinClasificarGrossUsd > 0 && (
+                  <div className="text-xs font-semibold text-amber-800 dark:text-amber-200 font-mono -mt-2">
+                    + {formatDolares(metricasCalculadas.sinClasificarGrossUsd)}
+                  </div>
+                )}
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-1 border-t border-amber-200 dark:border-slate-800">
+                  <div className="flex justify-between">
+                    <span>Transacciones:</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-white">{metricasCalculadas.countSinClasificar} operaciones</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Clasificación:</span>
+                    <span>Pendiente de conciliación</span>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-amber-100/70 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-500/20 p-2 text-[10px] text-amber-800 dark:text-amber-300">
+                  ⚠️ Método de pago no reconocido; no se asigna a Stripe de forma arbitraria
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section B: Corporate Treasury Bank Accounts */}
@@ -2628,11 +3166,10 @@ export const AccountingView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs font-sans dark:divide-slate-800/60">
                   {ventasFiltradas.map((item) => {
-                    const medio = (item.medioPago || '').toUpperCase();
-                    const esStripe = medio.includes('STRIPE');
-                    const fee = esStripe ? Number(item.total) * 0.0399 : 0;
+                    const canal = clasificarCanal(item.medioPago);
+                    const mon = (item.moneda || 'PEN').toUpperCase();
                     const spot = Number(item.montoDetraccion) || 0;
-                    const neto = Number(item.total) - fee - spot;
+                    const neto = Number(item.total) - spot;
 
                     return (
                       <tr key={item.idOrden} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
@@ -2655,48 +3192,70 @@ export const AccountingView: React.FC = () => {
                         </td>
 
                         <td className="py-3 px-3 whitespace-nowrap">
-                          {esStripe ? (
+                          {canal === 'IZIPAY' ? (
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] text-fuchsia-600 dark:text-fuchsia-400">
+                              <CreditCard className="h-3 w-3" />
+                              <span>izipay Online</span>
+                            </span>
+                          ) : canal === 'STRIPE' ? (
                             <span className="inline-flex items-center gap-1 font-mono text-[10px] text-cyan-600 dark:text-cyan-400">
                               <CreditCard className="h-3 w-3" />
                               <span>Stripe Card</span>
                             </span>
-                          ) : medio.includes('TELECREDITO') ? (
+                          ) : canal === 'TELECREDITO' ? (
                             <span className="inline-flex items-center gap-1 font-mono text-[10px] text-indigo-600 dark:text-indigo-400">
                               <Building className="h-3 w-3" />
                               <span>Telecrédito BCP</span>
                             </span>
-                          ) : (
+                          ) : canal === 'INTERBANK' ? (
                             <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-600 dark:text-emerald-400">
                               <Building className="h-3 w-3" />
                               <span>Interbank B2B</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] text-amber-600 dark:text-amber-400">
+                              <ShieldAlert className="h-3 w-3" />
+                              <span>Sin clasificar</span>
                             </span>
                           )}
                         </td>
 
                         <td className="py-3 px-3 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                          {formatSoles(item.total)}
+                          {mon === 'USD' ? formatDolares(item.total) : formatSoles(item.total)}
                         </td>
 
-                        <td className="py-3 px-3 text-right font-mono text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                          {fee > 0 ? `- ${formatSoles(fee)}` : 'S/. 0.00'}
+                        <td className="py-3 px-3 text-right font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                          {canal === 'TELECREDITO' || canal === 'INTERBANK' ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">S/. 0.00</span>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 italic">No liquidado</span>
+                          )}
                         </td>
 
                         <td className="py-3 px-3 text-right font-mono text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                          {spot > 0 ? `- ${formatSoles(spot)}` : 'S/. 0.00'}
+                          {spot > 0 ? `- ${mon === 'USD' ? formatDolares(spot) : formatSoles(spot)}` : '—'}
                         </td>
 
                         <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                          {formatSoles(neto)}
+                          {mon === 'USD' ? formatDolares(neto) : formatSoles(neto)}
                         </td>
 
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {esStripe ? (
-                            <span className="rounded bg-cyan-100 border border-cyan-200 text-cyan-800 dark:bg-cyan-950/70 dark:border-cyan-500/30 dark:text-cyan-300 px-2 py-0.5 text-[10px] font-mono font-bold">
-                              Liquidado Stripe
-                            </span>
-                          ) : (
+                          {canal === 'TELECREDITO' || canal === 'INTERBANK' ? (
                             <span className="rounded bg-indigo-100 border border-indigo-200 text-indigo-800 dark:bg-indigo-950/70 dark:border-indigo-500/30 dark:text-indigo-300 px-2 py-0.5 text-[10px] font-mono font-bold">
                               Conciliado Banco
+                            </span>
+                          ) : canal === 'IZIPAY' ? (
+                            <span className="rounded bg-fuchsia-100 border border-fuchsia-200 text-fuchsia-800 dark:bg-fuchsia-950/70 dark:border-fuchsia-500/30 dark:text-fuchsia-300 px-2 py-0.5 text-[10px] font-mono font-bold">
+                              Pendiente izipay
+                            </span>
+                          ) : canal === 'STRIPE' ? (
+                            <span className="rounded bg-cyan-100 border border-cyan-200 text-cyan-800 dark:bg-cyan-950/70 dark:border-cyan-500/30 dark:text-cyan-300 px-2 py-0.5 text-[10px] font-mono font-bold">
+                              Pendiente Stripe
+                            </span>
+                          ) : (
+                            <span className="rounded bg-amber-100 border border-amber-200 text-amber-800 dark:bg-amber-950/70 dark:border-amber-500/30 dark:text-amber-300 px-2 py-0.5 text-[10px] font-mono font-bold">
+                              Sin clasificar
                             </span>
                           )}
                         </td>
@@ -2707,29 +3266,53 @@ export const AccountingView: React.FC = () => {
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-100 font-mono text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                     <td colSpan={5} className="py-3 px-3 text-slate-500 dark:text-slate-400">
-                      TOTAL CONCILIACIÓN
+                      TOTAL CONCILIACIÓN PEN ({ventasFiltradas.filter((v) => (v.moneda || 'PEN').toUpperCase() === 'PEN').length} transacciones)
                     </td>
                     <td className="py-3 px-3 text-right text-slate-900 dark:text-white">
-                      {formatSoles(metricasCalculadas.total)}
+                      {formatSoles(metricasCalculadas.totalPen)}
                     </td>
-                    <td className="py-3 px-3 text-right text-rose-600 dark:text-rose-400">
-                      - {formatSoles(metricasCalculadas.stripeFee)}
+                    <td className="py-3 px-3 text-right text-slate-500 dark:text-slate-400 text-[10px]">
+                      No liquidada
                     </td>
                     <td className="py-3 px-3 text-right text-amber-600 dark:text-amber-400">
-                      - {formatSoles(metricasCalculadas.detracciones)}
+                      - {formatSoles(metricasCalculadas.detraccionesPen)}
                     </td>
                     <td className="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm">
-                      {formatSoles(metricasCalculadas.total - metricasCalculadas.stripeFee - metricasCalculadas.detracciones)}
+                      {formatSoles(metricasCalculadas.totalPen - metricasCalculadas.detraccionesPen)}
                     </td>
                     <td className="py-3 px-3 text-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                      100% Conciliado
+                      Conciliado PEN
                     </td>
                   </tr>
+                  {metricasCalculadas.totalUsd > 0 && (
+                    <tr className="border-t border-slate-200 bg-slate-100/60 font-mono text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
+                      <td colSpan={5} className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
+                        TOTAL CONCILIACIÓN USD ({ventasFiltradas.filter((v) => (v.moneda || '').toUpperCase() === 'USD').length} transacciones)
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-900 dark:text-white">
+                        {formatDolares(metricasCalculadas.totalUsd)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-slate-500 dark:text-slate-400 text-[10px]">
+                        No liquidada
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-amber-600 dark:text-amber-400">
+                        - {formatDolares(metricasCalculadas.detraccionesUsd)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm">
+                        {formatDolares(metricasCalculadas.totalUsd - metricasCalculadas.detraccionesUsd)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        Conciliado USD
+                      </td>
+                    </tr>
+                  )}
                 </tfoot>
               </table>
             </div>
           </div>
         </section>
+      )}
+        </>
       )}
 
       {/* Modal: Vista Previa Oficial de Comprobante Electrónico SUNAT */}

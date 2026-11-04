@@ -46,6 +46,8 @@ jwt:
 moodle:
   url: ${MOODLE_URL:http://localhost:8081}
   token: ${MOODLE_TOKEN:dev_moodle_wstoken_lysandri}
+  verification:
+    ttl-hours: 168
 
 izipay:
   shop-id: ${IZIPAY_SHOP_ID:test_shop_lysandri}
@@ -67,6 +69,7 @@ llm:
   api-key: ${OPENAI_API_KEY:mock-key}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+  mock-allowed: ${LLM_MOCK_ALLOWED:false}
 
 accounting:
   audit-pin: ${ACCOUNTING_AUDIT_PIN:}
@@ -124,3 +127,4 @@ whatsapp:
   app-secret: ${WHATSAPP_APP_SECRET:}
   connect-timeout-ms: ${WHATSAPP_CONNECT_TIMEOUT_MS:5000}
   read-timeout-ms: ${WHATSAPP_READ_TIMEOUT_MS:10000}
+

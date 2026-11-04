@@ -17,7 +17,13 @@ import {
   Save,
   Upload,
   Check,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ExternalLink,
+  Loader2,
 } from 'lucide-react';
+import { academicService } from '../../services/academicService';
 import { CourseModule, ProgramaResponse, TierLevel } from '../../types';
 
 interface ProgramEditorModalProps {
@@ -57,17 +63,20 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   // Form Fields
-  const [titulo, setTitulo] = useState(program?.tituloPrograma || '');
+  const [titulo, setTitulo] = useState(program?.titulo || program?.tituloPrograma || '');
   const [categoria, setCategoria] = useState(program?.tipoPrograma || 'Liderazgo y Estrategia');
-  const [instructor, setInstructor] = useState(program?.nombreInstructor || '');
-  const [descripcion, setDescripcion] = useState(program?.descripcion || '');
-  const [coverUrl, setCoverUrl] = useState(program?.coverUrl || '');
+  const [instructor, setInstructor] = useState(program?.instructorNombre || program?.nombreInstructor || '');
+  const [descripcion, setDescripcion] = useState(program?.descripcionCorta || program?.descripcionDetallada || program?.descripcion || '');
+  const [coverUrl, setCoverUrl] = useState(program?.imagenPortadaUrl || program?.coverUrl || '');
 
   const [precio, setPrecio] = useState<number | string>(
-    program?.precio !== undefined ? program.precio : 5
+    program?.precio !== undefined && program?.precio !== null ? program.precio : (program ? 0 : 5)
   );
+  const [moneda, setMoneda] = useState<string>(program?.moneda || 'USD');
   const [level, setLevel] = useState<TierLevel>((program?.level as TierLevel) || 'ENTERPRISE');
-  const [duracion, setDuracion] = useState(program?.duracionPrograma || '6 Semanas');
+  const [duracion, setDuracion] = useState(
+    program?.duracionPrograma || (program?.duracionHoras ? `${program.duracionHoras} Horas` : '6 Semanas')
+  );
   const [modalidad, setModalidad] = useState(
     program?.modalidad || 'Virtual Asincrónico con Mentoría RAG IA'
   );
@@ -82,18 +91,48 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
   const [uploadedFileName, setUploadedFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Moodle Course Linkage & Verification State
+  const [moodleCourseId, setMoodleCourseId] = useState<number | string>(
+    program?.moodleCourseId !== undefined && program?.moodleCourseId !== null ? program.moodleCourseId : ''
+  );
+  const [moodleCourseNombre, setMoodleCourseNombre] = useState<string>(
+    program?.moodleCourseNombre || ''
+  );
+  const [moodleVerificado, setMoodleVerificado] = useState<boolean>(
+    Boolean(program?.moodleVerificado)
+  );
+  const [moodleEstadoVerificacion, setMoodleEstadoVerificacion] = useState<string>(
+    program?.moodleEstadoVerificacion || (program?.moodleCourseId ? 'PENDIENTE_VERIFICACION' : 'SIN_VINCULACION')
+  );
+  const [isVerifyingMoodle, setIsVerifyingMoodle] = useState(false);
+  const [moodleVerificationMessage, setMoodleVerificationMessage] = useState<string>('');
+  const [activo, setActivo] = useState<boolean>(
+    program?.activo !== undefined ? program.activo : false
+  );
+  const [desvincularMoodleRequested, setDesvincularMoodleRequested] = useState<boolean>(false);
+
   useEffect(() => {
     if (isOpen) {
-      setTitulo(program?.tituloPrograma || '');
+      setTitulo(program?.titulo || program?.tituloPrograma || '');
       setCategoria(program?.tipoPrograma || 'Liderazgo y Estrategia');
-      setInstructor(program?.nombreInstructor || '');
-      setDescripcion(program?.descripcion || '');
-      setCoverUrl(program?.coverUrl || '');
+      setInstructor(program?.instructorNombre || program?.nombreInstructor || '');
+      setDescripcion(program?.descripcionCorta || program?.descripcionDetallada || program?.descripcion || '');
+      setCoverUrl(program?.imagenPortadaUrl || program?.coverUrl || '');
       setUploadedFileName('');
-      setPrecio(program?.precio !== undefined ? program.precio : 5);
+      setPrecio(program?.precio !== undefined && program?.precio !== null ? program.precio : (program ? 0 : 5));
+      setMoneda(program?.moneda || 'USD');
       setLevel((program?.level as TierLevel) || 'ENTERPRISE');
-      setDuracion(program?.duracionPrograma || '6 Semanas');
+      setDuracion(
+        program?.duracionPrograma || (program?.duracionHoras ? `${program.duracionHoras} Horas` : '6 Semanas')
+      );
       setModalidad(program?.modalidad || 'Virtual Asincrónico con Mentoría RAG IA');
+      setMoodleCourseId(program?.moodleCourseId !== undefined && program?.moodleCourseId !== null ? program.moodleCourseId : '');
+      setMoodleCourseNombre(program?.moodleCourseNombre || '');
+      setMoodleVerificado(Boolean(program?.moodleVerificado));
+      setMoodleEstadoVerificacion(program?.moodleEstadoVerificacion || (program?.moodleCourseId ? 'PENDIENTE_VERIFICACION' : 'SIN_VINCULACION'));
+      setMoodleVerificationMessage('');
+      setDesvincularMoodleRequested(false);
+      setActivo(program?.activo !== undefined ? program.activo : false);
       setStep(initialStep || 1);
       if (program?.syllabus && program.syllabus.length > 0) {
         setSyllabus(program.syllabus);
@@ -103,7 +142,52 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
     }
   }, [program, isOpen, initialStep]);
 
-  const handleAddModule = () => {
+  const handleVerifyMoodle = async () => {
+    const idNum = Number(moodleCourseId);
+    if (!idNum || idNum <= 0) {
+      setMoodleVerificado(false);
+      setMoodleEstadoVerificacion('SIN_VINCULACION');
+      setMoodleCourseNombre('');
+      setMoodleVerificationMessage('Ingrese un ID numérico positivo de curso Moodle.');
+      return;
+    }
+
+    setIsVerifyingMoodle(true);
+    setMoodleVerificationMessage('');
+    try {
+      const res = await academicService.verifyMoodleCourse(idNum);
+      if (res.status === 'VERIFICADO') {
+        setMoodleVerificado(true);
+        setMoodleEstadoVerificacion('VERIFICADO');
+        setMoodleCourseNombre(res.courseFullName || `Curso #${idNum}`);
+        setMoodleVerificationMessage(`Curso verificado en Moodle LMS: "${res.courseFullName || idNum}"`);
+      } else if (res.status === 'NO_ENCONTRADO') {
+        setMoodleVerificado(false);
+        setMoodleEstadoVerificacion('NO_ENCONTRADO');
+        setMoodleCourseNombre('');
+        setMoodleVerificationMessage(`El curso ID ${idNum} no existe en Moodle LMS.`);
+        if (activo) {
+          setActivo(false);
+        }
+      } else if (res.status === 'NO_DISPONIBLE') {
+        setMoodleEstadoVerificacion('NO_DISPONIBLE');
+        setMoodleVerificationMessage(`Servicio de Moodle no disponible: ${res.detalle || 'Error de conexión'}.`);
+        if (activo) {
+          setActivo(false);
+        }
+      }
+    } catch (err: any) {
+      setMoodleEstadoVerificacion('NO_DISPONIBLE');
+      setMoodleVerificationMessage(`Error de conexión al consultar Moodle: ${err.message || 'Error desconocido'}.`);
+      if (activo) {
+        setActivo(false);
+      }
+    } finally {
+      setIsVerifyingMoodle(false);
+    }
+  };
+
+    const handleAddModule = () => {
     const newModNumber = syllabus.length + 1;
     setSyllabus([
       ...syllabus,
@@ -217,28 +301,60 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (shouldPublish: boolean = false) => {
     if (!titulo.trim()) {
       alert('Por favor, ingresa el título del programa.');
       setStep(1);
       return;
     }
 
+    const idNum = moodleCourseId !== '' && !isNaN(Number(moodleCourseId)) && Number(moodleCourseId) > 0
+      ? Number(moodleCourseId)
+      : null;
+
+    if (shouldPublish) {
+      if (!idNum) {
+        alert('Regla de negocio: Todo programa publicado en la tienda debe estar vinculado a un curso de Moodle LMS. Para guardarlo sin vinculación, elija "Guardar como Borrador".');
+        setStep(2);
+        return;
+      }
+      if (!moodleVerificado) {
+        alert('El curso de Moodle debe estar verificado antes de publicar. Por favor verifique el curso en el Paso 2.');
+        setStep(2);
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
+      const numericPrecio = typeof precio === 'number'
+        ? precio
+        : (precio !== '' && !isNaN(Number(precio)) ? Number(precio) : (program?.precio !== undefined ? Number(program.precio) : 0));
+
       const payload: Partial<ProgramaResponse> = {
         idPrograma: program?.idPrograma,
+        titulo: titulo.trim(),
         tituloPrograma: titulo.trim(),
         tipoPrograma: categoria,
         nombreInstructor: instructor.trim() || 'Dirección Académica',
+        instructorNombre: instructor.trim() || 'Dirección Académica',
         descripcion: descripcion.trim(),
+        descripcionCorta: descripcion.trim(),
         coverUrl,
-        precio: Number(precio) || 5,
+        imagenPortadaUrl: coverUrl,
+        precio: numericPrecio,
+        moneda: moneda || program?.moneda || 'USD',
         level,
         duracionPrograma: duracion,
         modalidad,
         syllabus,
+        moodleCourseId: idNum || undefined,
+        moodleCourseNombre: moodleCourseNombre || undefined,
+        moodleVerificado: desvincularMoodleRequested ? false : moodleVerificado,
+        moodleEstadoVerificacion: desvincularMoodleRequested ? 'SIN_VINCULACION' : ((moodleEstadoVerificacion as any) || (idNum ? 'PENDIENTE_VERIFICACION' : 'SIN_VINCULACION')),
+        desvincularMoodle: desvincularMoodleRequested,
+        activo: desvincularMoodleRequested ? false : shouldPublish,
+        precioAprobado: program?.precioAprobado !== undefined ? program.precioAprobado : true,
       };
 
       await onSave(payload);
@@ -489,6 +605,50 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                     </div>
                   </button>
                 )}
+
+                {/* Portadas del proyecto o URL manual */}
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={coverUrl.startsWith('data:') ? '' : coverUrl}
+                      onChange={(e) => {
+                        setCoverUrl(e.target.value);
+                        setUploadedFileName('');
+                      }}
+                      placeholder="O escribe URL / ruta: /courses/curso1.png o https://..."
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 p-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-cyan-500 focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                      Portadas disponibles:
+                    </span>
+                    {[
+                      { path: '/courses/curso1.png', label: 'Curso 1 (FinOps)' },
+                      { path: '/courses/curso2.png', label: 'Curso 2 (Ciberseguridad)' },
+                      { path: '/courses/curso3.png', label: 'Curso 3 (Liderazgo)' },
+                      { path: '/courses/curso4.png', label: 'Curso 4 (Ágiles)' },
+                    ].map((item) => (
+                      <button
+                        key={item.path}
+                        type="button"
+                        onClick={() => {
+                          setCoverUrl(item.path);
+                          setUploadedFileName(item.label);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border transition-all ${
+                          coverUrl === item.path
+                            ? 'bg-cyan-500/20 border-cyan-500 text-cyan-700 dark:text-cyan-300 font-bold'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-cyan-400'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -594,6 +754,136 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 font-sans">
                   Al superar los S/. 700.00, el sistema contable aplicará automáticamente la retención SPOT del 12% para depósitos en el Banco de la Nación cuando las empresas soliciten Factura con RUC.
                 </p>
+              </div>
+
+              {/* Vinculación con Moodle LMS */}
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <ExternalLink className="h-4 w-4 text-cyan-500" />
+                      <span>Vinculación con Moodle LMS</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Identificador numérico del curso en el campus virtual oficial (https://campus.yunixingenieros.com).
+                    </p>
+                  </div>
+
+                  <div className="shrink-0">
+                    {moodleEstadoVerificacion === 'VERIFICADO' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Curso Verificado</span>
+                      </span>
+                    )}
+                    {moodleEstadoVerificacion === 'NO_ENCONTRADO' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                        <XCircle className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>Curso Inexistente</span>
+                      </span>
+                    )}
+                    {moodleEstadoVerificacion === 'NO_DISPONIBLE' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        <span>No Disponible</span>
+                      </span>
+                    )}
+                    {(moodleEstadoVerificacion === 'SIN_VINCULACION' || !moodleCourseId) && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
+                        <span>Sin Vinculación (Borrador)</span>
+                      </span>
+                    )}
+                    {moodleEstadoVerificacion === 'PENDIENTE_VERIFICACION' && moodleCourseId && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30">
+                        <span>Pendiente de Verificación</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={moodleCourseId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setMoodleCourseId(val);
+                        setMoodleVerificado(false);
+                        setMoodleCourseNombre('');
+                        setMoodleEstadoVerificacion(val ? 'PENDIENTE_VERIFICACION' : 'SIN_VINCULACION');
+                        setMoodleVerificationMessage('');
+                        setDesvincularMoodleRequested(false);
+                      }}
+                      placeholder="ID del curso Moodle (ej. 2, 15, 101)"
+                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-cyan-500 focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyMoodle}
+                    disabled={isVerifyingMoodle || !moodleCourseId}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {isVerifyingMoodle ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Verificando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Verificar en Moodle</span>
+                      </>
+                    )}
+                  </button>
+
+                  {(moodleCourseId || program?.moodleCourseId) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('¿Está seguro de desvincular el curso de Moodle? El programa se guardará como borrador y se desactivará de la tienda pública.')) {
+                          setMoodleCourseId('');
+                          setMoodleCourseNombre('');
+                          setMoodleVerificado(false);
+                          setMoodleEstadoVerificacion('SIN_VINCULACION');
+                          setMoodleVerificationMessage('Curso desvinculado voluntariamente. El programa quedará en borrador (desactivado).');
+                          setDesvincularMoodleRequested(true);
+                          setActivo(false);
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 text-rose-700 dark:text-rose-300 px-4 py-2.5 text-xs font-bold transition-all shadow-sm shrink-0"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      <span>Desvincular de Moodle</span>
+                    </button>
+                  )}
+                </div>
+
+                {moodleCourseNombre && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-xs">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <span><strong>Curso detectado en Moodle:</strong> {moodleCourseNombre}</span>
+                  </div>
+                )}
+
+                {moodleVerificationMessage && !moodleCourseNombre && (
+                  <div className={`p-2.5 rounded-xl border text-xs ${
+                    moodleEstadoVerificacion === 'NO_ENCONTRADO'
+                      ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-500/30 text-rose-700 dark:text-rose-300'
+                      : 'bg-amber-50 dark:bg-amber-950/30 border-amber-500/30 text-amber-700 dark:text-amber-300'
+                  }`}>
+                    {moodleVerificationMessage}
+                  </div>
+                )}
+
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 pt-3">
+                  <p>
+                    <strong className="text-slate-700 dark:text-slate-200">Gobernanza académica:</strong> Todo programa real publicado y disponible para compra debe estar vinculado a un curso existente y correcto en Moodle. Si no cuenta con el curso creado aún, guárdelo como borrador para conservarlo sin publicarlo en la tienda pública.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -848,15 +1138,29 @@ export const ProgramEditorModal: React.FC<ProgramEditorModalProps> = ({
                 <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-500/20 hover:opacity-95 transition-all disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                <span>{isSaving ? 'Guardando...' : 'Publicar Programa & Activar Malla'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSubmit(false)}
+                  disabled={isSaving}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all disabled:opacity-50 shadow-sm"
+                  title="Guarda como borrador inactivo sin publicar en la tienda"
+                >
+                  <Save className="h-4 w-4 text-slate-500" />
+                  <span>{isSaving ? 'Guardando...' : 'Guardar como Borrador'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSubmit(true)}
+                  disabled={isSaving || !moodleVerificado}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2 text-xs font-black text-white shadow-lg shadow-emerald-500/20 hover:opacity-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  title={!moodleVerificado ? 'Requiere curso verificado en Moodle para publicar' : 'Publica el programa en el catálogo comercial'}
+                >
+                  <Check className="h-4 w-4" />
+                  <span>{isSaving ? 'Publicando...' : 'Publicar Programa'}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

@@ -124,22 +124,20 @@ export const AdminDashboard: React.FC<
       const [usersResult, programsResult] =
         await Promise.allSettled([
           academicService.getUsers(),
-          academicService.getPrograms(),
+          academicService.getAllProgramsAdmin(),
         ]);
 
       if (usersResult.status === 'fulfilled') {
         setUsers(usersResult.value);
-      }
-      if (programsResult.status === 'fulfilled') {
-        setPrograms(programsResult.value);
+      } else {
+        setErrorMessage(getApiErrorMessage(usersResult.reason));
       }
 
-      if (
-        usersResult.status === 'rejected' &&
-        programsResult.status === 'rejected'
-      ) {
-        setErrorMessage(
-          getApiErrorMessage(programsResult.reason),
+      if (programsResult.status === 'fulfilled') {
+        setPrograms(programsResult.value);
+      } else {
+        setErrorMessage((prev) =>
+          prev ? `${prev} | ${getApiErrorMessage(programsResult.reason)}` : getApiErrorMessage(programsResult.reason)
         );
       }
     } catch (error) {
@@ -218,8 +216,80 @@ export const AdminDashboard: React.FC<
 
   const handleSaveUser = async (userData: Partial<UsuarioResponse> & { passw?: string }) => {
     if (editingUser) {
-      await academicService.updateUser(editingUser.idUser, userData);
-      setIsUserEditorOpen(false);
+      const personalChanged =
+        (userData.nombres !== undefined && userData.nombres !== editingUser.nombres) ||
+        (userData.apellidos !== undefined && userData.apellidos !== editingUser.apellidos) ||
+        (userData.email !== undefined && userData.email.toLowerCase() !== (editingUser.email || '').toLowerCase()) ||
+        (userData.telefono !== undefined && userData.telefono !== editingUser.telefono) ||
+        Boolean(userData.passw);
+
+      const roleChanged = Boolean(userData.rol && userData.rol !== editingUser.rol);
+      const statusChanged = userData.activo !== undefined && userData.activo !== editingUser.activo;
+
+      let personalOk = false;
+      let roleOk = false;
+      let statusOk = false;
+      const errores: string[] = [];
+
+      if (personalChanged) {
+        try {
+          await academicService.updateUser(editingUser.idUser, {
+            nombres: userData.nombres,
+            apellidos: userData.apellidos,
+            email: userData.email,
+            telefono: userData.telefono,
+            passw: userData.passw,
+          });
+          personalOk = true;
+        } catch (err) {
+          errores.push(`Datos personales: ${getApiErrorMessage(err)}`);
+        }
+      }
+
+      if (roleChanged && userData.rol) {
+        try {
+          await academicService.updateUserRole(
+            editingUser.idUser,
+            userData.rol,
+            'Actualización administrativa desde panel'
+          );
+          roleOk = true;
+        } catch (err) {
+          errores.push(`Rol: ${getApiErrorMessage(err)}`);
+        }
+      }
+
+      if (statusChanged && userData.activo === false) {
+        try {
+          await academicService.deactivateUser(
+            editingUser.idUser,
+            'Desactivación administrativa desde panel'
+          );
+          statusOk = true;
+        } catch (err) {
+          errores.push(`Estado: ${getApiErrorMessage(err)}`);
+        }
+      }
+
+      await loadData();
+
+      if (errores.length > 0) {
+        const guardados: string[] = [];
+        if (personalOk) guardados.push('datos personales');
+        if (roleOk) guardados.push('rol');
+        if (statusOk) guardados.push('estado');
+
+        let msg = '';
+        if (guardados.length > 0) {
+          msg = `Guardado parcial: Se guardó (${guardados.join(', ')}). Hubo errores en: ${errores.join(' | ')}`;
+        } else {
+          msg = `Error al guardar cambios: ${errores.join(' | ')}`;
+        }
+        alert(msg);
+        throw new Error(msg);
+      } else {
+        setIsUserEditorOpen(false);
+      }
     } else {
       await academicService.createUser({
         nombres: userData.nombres || '',
@@ -229,9 +299,8 @@ export const AdminDashboard: React.FC<
         telefono: userData.telefono || '',
         rol: userData.rol || 'ESTUDIANTE',
       });
-      // Dejar modal abierto en pantalla de bienvenida para que el administrador copie credenciales o envíe WhatsApp
+      await loadData();
     }
-    await loadData();
   };
 
   const normalizedSearch =
@@ -1319,7 +1388,21 @@ const ProgramsTable: React.FC<ProgramsTableProps> = ({
               >
                 <div className="lx-program-artwork">
                   {program.coverUrl ? (
-                    <img src={program.coverUrl} alt="" loading={index > 3 ? 'lazy' : 'eager'} />
+                    <img
+                      src={program.coverUrl}
+                      alt={program.titulo || 'Portada del programa'}
+                      loading={index > 3 ? 'lazy' : 'eager'}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent && !parent.querySelector('.lx-program-placeholder')) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'lx-program-placeholder';
+                          placeholder.innerHTML = '<span>Portada no disponible</span>';
+                          parent.appendChild(placeholder);
+                        }
+                      }}
+                    />
                   ) : (
                     <div className="lx-program-placeholder">
                       <BookOpen aria-hidden="true" />
@@ -1332,6 +1415,26 @@ const ProgramsTable: React.FC<ProgramsTableProps> = ({
                   <div className="lx-program-meta">
                     <span>{program.tipoPrograma || 'Programa de Especialización'}</span>
                     <span>{level}</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      program.activo
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
+                        : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    }`}>
+                      {program.activo ? 'Publicado' : 'Borrador'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      program.moodleVerificado
+                        ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950/80 dark:text-cyan-300'
+                        : program.moodleCourseId
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                    }`}>
+                      {program.moodleVerificado
+                        ? `Moodle #${program.moodleCourseId} Verificado`
+                        : program.moodleCourseId
+                          ? `Moodle #${program.moodleCourseId} (${program.moodleEstadoVerificacion || 'Pendiente'})`
+                          : 'Moodle: Sin vincular'}
+                    </span>
                   </div>
                   <h3>{program.tituloPrograma}</h3>
 

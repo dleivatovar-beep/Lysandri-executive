@@ -1,0 +1,144 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-28T21:37:00.774-05:00  INFO 33836 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 33836 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-28T21:37:00.778-05:00  INFO 33836 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-28T21:37:04.401-05:00  INFO 33836 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-28T21:37:04.912-05:00  INFO 33836 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 486 ms. Found 14 JPA repository interfaces.
+2026-10-28T21:37:06.629-05:00  INFO 33836 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-28T21:37:06.676-05:00  INFO 33836 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-28T21:37:06.676-05:00  INFO 33836 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-28T21:37:06.816-05:00  INFO 33836 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-28T21:37:06.818-05:00  INFO 33836 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 5877 ms
+2026-10-28T21:37:07.930-05:00  INFO 33836 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-28T21:37:07.931-05:00  INFO 33836 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-28T21:37:07.931-05:00  INFO 33836 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-28T21:37:08.007-05:00  INFO 33836 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-28T21:37:08.025-05:00  WARN 33836 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-28T21:37:08.091-05:00  INFO 33836 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-10-28T21:37:08.101-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 32 migrations (execution time 00:00.055s)
+2026-10-28T21:37:08.132-05:00  INFO 33836 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-10-28T21:37:08.247-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-10-28T21:37:08.270-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-10-28T21:37:08.329-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "chat_mensajes" does not exist, skipping
+2026-10-28T21:37:08.344-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "progreso_leccion" does not exist, skipping
+2026-10-28T21:37:08.346-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "inscripciones" does not exist, skipping
+2026-10-28T21:37:08.350-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "suscripciones" does not exist, skipping
+2026-10-28T21:37:08.353-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "detalle_ordenes" does not exist, skipping
+2026-10-28T21:37:08.357-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "ordenes" does not exist, skipping
+2026-10-28T21:37:08.360-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "leccion" does not exist, skipping
+2026-10-28T21:37:08.362-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "programa" does not exist, skipping
+2026-10-28T21:37:08.365-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "instructor" does not exist, skipping
+2026-10-28T21:37:08.371-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "usuarios" does not exist, skipping
+2026-10-28T21:37:08.770-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - add leccion fields"
+2026-10-28T21:37:08.773-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:08.775-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "orden" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:08.776-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_leccion_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:08.801-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - add instructor user unique constraint"
+2026-10-28T21:37:08.843-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "4 - create solicitud informacion"
+2026-10-28T21:37:08.944-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "5 - optimize indexes and integrity"
+2026-10-28T21:37:08.998-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "6 - create estructura academica"
+2026-10-28T21:37:09.259-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7 - create vector store"
+2026-10-28T21:37:09.267-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-28T21:37:09.381-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7.1 - prepare legacy schema for v8"
+2026-10-28T21:37:09.684-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "8 - purge lms and refactor knowledge store"
+2026-10-28T21:37:09.687-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-28T21:37:09.781-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:09.804-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "detalle_ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:09.930-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "9 - create billing and accounting module"
+2026-10-28T21:37:09.964-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "codigo_hash" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:09.966-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "monto_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:09.967-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "porcentaje_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:09.968-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "medio_pago" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:09.970-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "motivo_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:09.972-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:10.056-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "10 - ensure ai service documento chunks"
+2026-10-28T21:37:10.059-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-28T21:37:10.061-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "documento_chunks" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:10.063-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_documento_chunks_embedding" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:10.088-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "11 - expand user roles"
+2026-10-28T21:37:10.095-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-28T21:37:10.120-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "12 - seed founding admins"
+2026-10-28T21:37:10.124-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +--------+
+| setval |
++--------+
+| 1      |
++--------+
+
+2026-10-28T21:37:10.151-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "13 - add manual payment and corporate fields"
+2026-10-28T21:37:10.228-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "14 - add izipay support"
+2026-10-28T21:37:10.283-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "15 - stripe events idempotency"
+2026-10-28T21:37:10.381-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "16 - stripe events lease and recovery"
+2026-10-28T21:37:10.419-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "17 - stripe unique payment intent"
+2026-10-28T21:37:10.465-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "18 - add cancelado to estado orden"
+2026-10-28T21:37:10.467-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "ordenes_estado_orden_check" of relation "ordenes" does not exist, skipping
+2026-10-28T21:37:10.494-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "19 - add provisioning lease and notifications"
+2026-10-28T21:37:10.576-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "20 - create user audit table"
+2026-10-28T21:37:10.636-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "21 - allow all internal user roles"
+2026-10-28T21:37:10.639-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-28T21:37:10.661-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "22 - atomic receipt counters"
+2026-10-28T21:37:10.704-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "23 - align postgres schema with jpa"
+2026-10-28T21:37:10.712-05:00  INFO 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "titulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "precio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moneda" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moodle_course_id" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "slug" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "subtitulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_corta" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_detallada" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "imagen_portada_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "syllabus_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_nombre" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_bio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.121-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "duracion_horas" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.122-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "activo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.122-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_creacion" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-28T21:37:11.151-05:00  WARN 33836 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "uq_ordenes_codigo_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-28T21:37:11.179-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "24 - accounting audit log"
+2026-10-28T21:37:11.242-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "25 - least privilege app security"
+2026-10-28T21:37:11.270-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "26 - programa pricing governance and activation tokens"
+2026-10-28T21:37:11.334-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "27 - separate activation and administrative blocking"
+2026-10-28T21:37:11.369-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "28 - invalidate legacy plaintext tokens and outbox"
+2026-10-28T21:37:11.450-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "29 - create whatsapp tables"
+2026-10-28T21:37:11.536-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "30 - add whatsapp outbox and idempotency"
+2026-10-28T21:37:11.578-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "31 - add whatsapp lease and attempt tracking"
+2026-10-28T21:37:11.621-05:00  INFO 33836 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 32 migrations to schema "public", now at version v31 (execution time 00:02.525s)
+2026-10-28T21:37:11.750-05:00  INFO 33836 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-28T21:37:11.899-05:00  INFO 33836 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-28T21:37:11.965-05:00  INFO 33836 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-28T21:37:12.373-05:00  INFO 33836 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-28T21:37:12.424-05:00  INFO 33836 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-28T21:37:12.459-05:00  INFO 33836 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@4ede8888
+2026-10-28T21:37:12.463-05:00  INFO 33836 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-28T21:37:14.469-05:00  INFO 33836 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-28T21:37:14.536-05:00  INFO 33836 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-28T21:37:15.567-05:00  INFO 33836 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-28T21:37:18.054-05:00  INFO 33836 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-28T21:37:19.425-05:00  INFO 33836 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-28T21:37:19.429-05:00  INFO 33836 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-28T21:37:19.821-05:00  INFO 33836 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-28T21:37:20.155-05:00  WARN 33836 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-28T21:37:20.602-05:00  INFO 33836 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@e4add8b, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@3cacfe99, org.springframework.security.web.context.SecurityContextHolderFilter@4b5037a8, org.springframework.security.web.header.HeaderWriterFilter@42735475, org.springframework.web.filter.CorsFilter@4f96a7a, org.springframework.security.web.authentication.logout.LogoutFilter@14b4fcf0, com.lysandri.security.JwtAuthenticationFilter@41576e84, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@3e8b14e1, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@668b6033, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@323384a5, org.springframework.security.web.session.SessionManagementFilter@78277966, org.springframework.security.web.access.ExceptionTranslationFilter@2b3a4b06, org.springframework.security.web.access.intercept.AuthorizationFilter@1e259e2d]
+2026-10-28T21:37:21.393-05:00  INFO 33836 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-28T21:37:21.418-05:00  INFO 33836 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 21.791 seconds (process running for 23.263)
+2026-10-28T21:37:22.346-05:00  INFO 33836 --- [io-18099-exec-5] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-28T21:37:22.346-05:00  INFO 33836 --- [io-18099-exec-5] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-28T21:37:22.347-05:00  INFO 33836 --- [io-18099-exec-5] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-10-28T21:37:23.055-05:00  INFO 33836 --- [io-18099-exec-4] c.l.application.service.AuthService      : Registrando nuevo cliente ejecutivo (solicitud recibida)
+2026-10-28T21:37:23.647-05:00  INFO 33836 --- [o-18099-exec-10] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-28T21:37:23.880-05:00  INFO 33836 --- [io-18099-exec-3] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-28T21:37:23.984-05:00  WARN 33836 --- [io-18099-exec-3] c.l.application.service.AuthService      : Fallo de login: contraseña incorrecta [userId: 4]
+2026-10-28T21:37:23.999-05:00  WARN 33836 --- [io-18099-exec-3] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-28T21:37:24.034-05:00  INFO 33836 --- [io-18099-exec-1] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-28T21:37:24.098-05:00  WARN 33836 --- [io-18099-exec-1] c.l.application.service.AuthService      : Fallo de login: usuario no encontrado en base de datos
+2026-10-28T21:37:24.100-05:00  WARN 33836 --- [io-18099-exec-1] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados
+2026-10-28T21:37:24.121-05:00  INFO 33836 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-28T21:37:24.203-05:00  INFO 33836 --- [io-18099-exec-8] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 5 (almacenado como hash SHA-256)
+2026-10-28T21:37:24.219-05:00  WARN 33836 --- [io-18099-exec-8] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): El programa 'Curso Ejecutivo de Alta Dirección' (ID: 101) tiene un precio provisional no aprobado comercialmente

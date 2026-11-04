@@ -1,0 +1,40 @@
+================================================================================
+REGISTRO CONSOLIDADO DE VERIFICACIÓN FRONTEND
+Fecha de ejecución: 2026-11-03T08:06:15.001Z - 2026-11-03T08:06:47.778Z
+Directorio base:    F:\Lysandri-executive\frontend
+Estado global:      APROBADO_EXITOSO
+================================================================================
+
+RESUMEN DE COMANDOS Y CÓDIGOS DE SALIDA:
+--------------------------------------------------------------------------------
+[01] test-checkout-listeners-lifecycle
+    Comando:       node.exe test-checkout-listeners-lifecycle.js
+    Código salida: 0
+    Detalle:       Aprobados: 23, Fallidos: 0, Omitidos: 0
+    Log:           01-test-checkout-listeners-lifecycle.log
+
+[02] test-accounting-view-interaction
+    Comando:       node.exe test-accounting-view-interaction.js
+    Código salida: 0
+    Detalle:       Aprobados: 10, Fallidos: 0, Omitidos: 0
+    Log:           02-test-accounting-view-interaction.log
+
+[03] test-accounting-and-admin-services
+    Comando:       node.exe test-accounting-and-admin-services.js
+    Código salida: 0
+    Detalle:       Aprobados: 8, Fallidos: 0, Omitidos: 0
+    Log:           03-test-accounting-and-admin-services.log
+
+[04] test-checkout-modal-component
+    Comando:       node.exe test-checkout-modal-component.js
+    Código salida: 0
+    Detalle:       Aprobados: 14, Fallidos: 0, Omitidos: 0
+    Log:           04-test-checkout-modal-component.log
+
+[05] npm-run-build
+    Comando:       cmd.exe /d /s /c npm run build
+    Código salida: 0
+    Detalle:       Build: OK | TS: OK
+    Log:           05-npm-run-build.log
+
+================================================================================

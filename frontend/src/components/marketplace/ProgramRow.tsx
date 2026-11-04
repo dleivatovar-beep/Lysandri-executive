@@ -34,7 +34,7 @@ export const ProgramRow: React.FC<ProgramRowProps> = ({
         <span className="lx-program-tier">{playbook.tier === 'ENTERPRISE' ? 'Enterprise' : playbook.tier === 'ADVANCED' ? 'Advanced' : 'Essential'}</span>
       </div>
       <div className="lx-program-main">
-        <span className="lx-program-category">{playbook.category}{playbook.isDemo && <span className="lx-demo-label"> · Curso simulado</span>}</span>
+        <span className="lx-program-category">{playbook.category}</span>
         <h3>{playbook.title}</h3>
         <p>{playbook.description}</p>
         <div className="lx-program-meta">
@@ -46,12 +46,12 @@ export const ProgramRow: React.FC<ProgramRowProps> = ({
       <div className="lx-program-actions">
         <p className="lx-program-price">
           <span>Precio</span>
-          <strong>{playbook.isDemo ? 'Programa de muestra' : playbook.price != null ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: playbook.currency || 'PEN' }).format(playbook.price) : 'Consultar precio'}</strong>
+          <strong>{playbook.price != null ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: playbook.currency || 'PEN' }).format(playbook.price) : 'Consultar precio'}</strong>
         </p>
         <button type="button" className="lx-program-primary" onClick={() => onPreviewSyllabus(playbook)}>
           <BookOpen aria-hidden="true" /> Ver sílabo <ArrowUpRight aria-hidden="true" />
         </button>
-        {onEnroll && !playbook.isDemo && (
+        {onEnroll && (
           <button
             type="button"
             className="lx-program-enroll-btn"
@@ -76,12 +76,12 @@ export const ProgramRow: React.FC<ProgramRowProps> = ({
           </button>
         )}
         <div className="lx-program-secondary">
-          <button type="button" onClick={() => onAskAi(playbook)} disabled={playbook.isDemo}>
+          <button type="button" onClick={() => onAskAi(playbook)}>
             <Bot aria-hidden="true" /> Consultar IA
           </button>
-          <button type="button" onClick={() => onAddToCart(playbook)} disabled={playbook.isDemo}>
+          <button type="button" onClick={() => onAddToCart(playbook)}>
             {isInCart ? <Check aria-hidden="true" /> : <ShoppingCart aria-hidden="true" />}
-            {playbook.isDemo ? 'Solo demostración' : isInCart ? 'En el carrito' : 'Añadir al carrito'}
+            {isInCart ? 'En el carrito' : 'Añadir al carrito'}
           </button>
         </div>
       </div>

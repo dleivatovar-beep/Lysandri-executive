@@ -50,6 +50,14 @@ public interface SpringDataOrderRepository extends JpaRepository<OrdenEntity, Lo
     @Query("SELECT o FROM OrdenEntity o WHERE o.codigoOrden = :codigo")
     Optional<OrdenEntity> findByCodigoOrdenWithLock(@Param("codigo") String codigo);
 
+    @Query("SELECT o FROM OrdenEntity o JOIN o.items item WHERE item.idDetalle = :idDetalle")
+    @EntityGraph(attributePaths = {"items"})
+    Optional<OrdenEntity> findByDetalleId(@Param("idDetalle") Long idDetalle);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM OrdenEntity o JOIN o.items item WHERE item.idDetalle = :idDetalle")
+    Optional<OrdenEntity> findByDetalleIdWithLock(@Param("idDetalle") Long idDetalle);
+
     @Query("SELECT o FROM OrdenEntity o WHERE UPPER(o.bancoDestino) = UPPER(:bancoDestino) AND UPPER(o.cuentaDestino) = UPPER(:cuentaDestino) AND TRIM(o.numeroOperacion) = TRIM(:numeroOperacion) AND o.estadoOrden = com.lysandri.domain.model.EstadoOrden.PAGADO")
     List<OrdenEntity> findAbonosBancariosPagados(
             @Param("bancoDestino") String bancoDestino,

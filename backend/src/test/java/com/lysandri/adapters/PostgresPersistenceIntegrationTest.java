@@ -61,7 +61,7 @@ class PostgresPersistenceIntegrationTest extends PostgresTestDatabase {
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND version IS NOT NULL",
                 Integer.class);
-        assertEquals(36, appliedMigrations);
+        assertEquals(41, appliedMigrations);
 
         Integer v20 = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '20' AND success = TRUE",

@@ -10,6 +10,7 @@ param(
     [int]$ClonePort = 5434,
     [string]$CloneDatabase = "lysandri_clone_db",
     [switch]$SoloVerificar,
+    [switch]$SoloVerificarBaseDatos,
     [switch]$ForzarHerramientaAusente
 )
 
@@ -28,6 +29,9 @@ $params = @{
 }
 if ($SoloVerificar) {
     $params["SoloVerificar"] = $true
+}
+if ($SoloVerificarBaseDatos) {
+    $params["SoloVerificarBaseDatos"] = $true
 }
 if ($ForzarHerramientaAusente) {
     $params["ForzarHerramientaAusente"] = $true

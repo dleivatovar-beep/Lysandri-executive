@@ -63,7 +63,7 @@ public class MockIzipayPaymentAdapter implements PaymentPort {
         }
 
         log.debug("MockIzipayPaymentAdapter: Sesión generada para test - Session: {}, Tx: {}", sessionId, txId);
-        return new PaymentSessionResult(sessionId, redirectUrl, txId, formToken, publicKey);
+        return new PaymentSessionResult(sessionId, null, txId, formToken, publicKey);
     }
 
     @Override

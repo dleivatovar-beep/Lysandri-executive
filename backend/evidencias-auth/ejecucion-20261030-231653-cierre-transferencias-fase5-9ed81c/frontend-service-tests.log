@@ -1,0 +1,16 @@
+================================================================================
+PRUEBAS DE SERVICIO: storeService
+================================================================================
+✅ ESCENARIO 1 APROBADO: Adquisición y persistencia de credencial criptográfica antes de compra
+✅ ESCENARIO 2 APROBADO: Falla en sesión de invitado rechazada limpiamente sin crear órdenes huérfanas
+✅ ESCENARIO 3 APROBADO: Timeout en creación y reintento con la misma clave y contexto autorizado
+✅ ESCENARIO 4 APROBADO: Recarga y recuperación íntegra de orden confirmada sin reprocesamiento
+✅ ESCENARIO 5 APROBADO: Aislamiento criptográfico y de storage entre compradores diferentes
+✅ ESCENARIO 6 APROBADO: Manejo y despliegue transparente de conflicto 409 del backend
+✅ ESCENARIO 7 APROBADO: Nueva compra intencional limpia estado previo y genera nueva clave
+✅ ESCENARIO 8 APROBADO: Cuentas configurables cargadas y errores de validación desplegados fielmente
+✅ ESCENARIO 9 APROBADO: Ningún estado de éxito ficticio en UI ni en servicios cliente
+================================================================================
+RESUMEN SERVICIO: 9 de 9 escenarios aprobados exitosamente.
+CÓDIGO DE SALIDA: 0 (EXIT CODE 0)
+================================================================================

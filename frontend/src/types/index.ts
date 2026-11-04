@@ -34,7 +34,6 @@ export interface ProgramaEjecutivo {
   id: string;
   programId: number;
   title: string;
-  isDemo?: boolean;
   price?: number;
   currency?: string;
   coverUrl?: string;
@@ -108,6 +107,16 @@ export interface UsuarioResponse {
   email: string;
   telefono?: string;
   rol: UserRole;
+  activo?: boolean;
+}
+
+export interface MoodleCourseVerification {
+  status: 'VERIFICADO' | 'NO_ENCONTRADO' | 'SIN_VINCULACION' | 'NO_DISPONIBLE' | 'PENDIENTE_VERIFICACION';
+  moodleCourseId?: number | null;
+  courseFullName?: string | null;
+  courseShortName?: string | null;
+  detalle?: string | null;
+  verificadoEn?: string | null;
 }
 
 export interface ProgramaResponse {
@@ -116,6 +125,7 @@ export interface ProgramaResponse {
   nombreInstructor?: string;
   tituloPrograma?: string;
   titulo?: string;
+  subtitulo?: string;
   descripcionCorta?: string;
   descripcionDetallada?: string;
   imagenPortadaUrl?: string;
@@ -126,6 +136,16 @@ export interface ProgramaResponse {
   precio?: number;
   moneda?: string;
   moodleCourseId?: number;
+  moodleCourseNombre?: string;
+  moodleVerificado?: boolean;
+  moodleVerificadoEn?: string;
+  moodleUltimoIntentoEn?: string;
+  moodleEstadoVerificacion?: 'VERIFICADO' | 'NO_ENCONTRADO' | 'SIN_VINCULACION' | 'NO_DISPONIBLE' | 'PENDIENTE_VERIFICACION';
+  moodleVerificacionExpirada?: boolean;
+  desvincularMoodle?: boolean;
+  activo?: boolean;
+  precioAprobado?: boolean;
+  esGratuito?: boolean;
   duracionPrograma?: string;
   tipoPrograma?: string;
   level?: string;

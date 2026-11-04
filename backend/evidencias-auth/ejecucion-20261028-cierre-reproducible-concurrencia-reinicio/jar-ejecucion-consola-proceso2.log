@@ -1,0 +1,51 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-28T23:14:03.789-05:00  INFO 21724 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 21724 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-28T23:14:03.792-05:00  INFO 21724 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-28T23:14:04.892-05:00  INFO 21724 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-28T23:14:05.063-05:00  INFO 21724 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 157 ms. Found 14 JPA repository interfaces.
+2026-10-28T23:14:05.808-05:00  INFO 21724 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-28T23:14:05.821-05:00  INFO 21724 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-28T23:14:05.821-05:00  INFO 21724 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-28T23:14:05.873-05:00  INFO 21724 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-28T23:14:05.874-05:00  INFO 21724 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2002 ms
+2026-10-28T23:14:06.347-05:00  INFO 21724 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-28T23:14:06.347-05:00  INFO 21724 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-28T23:14:06.347-05:00  INFO 21724 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-28T23:14:06.407-05:00  INFO 21724 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-28T23:14:06.420-05:00  WARN 21724 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-28T23:14:06.477-05:00  INFO 21724 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 32 migrations (execution time 00:00.043s)
+2026-10-28T23:14:06.515-05:00  INFO 21724 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 31
+2026-10-28T23:14:06.520-05:00  INFO 21724 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-28T23:14:06.640-05:00  INFO 21724 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-28T23:14:06.729-05:00  INFO 21724 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-28T23:14:06.766-05:00  INFO 21724 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-28T23:14:07.057-05:00  INFO 21724 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-28T23:14:07.093-05:00  INFO 21724 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-28T23:14:07.140-05:00  INFO 21724 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@511de4dd
+2026-10-28T23:14:07.141-05:00  INFO 21724 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-28T23:14:08.647-05:00  INFO 21724 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-28T23:14:08.699-05:00  INFO 21724 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-28T23:14:09.083-05:00  INFO 21724 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-28T23:14:10.204-05:00  INFO 21724 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-28T23:14:11.002-05:00  INFO 21724 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-28T23:14:11.005-05:00  INFO 21724 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-28T23:14:11.189-05:00  INFO 21724 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-28T23:14:11.419-05:00  WARN 21724 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-28T23:14:11.724-05:00  INFO 21724 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@4e0a8bb0, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@6ce9226e, org.springframework.security.web.context.SecurityContextHolderFilter@1ae42bfe, org.springframework.security.web.header.HeaderWriterFilter@4f8c8136, org.springframework.web.filter.CorsFilter@6152d303, org.springframework.security.web.authentication.logout.LogoutFilter@4d742035, com.lysandri.security.JwtAuthenticationFilter@1926a40f, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@71c8e40e, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@65a44d8a, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@77454dbf, org.springframework.security.web.session.SessionManagementFilter@3a3fb848, org.springframework.security.web.access.ExceptionTranslationFilter@dd4fac6, org.springframework.security.web.access.intercept.AuthorizationFilter@72ca016e]
+2026-10-28T23:14:12.123-05:00  INFO 21724 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-28T23:14:12.138-05:00  INFO 21724 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 8.765 seconds (process running for 9.24)
+2026-10-28T23:14:12.223-05:00  WARN 21724 --- [           main] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Recuperación tras reinicio: 1 mensajes en estado EN_PROCESO_ENVIO fueron marcados conservadoramente como RESULTADO_INCIERTO
+2026-10-28T23:14:12.966-05:00  INFO 21724 --- [io-18099-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-28T23:14:12.966-05:00  INFO 21724 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-28T23:14:12.967-05:00  INFO 21724 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-10-28T23:14:13.422-05:00  INFO 21724 --- [io-18099-exec-2] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-restart-1793247242 ya finalizada o incierta (estado: RESULTADO_INCIERTO). No autoriza despacho redundante.
+2026-10-28T23:14:13.434-05:00  INFO 21724 --- [io-18099-exec-2] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-restart-1793247242 no autorizada para nuevo despacho de red (estado: RESULTADO_INCIERTO). Retornando estado actual.
+2026-10-28T23:14:13.510-05:00  INFO 21724 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Estado de mensaje WhatsApp conciliado exitosamente [id: 4, previo: RESULTADO_INCIERTO, nuevo: ENTREGADO]

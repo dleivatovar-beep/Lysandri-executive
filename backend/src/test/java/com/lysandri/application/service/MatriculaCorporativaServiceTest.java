@@ -61,6 +61,7 @@ class MatriculaCorporativaServiceTest {
                 .titulo("IA para Directores")
                 .precio(new BigDecimal("1200.00"))
                 .moodleCourseId(202L)
+                .moodleVerificado(true)
                 .build();
     }
 

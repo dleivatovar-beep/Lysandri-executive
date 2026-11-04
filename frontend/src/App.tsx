@@ -51,8 +51,7 @@ import { enviarMensajeChat } from './services/api';
 import {
   buildCategories,
   toCatalogCourse,
-  FALLBACK_PLAYBOOKS,
-} from './services/courseCatalog';
+  } from './services/courseCatalog';
 
 import {
   ActiveView,
@@ -360,11 +359,15 @@ const MarketplacePage: React.FC = () => {
       if (programs && programs.length > 0) {
         setPlaybooks(programs.map(toCatalogCourse));
       } else {
-        setPlaybooks(FALLBACK_PLAYBOOKS);
+        setPlaybooks([]);
       }
-    } catch {
-      // Fallback resiliente con datos ejecutivos
-      setPlaybooks(FALLBACK_PLAYBOOKS);
+    } catch (err: any) {
+      setPlaybooks([]);
+      setErrorMessage(
+        err?.response?.data?.message ||
+          err?.message ||
+          'No se pudo conectar con el catálogo oficial del backend.'
+      );
     } finally {
       setIsLoading(false);
     }

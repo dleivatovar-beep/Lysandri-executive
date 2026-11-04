@@ -1,0 +1,32 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN FRONTEND: test-accounting-and-admin-services
+================================================================================
+Comando exacto:        node.exe test-accounting-and-admin-services.js
+Directorio:            F:\Lysandri-executive\frontend
+Fecha y hora inicio:   2026-11-03T08:06:26.675Z
+Fecha y hora fin:      2026-11-03T08:06:27.044Z
+Código de salida real: 0
+Descripción:           Pruebas unitarias de servicios de contabilidad y administración
+================================================================================
+SALIDA COMPLETA (STDOUT):
+--------------------------------------------------------------------------------
+================================================================================
+PRUEBAS UNITARIAS: Servicios de Contabilidad, Programas y Usuarios
+================================================================================
+✅ TEST 1 APROBADO: fetchReporteVentas envía X-Audit-PIN y período YYYY-MM
+✅ TEST 2 APROBADO: fetchReporteVentas propaga errores 403 de PIN/acceso sin datos ficticios
+✅ TEST 3 APROBADO: anularComprobante usa idComprobante real y propaga motivo
+✅ TEST 4 APROBADO: anularComprobante propaga errores del servidor sin simular éxito
+✅ TEST 5 APROBADO: normalizeProgram unifica variantes de nombres y conserva precio/moneda reales
+✅ TEST 6 APROBADO: updateUser excluye rol y activo en PUT /usuarios/{id}
+✅ TEST 7 APROBADO: updateUserRole utiliza PATCH /usuarios/{id}/rol con motivo de auditoría
+✅ TEST 8 APROBADO: deactivateUser utiliza PATCH /usuarios/{id}/desactivar con motivo
+================================================================================
+RESUMEN: 8 de 8 pruebas unitarias frontend aprobadas exitosamente.
+================================================================================
+
+--------------------------------------------------------------------------------
+SALIDA COMPLETA (STDERR):
+--------------------------------------------------------------------------------
+(vacío)
+================================================================================

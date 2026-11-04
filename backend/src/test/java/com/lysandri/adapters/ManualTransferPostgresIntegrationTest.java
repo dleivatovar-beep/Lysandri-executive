@@ -32,6 +32,12 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import static org.mockito.Mockito.*;
+import com.lysandri.domain.ports.out.LmsClientPort;
+import com.lysandri.domain.ports.out.NotificationPort;
+import com.lysandri.domain.ports.out.BillingPort;
+import com.lysandri.domain.ports.out.WhatsAppCloudClientPort;
 import com.lysandri.config.CuentasBancariasProperties;
 import org.springframework.security.access.AccessDeniedException;
 import java.util.concurrent.*;
@@ -63,6 +69,18 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
     @Autowired
     private CuentasBancariasProperties cuentasBancariasProperties;
 
+    @SpyBean
+    private LmsClientPort lmsClientPort;
+
+    @SpyBean
+    private NotificationPort notificationPort;
+
+    @SpyBean
+    private BillingPort billingPort;
+
+    @SpyBean
+    private WhatsAppCloudClientPort whatsAppCloudClientPort;
+
 
     private Long testUserId;
 
@@ -85,10 +103,93 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
             ON CONFLICT (id_instructor_dni) DO NOTHING
         """);
         jdbcTemplate.execute("""
-            INSERT INTO programa (id_programa, id_instructor_dni, titulo, precio, moneda, activo, moodle_course_id, slug, duracion_programa, tipo_programa, nivel, precio_aprobado)
-            VALUES (101, 'DNI88888888', 'Programa Prueba Ejecutivo', 899.00, 'USD', true, 101, 'programa-prueba-ejecutivo', '40 horas', 'CURSO', 'INTERMEDIO', true)
-            ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, precio = 899.00, moneda = 'USD'
+            INSERT INTO programa (id_programa, id_instructor_dni, titulo, precio, moneda, activo, moodle_course_id, slug, duracion_programa, tipo_programa, nivel, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion)
+            VALUES (101, 'DNI88888888', 'Programa Prueba Ejecutivo', 899.00, 'USD', true, 101, 'programa-prueba-ejecutivo', '40 horas', 'CURSO', 'INTERMEDIO', true, true, NOW(), 'VERIFICADO')
+            ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, precio = 899.00, moneda = 'USD', moodle_verificado = true, moodle_estado_verificacion = 'VERIFICADO'
         """);
+
+        if (lmsClientPort != null) reset(lmsClientPort);
+        if (notificationPort != null) reset(notificationPort);
+        if (billingPort != null) reset(billingPort);
+        if (whatsAppCloudClientPort != null) reset(whatsAppCloudClientPort);
+    }
+
+    record EstadoSistemaCapturado(
+            EstadoOrden estadoOrden,
+            EstadoAprovisionamiento estadoAprovisionamiento,
+            int aprovisionamientoIntentos,
+            String bancoDestino,
+            String cuentaDestino,
+            String numeroOperacion,
+            BigDecimal montoVerificado,
+            String monedaVerificada,
+            OffsetDateTime fechaPago,
+            long comprobantesGlobales,
+            long comprobantesOrden,
+            long outboxGlobales,
+            long outboxUsuario,
+            long tokensUsuario
+    ) {}
+
+    private EstadoSistemaCapturado capturarEstado(Long idOrden, Long idUsuario) {
+        Orden orden = orderRepository.buscarPorId(idOrden).orElseThrow();
+        Long compGlobal = jdbcTemplate.queryForObject("SELECT count(*) FROM comprobante_pago", Long.class);
+        Long compOrden = jdbcTemplate.queryForObject("SELECT count(*) FROM comprobante_pago WHERE id_orden = ?", Long.class, idOrden);
+        Long outboxGlobal = jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_notificacion_activacion", Long.class);
+        Long outboxUser = jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_notificacion_activacion WHERE id_user = ?", Long.class, idUsuario);
+        Long tokUser = jdbcTemplate.queryForObject("SELECT count(*) FROM usuario_activacion_token WHERE id_user = ?", Long.class, idUsuario);
+
+        return new EstadoSistemaCapturado(
+                orden.getEstadoOrden(),
+                orden.getEstadoAprovisionamiento(),
+                orden.getAprovisionamientoIntentos(),
+                orden.getBancoDestino(),
+                orden.getCuentaDestino(),
+                orden.getNumeroOperacion(),
+                orden.getMontoVerificado(),
+                orden.getMonedaVerificada(),
+                orden.getFechaPago(),
+                compGlobal != null ? compGlobal : 0L,
+                compOrden != null ? compOrden : 0L,
+                outboxGlobal != null ? outboxGlobal : 0L,
+                outboxUser != null ? outboxUser : 0L,
+                tokUser != null ? tokUser : 0L
+        );
+    }
+
+    private void verificarAusenciaDeEfectosPosteriores(Long idOrden, Long idUsuario, EstadoSistemaCapturado antes) {
+        Orden despues = orderRepository.buscarPorId(idOrden).orElseThrow();
+
+        // Orden permanece PENDIENTE y conserva valores previos
+        assertEquals(EstadoOrden.PENDIENTE, despues.getEstadoOrden(), "La orden debe permanecer PENDIENTE");
+        assertEquals(antes.estadoAprovisionamiento(), despues.getEstadoAprovisionamiento(), "El estado de aprovisionamiento no debe cambiar");
+        assertEquals(antes.aprovisionamientoIntentos(), despues.getAprovisionamientoIntentos(), "El contador de intentos de aprovisionamiento no debe cambiar");
+        assertEquals(antes.bancoDestino(), despues.getBancoDestino(), "El banco destino no debe haber cambiado");
+        assertEquals(antes.cuentaDestino(), despues.getCuentaDestino(), "La cuenta destino no debe haber cambiado");
+        assertEquals(antes.numeroOperacion(), despues.getNumeroOperacion(), "El número de operación no debe haber cambiado");
+        assertEquals(antes.montoVerificado(), despues.getMontoVerificado(), "El monto verificado no debe haber cambiado");
+        assertEquals(antes.monedaVerificada(), despues.getMonedaVerificada(), "La moneda verificada no debe haber cambiado");
+        assertEquals(antes.fechaPago(), despues.getFechaPago(), "La fecha de pago no debe haber cambiado");
+
+        // Sin comprobantes nuevos
+        Long compGlobalDespues = jdbcTemplate.queryForObject("SELECT count(*) FROM comprobante_pago", Long.class);
+        Long compOrdenDespues = jdbcTemplate.queryForObject("SELECT count(*) FROM comprobante_pago WHERE id_orden = ?", Long.class, idOrden);
+        assertEquals(antes.comprobantesGlobales(), compGlobalDespues, "El conteo global de comprobantes no debe aumentar");
+        assertEquals(antes.comprobantesOrden(), compOrdenDespues, "La orden no debe tener comprobantes generados");
+
+        // Sin nuevas activaciones ni tareas de outbox
+        Long outboxGlobalDespues = jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_notificacion_activacion", Long.class);
+        Long outboxUserDespues = jdbcTemplate.queryForObject("SELECT count(*) FROM outbox_notificacion_activacion WHERE id_user = ?", Long.class, idUsuario);
+        Long tokUserDespues = jdbcTemplate.queryForObject("SELECT count(*) FROM usuario_activacion_token WHERE id_user = ?", Long.class, idUsuario);
+        assertEquals(antes.outboxGlobales(), outboxGlobalDespues, "El conteo global de outbox no debe cambiar");
+        assertEquals(antes.outboxUsuario(), outboxUserDespues, "No deben crearse tareas outbox para el usuario");
+        assertEquals(antes.tokensUsuario(), tokUserDespues, "No deben crearse tokens de activación para el usuario");
+
+        // Sin llamadas a servicios externos
+        verifyNoInteractions(lmsClientPort);
+        verifyNoInteractions(notificationPort);
+        verifyNoInteractions(billingPort);
+        verifyNoInteractions(whatsAppCloudClientPort);
     }
 
     @AfterEach
@@ -318,14 +419,22 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
                 OffsetDateTime.now().minusHours(1), "TRANSFERENCIA", null, null, "admin"
         );
 
+        reset(lmsClientPort, notificationPort, billingPort, whatsAppCloudClientPort);
+        EstadoSistemaCapturado antes = capturarEstado(orden2.getIdOrden(), testUserId);
+
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
-                financialTransactionService.confirmarPagoManualFinanciero(orden2.getIdOrden(), cmd2));
+                buyCourseUseCase.confirmarPagoManual(orden2.getIdOrden(), cmd2));
 
-        assertTrue(ex.getMessage().contains("ya fue utilizado"));
+        assertTrue(ex.getMessage().contains("El abono ya fue aplicado a otra orden pagada."));
 
-        // Orden 2 debe permanecer PENDIENTE
-        Orden orden2Actual = orderRepository.buscarPorId(orden2.getIdOrden()).orElseThrow();
-        assertEquals(EstadoOrden.PENDIENTE, orden2Actual.getEstadoOrden());
+        verificarAusenciaDeEfectosPosteriores(orden2.getIdOrden(), testUserId, antes);
+
+        // Comprobar que la orden 1 previa permanece intacta
+        Orden orden1Actual = orderRepository.buscarPorId(orden1.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, orden1Actual.getEstadoOrden());
+        assertEquals("BCP", orden1Actual.getBancoDestino());
+        assertEquals("19398218491028", orden1Actual.getCuentaDestino());
+        assertEquals(numOperacionComun.replaceAll("[^A-Za-z0-9]", "").toUpperCase(), orden1Actual.getNumeroOperacion());
     }
 
     @Test
@@ -467,7 +576,7 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
                 financialTransactionService.confirmarPagoManualFinanciero(orden2.getIdOrden(), cmd2));
 
-        assertTrue(ex.getMessage().contains("ya fue utilizado"), "Normalización debe detectar que es el mismo depósito reutilizado");
+        assertTrue(ex.getMessage().contains("El abono ya fue aplicado a otra orden pagada."), "Normalización debe detectar que es el mismo depósito reutilizado");
     }
 
     @Test
@@ -720,4 +829,292 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
         assertTrue(ex.getMessage().contains("pertenece a otro usuario"), "Debe bloquear acceso cross-buyer por IDOR");
     }
 
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "'BANCO SIN IDENTIFICAR', 19398218491028",
+        "BCP,",
+        "BCP, 1234",
+        "BCP, CUENTA-NO-IDENTIFICADA",
+        "BCP, 193982184910"
+    })
+    @DisplayName("Destino historico incierto bloquea la nueva aprobacion")
+    void testBancoHistoricoDesconocidoRequiereRevision(
+            String bancoHistorico, String cuentaHistorica) {
+        String operacion = "HIST" + UUID.randomUUID().toString().replace("-", "");
+
+        Orden historica = crearOrdenTest(
+                "HIST-" + UUID.randomUUID().toString().substring(0, 20),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = ?, cuenta_destino = ?, numero_operacion = ? WHERE id_orden = ?",
+                bancoHistorico, cuentaHistorica,
+                operacion, historica.getIdOrden());
+
+        Orden nueva = crearOrdenTest(
+                "NUEVA-" + UUID.randomUUID().toString().substring(0, 20),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        reset(lmsClientPort, notificationPort, billingPort, whatsAppCloudClientPort);
+        EstadoSistemaCapturado antes = capturarEstado(nueva.getIdOrden(), testUserId);
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand command =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> buyCourseUseCase.confirmarPagoManual(
+                        nueva.getIdOrden(), command));
+
+        assertTrue(error.getMessage().contains("requiere revisión administrativa"));
+
+        verificarAusenciaDeEfectosPosteriores(nueva.getIdOrden(), testUserId, antes);
+
+        Orden historicaActual = orderRepository.buscarPorId(historica.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, historicaActual.getEstadoOrden());
+        assertEquals(bancoHistorico, historicaActual.getBancoDestino());
+        assertEquals(cuentaHistorica, historicaActual.getCuentaDestino());
+        assertEquals(operacion, historicaActual.getNumeroOperacion());
+    }
+
+    @Test
+    @DisplayName("Destino diferente demostrado permite aprobar si cumple las demas reglas")
+    void testMismaOperacionDestinoDiferenteDemostradoPermiteAprobacion() {
+        String operacion = "DIFF" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+
+        // Orden historica pagada en INTERBANK
+        Orden historicaInterbank = crearOrdenTest(
+                "HIST-IBK-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = 'INTERBANK', cuenta_destino = '2003001849128', numero_operacion = ? WHERE id_orden = ?",
+                operacion, historicaInterbank.getIdOrden());
+
+        // Nueva orden a pagar en BCP con la misma operacion
+        Orden nuevaBcp = crearOrdenTest(
+                "NUEVA-BCP-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand command =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        Orden aprobada = financialTransactionService.confirmarPagoManualFinanciero(nuevaBcp.getIdOrden(), command);
+
+        assertNotNull(aprobada);
+        assertEquals(EstadoOrden.PAGADO, aprobada.getEstadoOrden());
+        assertEquals("BCP", aprobada.getBancoDestino());
+        assertEquals("19398218491028", aprobada.getCuentaDestino());
+
+        // Verificar que la historica sigue PAGADO intacta
+        assertEquals(EstadoOrden.PAGADO,
+                orderRepository.buscarPorId(historicaInterbank.getIdOrden())
+                        .orElseThrow().getEstadoOrden());
+    }
+
+    @Test
+    @DisplayName("Varios candidatos incluyendo uno incierto bloquea para revision administrativa")
+    void testVariosCandidatosConUnoInciertoBloqueaParaRevision() {
+        String operacion = "MULT" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+
+        // Candidato 1: INTERBANK (destino diferente demostrado)
+        Orden cand1 = crearOrdenTest(
+                "CAND1-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = 'INTERBANK', cuenta_destino = '2003001849128', numero_operacion = ? WHERE id_orden = ?",
+                operacion, cand1.getIdOrden());
+
+        // Candidato 2: Banco desconocido (destino incierto)
+        Orden cand2 = crearOrdenTest(
+                "CAND2-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = 'BANCO_EXTRANO', cuenta_destino = '12345', numero_operacion = ? WHERE id_orden = ?",
+                operacion, cand2.getIdOrden());
+
+        // Nueva orden a pagar en BCP
+        Orden nueva = crearOrdenTest(
+                "NUEVA-MULT-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        reset(lmsClientPort, notificationPort, billingPort, whatsAppCloudClientPort);
+        EstadoSistemaCapturado antes = capturarEstado(nueva.getIdOrden(), testUserId);
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand command =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> buyCourseUseCase.confirmarPagoManual(nueva.getIdOrden(), command));
+
+        assertTrue(error.getMessage().contains("requiere revisión administrativa"));
+
+        verificarAusenciaDeEfectosPosteriores(nueva.getIdOrden(), testUserId, antes);
+
+        // Candidatos históricos permanecen intactos
+        Orden cand1Actual = orderRepository.buscarPorId(cand1.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, cand1Actual.getEstadoOrden());
+        assertEquals("INTERBANK", cand1Actual.getBancoDestino());
+        assertEquals("2003001849128", cand1Actual.getCuentaDestino());
+
+        Orden cand2Actual = orderRepository.buscarPorId(cand2.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, cand2Actual.getEstadoOrden());
+        assertEquals("BANCO_EXTRANO", cand2Actual.getBancoDestino());
+        assertEquals("12345", cand2Actual.getCuentaDestino());
+    }
+
+    @Test
+    @DisplayName("Colision historica entre varias ordenes pagadas bloquea y rechaza aprobacion")
+    void testColisionHistoricaVariasOrdenesPagadasRechaza() {
+        String operacion = "COLIS" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+
+        // Dos ordenes historicas pagadas que convergen al mismo destino BCP
+        Orden hist1 = crearOrdenTest(
+                "COL1-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = 'BCP', cuenta_destino = '19398218491028', numero_operacion = ? WHERE id_orden = ?",
+                operacion, hist1.getIdOrden());
+
+        Orden hist2 = crearOrdenTest(
+                "COL2-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PAGADO);
+        jdbcTemplate.update(
+                "UPDATE ordenes SET banco_destino = 'BANCO DE CREDITO', cuenta_destino = '00219300982184910218', numero_operacion = ? WHERE id_orden = ?",
+                operacion, hist2.getIdOrden());
+
+        // Nueva orden
+        Orden nueva = crearOrdenTest(
+                "NUEVA-COL-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        reset(lmsClientPort, notificationPort, billingPort, whatsAppCloudClientPort);
+        EstadoSistemaCapturado antes = capturarEstado(nueva.getIdOrden(), testUserId);
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand command =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        IllegalStateException error = assertThrows(
+                IllegalStateException.class,
+                () -> buyCourseUseCase.confirmarPagoManual(nueva.getIdOrden(), command));
+
+        assertTrue(error.getMessage().contains("Conflicto por colisión de abono histórico"));
+        assertTrue(error.getMessage().contains("requiere revisión administrativa"));
+
+        verificarAusenciaDeEfectosPosteriores(nueva.getIdOrden(), testUserId, antes);
+
+        // Históricos permanecen intactos
+        Orden hist1Actual = orderRepository.buscarPorId(hist1.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, hist1Actual.getEstadoOrden());
+        assertEquals("BCP", hist1Actual.getBancoDestino());
+        assertEquals("19398218491028", hist1Actual.getCuentaDestino());
+
+        Orden hist2Actual = orderRepository.buscarPorId(hist2.getIdOrden()).orElseThrow();
+        assertEquals(EstadoOrden.PAGADO, hist2Actual.getEstadoOrden());
+        assertEquals("BANCO DE CREDITO", hist2Actual.getBancoDestino());
+        assertEquals("00219300982184910218", hist2Actual.getCuentaDestino());
+    }
+
+    @Test
+    @DisplayName("Dos aprobaciones concurrentes del mismo abono no permiten que ambas paguen ordenes distintas")
+    void testDosAprobacionesConcurrentesMismoAbonoNoPermitenDoblePago() throws Exception {
+        String operacion = "CONC" + UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+
+        Orden ordenA = crearOrdenTest(
+                "CONC-A-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        Orden ordenB = crearOrdenTest(
+                "CONC-B-" + UUID.randomUUID().toString().substring(0, 15),
+                new BigDecimal("899.00"), "USD",
+                "TRANSFERENCIA", EstadoOrden.PENDIENTE);
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand cmdA =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        BuyCourseUseCase.ConfirmarPagoManualCommand cmdB =
+                new BuyCourseUseCase.ConfirmarPagoManualCommand(
+                        operacion, "BCP", "193-98218491-0-28",
+                        new BigDecimal("899.00"), "USD",
+                        OffsetDateTime.now().minusHours(1),
+                        "TRANSFERENCIA", null, null, "admin");
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        AtomicInteger exitos = new AtomicInteger(0);
+        AtomicInteger rechazos = new AtomicInteger(0);
+
+        Future<?> fA = executor.submit(() -> {
+            try {
+                barrier.await(5, TimeUnit.SECONDS);
+                financialTransactionService.confirmarPagoManualFinanciero(ordenA.getIdOrden(), cmdA);
+                exitos.incrementAndGet();
+            } catch (IllegalStateException e) {
+                rechazos.incrementAndGet();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        Future<?> fB = executor.submit(() -> {
+            try {
+                barrier.await(5, TimeUnit.SECONDS);
+                financialTransactionService.confirmarPagoManualFinanciero(ordenB.getIdOrden(), cmdB);
+                exitos.incrementAndGet();
+            } catch (IllegalStateException e) {
+                rechazos.incrementAndGet();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        fA.get(15, TimeUnit.SECONDS);
+        fB.get(15, TimeUnit.SECONDS);
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+
+        assertEquals(1, exitos.get(), "Exactamente una aprobacion debe tener exito");
+        assertEquals(1, rechazos.get(), "La segunda aprobacion concurrente debe ser rechazada");
+
+        Orden estadoA = orderRepository.buscarPorId(ordenA.getIdOrden()).orElseThrow();
+        Orden estadoB = orderRepository.buscarPorId(ordenB.getIdOrden()).orElseThrow();
+
+        // Exactamente una debe estar PAGADO y la otra PENDIENTE
+        boolean aPagado = estadoA.getEstadoOrden() == EstadoOrden.PAGADO;
+        boolean bPagado = estadoB.getEstadoOrden() == EstadoOrden.PAGADO;
+        assertTrue(aPagado ^ bPagado, "Solo una de las dos ordenes debe haber quedado en PAGADO");
+    }
 }
