@@ -4,5 +4,6 @@ public enum EstadoOrden {
     PENDIENTE,
     PAGADO,
     FALLIDO,
-    REEMBOLSADO
+    REEMBOLSADO,
+    CANCELADO
 }

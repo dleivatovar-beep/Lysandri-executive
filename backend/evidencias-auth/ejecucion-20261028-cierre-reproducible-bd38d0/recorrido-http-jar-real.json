@@ -1,0 +1,317 @@
+{
+  "identificadorEjecucion": "run-20261028-230754-bd38d0",
+  "fechaEjecucion": "2026-10-28T23:08:15.386384",
+  "artefactoProbado": "F:\\Lysandri-executive\\backend\\target\\lysandri-backend-1.0.0-SNAPSHOT.jar",
+  "sha256": "EC383C21D1A632412CB3C3F9B3C83B44634B36211081AEBFCA64D274D9FDE743",
+  "entorno": {
+    "disposableContainer": "lysandri-pg-bd38d0",
+    "disposableDatabase": "127.0.0.1:15445/lysandri_disposable_jar_db",
+    "disposableDatabaseUser": "lysandri_test_runner",
+    "mockSmtpPort": 1025,
+    "mockWhatsAppPort": 19099,
+    "backendHttpPort": 18099
+  },
+  "totalPasos": 33,
+  "pasosAprobados": 26,
+  "pasosFallidos": 1,
+  "pasosNoEjecutados": 6,
+  "resultadosDetallados": [
+    {
+      "paso": 1,
+      "nombre": "Inicio de sesión exitoso de Administrador",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 200 y token JWT emitido por el servidor"
+    },
+    {
+      "paso": 2,
+      "nombre": "Rechazo de contraseña incorrecta con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 3,
+      "nombre": "Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración)",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 4,
+      "nombre": "Creación de orden checkout para invitado",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden checkout creada con Session ID: izisess_mock_1a5d1c800b5148b4bb22af22df504199"
+    },
+    {
+      "paso": 5,
+      "nombre": "Confirmación de pago de orden y disparo de outbox de activación",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Pago confirmado. Evento de activación encolado en outbox."
+    },
+    {
+      "paso": 6,
+      "nombre": "Recepción de correo de activación en Mock SMTP",
+      "tipo": "MAIL",
+      "esperado": "EMAIL_RECIBIDO",
+      "obtenido": "EMAIL_RECIBIDO",
+      "resultado": "APROBADO",
+      "detalles": "Correo capturado por el outbox worker sin tocar servicios externos"
+    },
+    {
+      "paso": 7,
+      "nombre": "Rechazo de login para cuenta pendiente de activación con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 8,
+      "nombre": "Activación de cuenta con token válido y establecimiento de contraseña",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Cuenta activada y token de sesión retornado"
+    },
+    {
+      "paso": 9,
+      "nombre": "Rechazo de token de activación ya consumido (anti-reuso)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 409 Conflict ante intento de reusar token consumido"
+    },
+    {
+      "paso": 10,
+      "nombre": "Rechazo de token manipulado / alterado",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos"
+    },
+    {
+      "paso": 11,
+      "nombre": "Rechazo del hash de BD presentado directamente como token",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "El hash almacenado no puede utilizarse como sustituto del token en claro"
+    },
+    {
+      "paso": 12,
+      "nombre": "Inicio de sesión exitoso de Usuario 1 activado",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Sesión iniciada correctamente con la nueva contraseña"
+    },
+    {
+      "paso": 13,
+      "nombre": "Registro de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "APROBADO",
+      "detalles": "Usuario 2 registrado exitosamente"
+    },
+    {
+      "paso": 14,
+      "nombre": "Administrador desactiva cuenta de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Usuario 2 marcado como inactivo/desactivado por la administración"
+    },
+    {
+      "paso": 15,
+      "nombre": "Rechazo de login para cuenta desactivada con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 16,
+      "nombre": "Rechazo de petición no autenticada a ruta protegida",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Ruta protegida rechaza peticiones sin cabecera Authorization"
+    },
+    {
+      "paso": 17,
+      "nombre": "Rechazo de JWT manipulado / firma inválida",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Filtro de seguridad rechaza JWT con firma alterada"
+    },
+    {
+      "paso": 18,
+      "nombre": "Rechazo de JWT firmado con clave distinta",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "El servidor rechaza tokens firmados con llaves no autorizadas"
+    },
+    {
+      "paso": 19,
+      "nombre": "Usuario común bloqueado de endpoints administrativos (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios"
+    },
+    {
+      "paso": 20,
+      "nombre": "Administrador autorizado accede a endpoints administrativos (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Se listaron 5 usuarios correctamente"
+    },
+    {
+      "paso": 21,
+      "nombre": "Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Acceso concedido al propietario de la cuenta"
+    },
+    {
+      "paso": 22,
+      "nombre": "Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Lectura cruzada entre usuarios bloqueada por control de autorización"
+    },
+    {
+      "paso": 23,
+      "nombre": "Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Modificación no autorizada rechazada con AccessDeniedException"
+    },
+    {
+      "paso": 24,
+      "nombre": "Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó",
+      "tipo": "DB",
+      "esperado": "Segundo",
+      "obtenido": "Segundo",
+      "resultado": "APROBADO",
+      "detalles": "El nombre en BD permanece intacto: 'Segundo'"
+    },
+    {
+      "paso": 25,
+      "nombre": "Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado",
+      "tipo": "DB",
+      "esperado": "ENVIADO|t",
+      "obtenido": "ENVIADO|t",
+      "resultado": "APROBADO",
+      "detalles": "Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)"
+    },
+    {
+      "paso": 26,
+      "nombre": "WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR"
+    },
+    {
+      "paso": 27,
+      "nombre": "WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "FALLIDO",
+      "detalles": "Mensaje creado con ID 1, estado RESULTADO_INCIERTO, contactó al proveedor simulado"
+    },
+    {
+      "paso": 28,
+      "nombre": "WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 29,
+      "nombre": "WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 30,
+      "nombre": "WhatsApp Reinicio Real: Recuperación a RESULTADO_INCIERTO tras muerte del proceso JVM",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 31,
+      "nombre": "WhatsApp Reinicio Real: Solicitud en RESULTADO_INCIERTO rechaza nuevo despacho a la red",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 32,
+      "nombre": "WhatsApp Reinicio Real: Webhook autenticado concilia solicitud recuperada",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 33,
+      "nombre": "WhatsApp Reinicio Real: Estado final ENTREGADO y llamadas totales al proveedor igual a 1",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,7 +38,8 @@ public class SolicitudInformacionController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista todas las solicitudes corporativas")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lista todas las solicitudes corporativas (solo administradores)")
     public ResponseEntity<List<SolicitudInformacion>> listarSolicitudes(
             @RequestParam(required = false) String estado
     ) {
@@ -51,13 +53,15 @@ public class SolicitudInformacionController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Obtiene una solicitud de información por ID")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Obtiene una solicitud de información por ID (solo administradores)")
     public ResponseEntity<SolicitudInformacion> obtenerPorId(@PathVariable Long id) {
         return ResponseEntity.ok(solicitudUseCase.obtenerPorId(id));
     }
 
     @PatchMapping("/{id}/estado")
-    @Operation(summary = "Actualiza el estado de una solicitud (PENDIENTE, CONTACTADA, CERRADA)")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Actualiza el estado de una solicitud (solo administradores)")
     public ResponseEntity<SolicitudInformacion> actualizarEstado(
             @PathVariable Long id,
             @RequestParam String estado
@@ -66,7 +70,8 @@ public class SolicitudInformacionController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Elimina una solicitud de información")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Elimina una solicitud de información (solo administradores)")
     public ResponseEntity<Void> eliminarSolicitud(@PathVariable Long id) {
         solicitudUseCase.eliminarSolicitud(id);
         return ResponseEntity.noContent().build();

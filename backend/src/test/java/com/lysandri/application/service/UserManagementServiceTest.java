@@ -2,6 +2,8 @@ package com.lysandri.application.service;
 
 import com.lysandri.domain.model.RolUsuario;
 import com.lysandri.domain.model.Usuario;
+import com.lysandri.domain.model.UsuarioCambioAudit;
+import com.lysandri.domain.ports.out.UserAuditRepositoryPort;
 import com.lysandri.domain.ports.out.UserRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +28,13 @@ class UserManagementServiceTest {
     private UserRepositoryPort userRepositoryPort;
 
     @Mock
+    private UserAuditRepositoryPort userAuditRepositoryPort;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private com.lysandri.domain.ports.out.UserActivationPort userActivationPort;
 
     @InjectMocks
     private UserManagementService userManagementService;
@@ -83,6 +91,28 @@ class UserManagementServiceTest {
     }
 
     @Test
+    void crearUsuario_telefonoDuplicado_lanzaExcepcion() {
+        Usuario usuarioConTel = Usuario.builder()
+                .idUser(2L)
+                .email("otro@lysandri.com")
+                .telefono("+51 987 654 321")
+                .build();
+
+        Usuario nuevo = Usuario.builder()
+                .nombres("Pedro")
+                .apellidos("Gomez")
+                .email("pedro@lysandri.com")
+                .telefono("987654321")
+                .build();
+
+        when(userRepositoryPort.existePorEmail("pedro@lysandri.com")).thenReturn(false);
+        when(userRepositoryPort.listarTodos()).thenReturn(List.of(usuarioConTel));
+
+        assertThrows(IllegalStateException.class, () -> userManagementService.crearUsuario(nuevo));
+        verify(userRepositoryPort, never()).guardar(any(Usuario.class));
+    }
+
+    @Test
     void listarUsuarios_todos() {
         when(userRepositoryPort.listarTodos()).thenReturn(List.of(usuarioMock));
 
@@ -117,6 +147,60 @@ class UserManagementServiceTest {
 
         assertNotNull(actualizado);
         verify(userRepositoryPort, times(1)).guardar(any(Usuario.class));
+    }
+
+        @Test
+        void actualizarRol_persisteCambioYRegistraAuditoria() {
+        when(userRepositoryPort.buscarPorId(1L)).thenReturn(Optional.of(usuarioMock));
+        when(userRepositoryPort.guardar(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario actualizado = userManagementService.actualizarRol(
+            1L, RolUsuario.TRABAJADOR, "Alta autorizada", "admin@lysandri.com");
+
+        assertEquals(RolUsuario.TRABAJADOR, actualizado.getRol());
+        verify(userAuditRepositoryPort).registrar(argThat(audit ->
+            audit.getIdUsuario().equals(1L)
+                && audit.getRolAnterior() == RolUsuario.ESTUDIANTE
+                && audit.getRolNuevo() == RolUsuario.TRABAJADOR
+                && audit.getEjecutadoPor().equals("admin@lysandri.com")));
+        }
+
+        @Test
+        void desactivarUsuario_persisteEstadoYRegistraAuditoria() {
+        when(userRepositoryPort.buscarPorId(1L)).thenReturn(Optional.of(usuarioMock));
+        when(userRepositoryPort.guardar(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario actualizado = userManagementService.desactivarUsuario(
+            1L, "Baja laboral", "admin@lysandri.com");
+
+        assertFalse(actualizado.isActivo());
+        assertTrue(actualizado.isBloqueadoAdmin());
+        assertFalse(actualizado.isPendienteActivacion());
+        verify(userActivationPort).revocarTokensUsuario(1L);
+        verify(userAuditRepositoryPort).registrar(argThat(audit ->
+            audit.getIdUsuario().equals(1L)
+                && audit.getAccion().equals("CUENTA_DESACTIVADA")
+                && audit.getEjecutadoPor().equals("admin@lysandri.com")));
+        }
+
+    @Test
+    void desactivarUsuario_cuentaInactivaPendiente_bloqueaAdminYRevocaTokens() {
+        Usuario inactivo = Usuario.builder()
+                .idUser(2L)
+                .email("guest@lysandri.com")
+                .activo(false)
+                .bloqueadoAdmin(false)
+                .pendienteActivacion(true)
+                .build();
+        when(userRepositoryPort.buscarPorId(2L)).thenReturn(Optional.of(inactivo));
+        when(userRepositoryPort.guardar(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario actualizado = userManagementService.desactivarUsuario(2L, "Bloqueo preventivo", "admin@lysandri.com");
+
+        assertFalse(actualizado.isActivo());
+        assertTrue(actualizado.isBloqueadoAdmin());
+        assertFalse(actualizado.isPendienteActivacion());
+        verify(userActivationPort).revocarTokensUsuario(2L);
     }
 
     @Test

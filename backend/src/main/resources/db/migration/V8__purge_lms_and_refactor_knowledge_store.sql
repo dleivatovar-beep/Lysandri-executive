@@ -1,16 +1,18 @@
 CREATE EXTENSION IF NOT EXISTS "vector";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-DROP TABLE IF EXISTS PROGRESO_LECCION CASCADE;
-DROP TABLE IF EXISTS ACTIVIDAD_BLOQUE CASCADE;
-DROP TABLE IF EXISTS LECCION CASCADE;
-DROP TABLE IF EXISTS MODULO CASCADE;
-DROP TABLE IF EXISTS BLOQUE CASCADE;
-DROP TABLE IF EXISTS INSCRIPCIONES CASCADE;
-DROP TABLE IF EXISTS SUSCRIPCIONES CASCADE;
-DROP TABLE IF EXISTS INSTRUCTOR CASCADE;
-DROP TABLE IF EXISTS CHAT_MENSAJES CASCADE;
-DROP TABLE IF EXISTS documento_chunks CASCADE;
+-- V7 upgrades retain the legacy academic tables and their foreign keys.
+-- The modern chat view uses a separate name from the historical message table.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+               WHERE n.nspname='public' AND c.relname='chat_mensajes' AND c.relkind='r') THEN
+        IF to_regclass('public.chat_mensajes_legacy') IS NOT NULL THEN
+            RAISE EXCEPTION 'Historical chat destination already exists; reconcile before migrating';
+        END IF;
+        ALTER TABLE public.chat_mensajes RENAME TO chat_mensajes_legacy;
+    END IF;
+END $$;
 
 -- 2. Migrar o Crear tabla USUARIO
 CREATE TABLE IF NOT EXISTS USUARIO (
@@ -21,7 +23,7 @@ CREATE TABLE IF NOT EXISTS USUARIO (
     email VARCHAR(150) NOT NULL UNIQUE,
     passw VARCHAR(255) NOT NULL,
     telefono VARCHAR(25),
-    rol VARCHAR(20) NOT NULL DEFAULT 'CLIENTE' CHECK (rol IN ('CLIENTE', 'ADMIN')),
+    rol VARCHAR(20) NOT NULL DEFAULT 'CLIENTE' CHECK (rol IN ('CLIENTE', 'ESTUDIANTE', 'INSTRUCTOR', 'ADMIN')),
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -36,12 +38,13 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'usuarios') THEN
         INSERT INTO USUARIO (id_user, nombres, apellidos, email, passw, telefono, rol, activo, fecha_creacion)
         SELECT id_user, nombres, apellidos, email, passw, telefono, 
-               CASE WHEN rol = 'ADMIN' THEN 'ADMIN' ELSE 'CLIENTE' END, 
+               rol, 
                TRUE, CURRENT_TIMESTAMP
         FROM USUARIOS
         ON CONFLICT (email) DO NOTHING;
         
-        DROP TABLE USUARIOS CASCADE;
+        -- Keep USUARIOS as the historical identity referenced by academic records.
+        PERFORM setval(pg_get_serial_sequence('usuario', 'id_user'), coalesce(max(id_user), 1)) FROM usuario;
     END IF;
 END $$;
 
@@ -99,10 +102,9 @@ CREATE INDEX IF NOT EXISTS idx_programa_moodle_course ON PROGRAMA(moodle_course_
 CREATE INDEX IF NOT EXISTS idx_programa_slug ON PROGRAMA(slug);
 
 -- 4. Recrear o adaptar ORDENES y DETALLE_ORDENES
-DROP TABLE IF EXISTS DETALLE_ORDENES CASCADE;
-DROP TABLE IF EXISTS ORDENES CASCADE;
-
-CREATE TABLE ORDENES (
+-- Importante: no se eliminan las órdenes ni el detalle de compra existentes durante la migración.
+-- Si la tabla ya existía con información, se adapta en lugar de recrearse.
+CREATE TABLE IF NOT EXISTS ORDENES (
     id_orden BIGSERIAL PRIMARY KEY,
     id_user BIGINT NOT NULL REFERENCES USUARIO(id_user) ON DELETE RESTRICT,
     codigo_orden VARCHAR(36) NOT NULL UNIQUE,
@@ -120,7 +122,7 @@ CREATE TABLE ORDENES (
 CREATE INDEX IF NOT EXISTS idx_ordenes_user ON ORDENES(id_user);
 CREATE INDEX IF NOT EXISTS idx_ordenes_stripe_session ON ORDENES(stripe_session_id);
 
-CREATE TABLE DETALLE_ORDENES (
+CREATE TABLE IF NOT EXISTS DETALLE_ORDENES (
     id_detalle BIGSERIAL PRIMARY KEY,
     id_orden BIGINT NOT NULL REFERENCES ORDENES(id_orden) ON DELETE CASCADE,
     id_programa BIGINT NOT NULL REFERENCES PROGRAMA(id_programa) ON DELETE RESTRICT,

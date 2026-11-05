@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "DETALLE_ORDENES")
@@ -19,17 +20,35 @@ public class DetalleOrdenEntity {
     @Column(name = "id_detalle")
     private Long idDetalle;
 
-    @Column(name = "id_orden", nullable = false)
-    private Long idOrden;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_orden", insertable = false, updatable = false)
+    @JoinColumn(name = "id_orden", nullable = false)
     private OrdenEntity orden;
 
     @Column(name = "id_programa", nullable = false)
     private Long idPrograma;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @Column(name = "moodle_course_id")
+    private Long moodleCourseId;
+
+    @Column(name = "origen_moodle_course_id", length = 50)
+    private String origenMoodleCourseId;
+
+    @Column(name = "moodle_resolucion_autorizada_por", length = 100)
+    private String moodleResolucionAutorizadaPor;
+
+    @Column(name = "moodle_resolucion_fecha")
+    private OffsetDateTime moodleResolucionFecha;
+
+    @Column(name = "moodle_resolucion_motivo", columnDefinition = "TEXT")
+    private String moodleResolucionMotivo;
+
+    @Column(name = "moodle_resolucion_evidencia", columnDefinition = "TEXT")
+    private String moodleResolucionEvidencia;
+
+    @Column(name = "moodle_resolucion_curso_anterior")
+    private Long moodleResolucionCursoAnterior;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_programa", insertable = false, updatable = false)
     private ProgramaEntity programa;
 
@@ -46,4 +65,8 @@ public class DetalleOrdenEntity {
     @Column(name = "moodle_matriculado", nullable = false)
     @Builder.Default
     private boolean moodleMatriculado = false;
+
+    public Long getIdOrden() {
+        return orden != null ? orden.getIdOrden() : null;
+    }
 }

@@ -7,6 +7,7 @@ import com.lysandri.domain.model.EstadoComprobante;
 import com.lysandri.domain.model.Orden;
 import com.lysandri.domain.model.TipoComprobante;
 import com.lysandri.domain.ports.out.BillingPort;
+import com.lysandri.domain.ports.out.CorrelativoComprobantePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import java.util.Optional;
 public class BillingServiceAdapter implements BillingPort {
 
     private final SpringDataComprobantePagoRepository repository;
+    private final CorrelativoComprobantePort correlativoPort;
     private static final BigDecimal DIVISOR_IGV = new BigDecimal("1.18");
 
     @Override
@@ -48,7 +50,7 @@ public class BillingServiceAdapter implements BillingPort {
         String serie = (tipo == TipoComprobante.FACTURA) ? "F001" : "B001";
 
         // 2. Generar correlativo secuencial único
-        int siguienteCorrelativo = repository.findMaxCorrelativoBySerie(serie) + 1;
+        int siguienteCorrelativo = correlativoPort.reservarSiguiente(serie);
 
         // 3. Determinar documento de identidad y razón social / nombre
         String docCliente = orden.getNumeroDocumentoCliente();
@@ -89,7 +91,7 @@ public class BillingServiceAdapter implements BillingPort {
         String rawDataToHash = String.format("20609812451|%s|%s|%08d|%s|%s|%s",
                 tipoDoc, serie, siguienteCorrelativo, montoIgv, montoTotal, docCliente, LocalDateTime.now());
         String codigoHash = generarHashSha256(rawDataToHash);
-        String medioPago = orden.getMetodoPago() != null ? orden.getMetodoPago() : "STRIPE_CHECKOUT";
+        String medioPago = orden.getMetodoPago() != null ? orden.getMetodoPago() : "IZIPAY_ONLINE";
 
         String pdfUrl = String.format("https://lysandri.com/comprobantes/%s-%08d.pdf", serie, siguienteCorrelativo);
 
@@ -114,7 +116,16 @@ public class BillingServiceAdapter implements BillingPort {
                 .medioPago(medioPago)
                 .build();
 
-        ComprobantePagoEntity guardado = repository.save(entity);
+        ComprobantePagoEntity guardado;
+        try {
+            guardado = repository.save(entity);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.warn("Colisión de concurrencia al emitir comprobante para orden ID {}. Recuperando comprobante ya persistido: {}",
+                    orden.getIdOrden(), e.getMessage());
+            guardado = repository.findByIdOrden(orden.getIdOrden())
+                    .orElseThrow(() -> new IllegalStateException("Error al recuperar comprobante emitido concurrentemente para orden: " + orden.getIdOrden(), e));
+        }
+
         log.info("Comprobante emitido con éxito: Serie={}, Correlativo={}, Total={}, Detracción={}, Cliente={}",
                 guardado.getSerie(), guardado.getCorrelativo(), guardado.getMontoTotal(), guardado.getMontoDetraccion(), guardado.getRazonSocialONombre());
 

@@ -76,8 +76,10 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
                 .telefono(d.getTelefono())
                 .rol(d.getRol() != null ? d.getRol() : RolUsuario.CLIENTE)
                 .activo(d.isActivo())
-                .fechaCreacion(d.getFechaCreacion())
-                .fechaActualizacion(d.getFechaActualizacion())
+                .bloqueadoAdmin(d.isBloqueadoAdmin())
+                .pendienteActivacion(d.isPendienteActivacion())
+                .fechaCreacion(d.getFechaCreacion() != null ? d.getFechaCreacion() : java.time.OffsetDateTime.now())
+                .fechaActualizacion(d.getFechaActualizacion() != null ? d.getFechaActualizacion() : java.time.OffsetDateTime.now())
                 .build();
     }
 
@@ -92,6 +94,8 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
                 .telefono(e.getTelefono())
                 .rol(e.getRol())
                 .activo(e.isActivo())
+                .bloqueadoAdmin(e.isBloqueadoAdmin())
+                .pendienteActivacion(e.isPendienteActivacion())
                 .fechaCreacion(e.getFechaCreacion())
                 .fechaActualizacion(e.getFechaActualizacion())
                 .build();

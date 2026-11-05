@@ -1,0 +1,126 @@
+================================================================================
+EVIDENCIAS DE PRUEBAS FRONTEND: CIERRE DE CINCO PENDIENTES (2026-11-02)
+================================================================================
+
+--- 1. CICLO DE VIDA DE LISTENERS IZIPAY (CheckoutModal.tsx) ---
+--- TEST CICLO DE VIDA DE LISTENERS IZIPAY Y COORDINADOR ---
+PASS 1: Registro correcto de listeners y coordinador global con código ORD-IZI-LIFE-001.
+PASS 2: Desmonte invalida coordinador y llama KR.removeForms(), descartando eventos.
+PASS 3: Compras consecutivas actualizan activeOrderCode a ORD-IZI-CONSEC-002 sin fugas.
+PASS 4: Errores del SDK capturados por el coordinador y presentados claramente al usuario.
+PASS 5: Evento tardío de orden anterior descartado; orden vigente atendida con éxito.
+
+RESULTADO CICLO DE VIDA IZIPAY: 5/5 escenarios aprobados.
+Evento de pago descartado: no coincide con la orden activa actual. { esperado: 'ORD-IZI-CONSEC-002', recibido: 'ORD-IZI-CONSEC-001' }
+
+[Codigo de salida: 0]
+
+--- 2. INTERACCION UI CONTABILIDAD Y PANEL ADMINISTRADOR (AccountingView.tsx + AdminDashboard) ---
+--- TEST DE INTERACCIÓN: AccountingView y AdminDashboard ---
+PASS 1: AccountingView autenticado con PIN muestra métricas PEN y USD separadas y sección de pendientes.
+PASS 2: Cambio de período actualiza consulta y conserva histórico de períodos conocidos.
+PASS 3: Descarga SIRE rechaza "TODOS" con alerta explicativa sin llamar al backend.
+PASS 4: Anulación de comprobante utiliza idComprobante (501) sin cruzar con idOrden (101).
+PASS 5: AdminDashboard separa estrictamente PUT /usuarios/{id} (perfil) y PATCH /usuarios/{id}/rol (auditoría).
+
+RESUMEN: 5/5 pruebas de interacción frontend aprobadas.
+
+[Codigo de salida: 0]
+
+--- 3. SERVICIOS DE CONTABILIDAD Y ADMINISTRACION (accountingService.ts + adminService.ts) ---
+================================================================================
+PRUEBAS UNITARIAS: Servicios de Contabilidad, Programas y Usuarios
+================================================================================
+✅ TEST 1 APROBADO: fetchReporteVentas envía X-Audit-PIN y período YYYY-MM
+✅ TEST 2 APROBADO: fetchReporteVentas propaga errores 403 de PIN/acceso sin datos ficticios
+✅ TEST 3 APROBADO: anularComprobante usa idComprobante real y propaga motivo
+✅ TEST 4 APROBADO: anularComprobante propaga errores del servidor sin simular éxito
+✅ TEST 5 APROBADO: normalizeProgram unifica variantes de nombres y conserva precio/moneda reales
+✅ TEST 6 APROBADO: updateUser excluye rol y activo en PUT /usuarios/{id}
+✅ TEST 7 APROBADO: updateUserRole utiliza PATCH /usuarios/{id}/rol con motivo de auditoría
+✅ TEST 8 APROBADO: deactivateUser utiliza PATCH /usuarios/{id}/desactivar con motivo
+================================================================================
+RESUMEN: 8 de 8 pruebas unitarias frontend aprobadas exitosamente.
+================================================================================
+
+[Codigo de salida: 0]
+
+--- 4. COMPONENTE CHECKOUT MODAL Y GUEST SESSION (CheckoutModal.tsx) ---
+PRUEBAS DE INTERACCIÓN REAL: CheckoutModal con React Testing Library + jsdom
+PASS UI a: credencial y clave persistidas antes del POST de creación.
+PASS UI b: error de guest-session, botón recuperado y cero POST de creación.
+PASS UI c: retry tras timeout mantiene clave/token y no duplica el registro simulado.
+PASS UI d: remount recupera la orden persistida sin crear otra.
+PASS UI e: 409 visible, sin éxito ni WhatsApp, y botón reactivado.
+PASS UI f: cambio de comprador no muestra ni recupera la orden previa.
+PASS UI g: nueva compra explícita genera otra clave.
+PASS UI h: destino visible y error de carga backend mostrado.
+PASS UI i: error de red no genera éxito ni abre WhatsApp.
+PASS UI j: modo demo bloquea creación real y muestra aviso claro.
+PASS UI k: izipay formToken renderiza contenedor kr-embedded sin redirección.
+PASS UI l: respuesta incompleta (falta publicKey) bloquea renderizado y muestra aviso claro.
+PASS UI m & n: errores del SDK muestran reintento y reinicio de orden invoca KR.removeForms().
+RESULTADO UI: 14/14 escenarios aprobados (interacciones DOM reales).
+
+[Codigo de salida: 0]
+
+--- 5. IDEMPOTENCIA Y RECUPERACION DE ORDENES (storeService.ts) ---
+================================================================================
+PRUEBAS AUTOMATIZADAS FRONTEND (CÓDIGO DE PRODUCCIÓN REAL: storeService.ts)
+================================================================================
+✅ ESCENARIO 1 APROBADO: Intención persistida correctamente en sessionStorage antes de enviar
+✅ ESCENARIO 2 APROBADO: Timeout detectado honestamente y orden recuperada en el reintento
+✅ ESCENARIO 3 APROBADO: Deduplicación exacta con la misma clave y contexto autorizado
+✅ ESCENARIO 4 APROBADO: Recuperación íntegra de orden confirmada tras recarga
+✅ ESCENARIO 5 APROBADO: Conflicto 409 manejado limpiamente sin fuga de información
+✅ ESCENARIO 6 APROBADO: Ámbitos aislados y reinicio intencional de compra
+✅ ESCENARIO 7 APROBADO: Validación estricta de destinos y rechazo de combinaciones inválidas
+✅ ESCENARIO 8 APROBADO: Ningún método fabrica respuestas ficticias ante errores de red
+================================================================================
+RESUMEN: 8 de 8 escenarios aprobados exitosamente.
+CÓDIGO DE SALIDA: 0 (EXIT CODE 0)
+================================================================================
+
+[Codigo de salida: 0]
+
+--- 6. AISLAMIENTO Y SERVICIOS CLIENTE (storeService.ts) ---
+================================================================================
+PRUEBAS DE SERVICIO: storeService
+================================================================================
+✅ ESCENARIO 1 APROBADO: Adquisición y persistencia de credencial criptográfica antes de compra
+✅ ESCENARIO 2 APROBADO: Falla en sesión de invitado rechazada limpiamente sin crear órdenes huérfanas
+✅ ESCENARIO 3 APROBADO: Timeout en creación y reintento con la misma clave y contexto autorizado
+✅ ESCENARIO 4 APROBADO: Recarga y recuperación íntegra de orden confirmada sin reprocesamiento
+✅ ESCENARIO 5 APROBADO: Aislamiento criptográfico y de storage entre compradores diferentes
+✅ ESCENARIO 6 APROBADO: Manejo y despliegue transparente de conflicto 409 del backend
+✅ ESCENARIO 7 APROBADO: Nueva compra intencional limpia estado previo y genera nueva clave
+✅ ESCENARIO 8 APROBADO: Cuentas configurables cargadas y errores de validación desplegados fielmente
+✅ ESCENARIO 9 APROBADO: Ningún estado de éxito ficticio en UI ni en servicios cliente
+================================================================================
+RESUMEN SERVICIO: 9 de 9 escenarios aprobados exitosamente.
+CÓDIGO DE SALIDA: 0 (EXIT CODE 0)
+================================================================================
+
+[Codigo de salida: 0]
+
+--- 7. TRANSFERENCIAS MANUALES Y ROBUSTEZ ANTE ERRORES (storeService.ts) ---
+▶ Pruebas unitarias de storeService: no simular estados ni fabricar respuestas
+  ✔ obtenerCuentasBancarias y obtenerOrdenPorCodigo estan definidos (0.5335ms)
+  ✔ createCheckoutSession propaga error de red sin inventar orden ni sesion (29.7692ms)
+  ✔ confirmarPagoManual propaga error de red sin simular orden PAGADO ni matricula (0.2795ms)
+  ✔ listarOrdenes no retorna ordenes falsas cableadas ante error (0.2327ms)
+✔ Pruebas unitarias de storeService: no simular estados ni fabricar respuestas (243.0348ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247.0126
+
+[Codigo de salida: 0]
+
+================================================================================
+RESUMEN: TODAS LAS SUITES DE PRUEBAS FRONTEND FINALIZADAS CON EXITO (EXIT CODE 0)
+================================================================================

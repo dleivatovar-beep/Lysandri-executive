@@ -221,13 +221,25 @@ export const InstructorStudents:
             <LoaderCircle className="h-7 w-7 animate-spin text-cyan-500" />
           </div>
         ) : programs.length === 0 ? (
-          <EmptyState
-            icon={
-              <BookOpen className="h-8 w-8" />
-            }
-            title="No tienes programas asignados"
-            description="Cuando te asignen un programa, podrás consultar aquí sus estudiantes."
-          />
+          <div className="rounded-2xl border border-cyan-500/30 bg-slate-900/60 p-6 text-center space-y-4 max-w-xl mx-auto">
+            <GraduationCap className="h-10 w-10 text-cyan-400 mx-auto" />
+            <h3 className="text-base font-bold text-white">Gestión Docente Moodle Oficial</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              La asignación y seguimiento de estudiantes está centralizada en el Campus Virtual Moodle.
+              La sincronización directa desde este panel está pendiente de integración con la API del LMS.
+            </p>
+            <div className="pt-2 flex flex-wrap justify-center gap-3">
+              <a
+                href="https://campus.yunixingenieros.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg hover:opacity-90 transition"
+              >
+                <span>Acceder al Campus Virtual</span>
+                <Users className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
         ) : (
           <>
             <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#0c111a] md:flex-row md:items-end md:justify-between">

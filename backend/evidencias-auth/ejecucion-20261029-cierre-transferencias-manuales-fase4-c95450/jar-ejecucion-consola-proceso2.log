@@ -1,0 +1,70 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-29T02:24:07.206-05:00  INFO 7328 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 7328 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-29T02:24:07.211-05:00  INFO 7328 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-29T02:24:08.991-05:00  INFO 7328 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T02:24:09.373-05:00  INFO 7328 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 367 ms. Found 14 JPA repository interfaces.
+2026-10-29T02:24:10.700-05:00  INFO 7328 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-29T02:24:10.718-05:00  INFO 7328 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-29T02:24:10.718-05:00  INFO 7328 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-29T02:24:10.773-05:00  INFO 7328 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-29T02:24:10.775-05:00  INFO 7328 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3456 ms
+2026-10-29T02:24:11.337-05:00  INFO 7328 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-29T02:24:11.338-05:00  INFO 7328 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-29T02:24:11.338-05:00  INFO 7328 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-29T02:24:11.424-05:00  INFO 7328 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-29T02:24:11.441-05:00  WARN 7328 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-29T02:24:11.519-05:00  INFO 7328 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 34 migrations (execution time 00:00.060s)
+2026-10-29T02:24:11.574-05:00  INFO 7328 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 33
+2026-10-29T02:24:11.579-05:00  INFO 7328 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-29T02:24:11.727-05:00  INFO 7328 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T02:24:11.818-05:00  INFO 7328 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-29T02:24:11.871-05:00  INFO 7328 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T02:24:12.173-05:00  INFO 7328 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T02:24:12.204-05:00  INFO 7328 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T02:24:12.241-05:00  INFO 7328 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1a77eb6
+2026-10-29T02:24:12.243-05:00  INFO 7328 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T02:24:14.020-05:00  INFO 7328 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T02:24:14.086-05:00  INFO 7328 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T02:24:14.542-05:00  INFO 7328 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-29T02:24:15.888-05:00  INFO 7328 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-29T02:24:16.925-05:00  INFO 7328 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-29T02:24:16.929-05:00  INFO 7328 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-29T02:24:17.163-05:00  INFO 7328 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-29T02:24:17.446-05:00  WARN 7328 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T02:24:17.805-05:00  INFO 7328 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@2033326a, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7c8fe8cd, org.springframework.security.web.context.SecurityContextHolderFilter@1d55df3a, org.springframework.security.web.header.HeaderWriterFilter@27eda07, org.springframework.web.filter.CorsFilter@3402f41a, org.springframework.security.web.authentication.logout.LogoutFilter@9c125f4, com.lysandri.security.JwtAuthenticationFilter@5cb2a1ea, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@5cb88b6b, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6dfbd571, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@580d7c1f, org.springframework.security.web.session.SessionManagementFilter@7ec287d, org.springframework.security.web.access.ExceptionTranslationFilter@6432ce09, org.springframework.security.web.access.intercept.AuthorizationFilter@5e50461f]
+2026-10-29T02:24:18.335-05:00  INFO 7328 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-29T02:24:18.354-05:00  INFO 7328 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 11.847 seconds (process running for 12.636)
+2026-10-29T02:24:18.462-05:00  WARN 7328 --- [           main] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Recuperación tras reinicio: 1 mensajes en estado EN_PROCESO_ENVIO fueron marcados conservadoramente como RESULTADO_INCIERTO
+2026-10-29T02:24:19.829-05:00  INFO 7328 --- [io-18099-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-29T02:24:19.830-05:00  INFO 7328 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-29T02:24:19.832-05:00  INFO 7328 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-10-29T02:24:20.746-05:00  INFO 7328 --- [io-18099-exec-2] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-restart-1793258645 ya finalizada o incierta (estado: RESULTADO_INCIERTO). No autoriza despacho redundante.
+2026-10-29T02:24:20.768-05:00  INFO 7328 --- [io-18099-exec-2] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-restart-1793258645 no autorizada para nuevo despacho de red (estado: RESULTADO_INCIERTO). Retornando estado actual.
+2026-10-29T02:24:20.879-05:00  INFO 7328 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Estado de mensaje WhatsApp conciliado exitosamente [id: 4, previo: RESULTADO_INCIERTO, nuevo: ENTREGADO]
+2026-10-29T02:24:21.097-05:00  INFO 7328 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:24:21.194-05:00  INFO 7328 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Orden 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T02:24:21.413-05:00  INFO 7328 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:24:21.448-05:00  INFO 7328 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-c95450. Recuperando orden existente 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff
+2026-10-29T02:24:21.668-05:00  INFO 7328 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T02:24:21.695-05:00  INFO 7328 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-c95450. Recuperando orden existente 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff
+2026-10-29T02:24:21.696-05:00  WARN 7328 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Conflicto de idempotencia en orden 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff: Programas difieren (existente: [102], solicitado: [101])
+2026-10-29T02:24:21.700-05:00  WARN 7328 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): Conflicto de idempotencia: La clave ya existe pero con una selección de programas diferente
+2026-10-29T02:24:21.719-05:00  INFO 7328 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:24:21.736-05:00  INFO 7328 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-c95450. Recuperando orden existente 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff
+2026-10-29T02:24:21.736-05:00  WARN 7328 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR: El usuario 4 intentó acceder a la orden 62fbc0ab-ac3a-48aa-94ff-4ac4d449f1ff creada por otro usuario
+2026-10-29T02:24:21.737-05:00  WARN 7328 --- [io-18099-exec-8] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: la clave de compra pertenece a otro usuario
+2026-10-29T02:24:21.761-05:00  INFO 7328 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:24:21.773-05:00  WARN 7328 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Rechazo de compra: Método de pago no admitido: BITCOIN
+2026-10-29T02:24:21.774-05:00  WARN 7328 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Método de pago no admitido: BITCOIN. Los métodos admitidos son: IZIPAY, STRIPE, TRANSFERENCIA, YAPE, PLIN.
+2026-10-29T02:24:21.802-05:00  INFO 7328 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 2 por usuario: danny@lysandri.invalid
+2026-10-29T02:24:21.803-05:00  INFO 7328 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 2
+2026-10-29T02:24:21.803-05:00  INFO 7328 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 2
+2026-10-29T02:24:21.836-05:00  WARN 7328 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La fecha del abono no puede ser futura

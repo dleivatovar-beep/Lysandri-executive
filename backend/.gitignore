@@ -12,6 +12,7 @@ target/
 
 # Logs
 *.log
+!evidencias-auth/**/*.log
 
 # IDE & Editor files
 .idea/
@@ -20,3 +21,5 @@ target/
 .settings/
 .project
 .classpath
+fase3c-verify.log
+.env*

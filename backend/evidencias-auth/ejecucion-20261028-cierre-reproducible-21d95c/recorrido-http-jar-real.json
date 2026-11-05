@@ -1,0 +1,281 @@
+{
+  "identificadorEjecucion": "run-20261028-213650-21d95c",
+  "fechaEjecucion": "2026-10-28T21:37:24.221450",
+  "artefactoProbado": "F:\\Lysandri-executive\\backend\\target\\lysandri-backend-1.0.0-SNAPSHOT.jar",
+  "sha256": "62533BEC0AA066E75F280ED029CDEB65249A643B6E33B08726718159B1502EC0",
+  "entorno": {
+    "disposableContainer": "lysandri-pg-21d95c",
+    "disposableDatabase": "127.0.0.1:15445/lysandri_disposable_jar_db",
+    "disposableDatabaseUser": "lysandri_test_runner",
+    "mockSmtpPort": 1025,
+    "mockWhatsAppPort": 19099,
+    "backendHttpPort": 18099
+  },
+  "totalPasos": 29,
+  "pasosAprobados": 3,
+  "pasosFallidos": 1,
+  "pasosNoEjecutados": 25,
+  "resultadosDetallados": [
+    {
+      "paso": 1,
+      "nombre": "Inicio de sesión exitoso de Administrador",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 200 y token JWT emitido por el servidor"
+    },
+    {
+      "paso": 2,
+      "nombre": "Rechazo de contraseña incorrecta con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 3,
+      "nombre": "Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración)",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 4,
+      "nombre": "Creación de orden checkout para invitado",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "400",
+      "resultado": "FALLIDO",
+      "detalles": "Orden checkout creada con Session ID: None"
+    },
+    {
+      "paso": 5,
+      "nombre": "Confirmación de pago de orden y disparo de outbox de activación",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 6,
+      "nombre": "Recepción de correo de activación en Mock SMTP",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 7,
+      "nombre": "Rechazo de login para cuenta pendiente de activación con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 8,
+      "nombre": "Activación de cuenta con token válido y establecimiento de contraseña",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 9,
+      "nombre": "Rechazo de token de activación ya consumido (anti-reuso)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 10,
+      "nombre": "Rechazo de token manipulado / alterado",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 11,
+      "nombre": "Rechazo del hash de BD presentado directamente como token",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 12,
+      "nombre": "Inicio de sesión exitoso de Usuario 1 activado",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 13,
+      "nombre": "Registro de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 14,
+      "nombre": "Administrador desactiva cuenta de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 15,
+      "nombre": "Rechazo de login para cuenta desactivada con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 16,
+      "nombre": "Rechazo de petición no autenticada a ruta protegida",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 17,
+      "nombre": "Rechazo de JWT manipulado / firma inválida",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 18,
+      "nombre": "Rechazo de JWT firmado con clave distinta",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 19,
+      "nombre": "Usuario común bloqueado de endpoints administrativos (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 20,
+      "nombre": "Administrador autorizado accede a endpoints administrativos (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 21,
+      "nombre": "Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 22,
+      "nombre": "Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 23,
+      "nombre": "Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 24,
+      "nombre": "Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 25,
+      "nombre": "Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 26,
+      "nombre": "WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 27,
+      "nombre": "WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 28,
+      "nombre": "WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 29,
+      "nombre": "WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    }
+  ]
+}

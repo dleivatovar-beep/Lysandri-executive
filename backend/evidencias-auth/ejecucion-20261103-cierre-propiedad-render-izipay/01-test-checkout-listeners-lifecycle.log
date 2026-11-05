@@ -1,0 +1,56 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN FRONTEND: test-checkout-listeners-lifecycle
+================================================================================
+Comando exacto:        node.exe test-checkout-listeners-lifecycle.js
+Directorio:            F:\Lysandri-executive\frontend
+Fecha y hora inicio:   2026-11-03T07:26:57.179Z
+Fecha y hora fin:      2026-11-03T07:27:06.533Z
+Código de salida real: 0
+Descripción:           Pruebas de ciclo de vida de listeners, renderElements y propiedad global inter-instancias del SDK izipay
+================================================================================
+SALIDA COMPLETA (STDOUT):
+--------------------------------------------------------------------------------
+--- TEST CICLO DE VIDA DE LISTENERS IZIPAY, RENDERIZADO Y PROPIEDAD GLOBAL (SDK OFICIAL) ---
+PASS 1: Limpieza de A pendiente cuando se solicita B: B espera sin ejecutar operaciones incompatibles.
+PASS 2: Limpieza de A termina tarde y no borra el formulario B (formsCount queda en 1, B activo).
+PASS 3: Limpieza rechaza: error capturado, mensaje en interfaz y sin inicialización ficticia.
+PASS 4: Reintento posterior recupera limpiamente la sesión activa.
+PASS 5: Compras consecutivas rápidas: sólo la última queda activa; intermedias descartadas.
+PASS 6: El script comienza a cargar para A, A se cierra, el script termina: A no ejecuta operaciones sobre KR.
+PASS 7: El script comienza a cargar para A, B reemplaza a A antes de onload: sólo B se inicializa.
+PASS 8: Fallo del script: mensaje de error con reintento limpio que logra cargar y montar el formulario.
+PASS 9: Desmontaje con operaciones pendientes: no hay fugas ni llamadas inválidas.
+PASS 10: Errores legítimos de la sesión activa siguen mostrándose (con o sin ID).
+PASS 11: Eventos viejos de A no modifican la compra actual B (errores y submits ajenos descartados).
+PASS 12: Comprobación de submit válido de orden activa: redirige correctamente.
+PASS 13: Renderizado exitoso: confirma formulario, registra callbacks y habilita acciones.
+PASS 14: Renderizado rechazado: error visible, botón de reintento y ningún formulario ficticio mostrado.
+PASS 15: Reintento exitoso tras fallo de renderizado recupera formulario y estado listo.
+PASS 16: Caso documentado "already rendered" tratado específicamente y disponibilidad confirmada.
+PASS 17: Resolución y rechazo tardíos de renderElements de A descartados sin alterar a B.
+PASS 18: Cierre con renderElements pendiente: sin excepciones ni registros huérfanos.
+PASS 19: Propiedad global inter-instancias: limpieza retenida de A no elimina formulario ni callbacks de B.
+PASS 20: Identificadores de sesión únicos entre distintos montajes con el mismo código de orden.
+PASS 21: Limpieza pendiente de A encola a B sin interferencia y B se inicializa limpiamente.
+PASS 22: Limpieza de A cuando no existe B: recursos huérfanos eliminados y propiedad liberada.
+
+RESULTADO CICLO DE VIDA, RENDERIZADO Y PROPIEDAD GLOBAL IZIPAY: 22/22 escenarios aprobados con éxito.
+
+--------------------------------------------------------------------------------
+SALIDA COMPLETA (STDERR):
+--------------------------------------------------------------------------------
+Advertencia en limpieza coordinada de pasarela izipay: Error: Fallo simulado al eliminar formularios de pasarela izipay
+    at new SimulatedKryptonSdk (file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:159:35)
+    at file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:526:17
+Advertencia en limpieza coordinada de pasarela izipay: Error: Fallo simulado al eliminar formularios de pasarela izipay
+    at new SimulatedKryptonSdk (file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:159:35)
+    at file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:526:17
+Advertencia en limpieza coordinada de pasarela izipay: Error: Fallo simulado al eliminar formularios de pasarela izipay
+    at new SimulatedKryptonSdk (file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:159:35)
+    at file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:562:17
+Advertencia en limpieza coordinada de pasarela izipay: Error: Fallo simulado al eliminar formularios de pasarela izipay
+    at new SimulatedKryptonSdk (file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:159:35)
+    at file:///F:/Lysandri-executive/frontend/test-checkout-listeners-lifecycle.js:562:17
+Evento de pago descartado: no coincide con la orden activa actual. { esperado: 'ORD-IZI-STALE-K-002', recibido: 'ORD-IZI-STALE-K-001' }
+
+================================================================================

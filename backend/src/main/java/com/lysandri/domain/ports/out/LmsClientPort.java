@@ -1,8 +1,17 @@
 package com.lysandri.domain.ports.out;
 
+import com.lysandri.domain.model.MoodleCourseVerification;
 import java.util.Optional;
 
 public interface LmsClientPort {
+
+    /**
+     * Verifica la existencia y metadatos de un curso en Moodle LMS mediante core_course_get_courses_by_field.
+     *
+     * @param moodleCourseId ID numérico del curso en Moodle.
+     * @return Objeto MoodleCourseVerification con el estado (VERIFICADO, NO_ENCONTRADO, NO_DISPONIBLE, SIN_VINCULACION).
+     */
+    MoodleCourseVerification verificarCurso(Long moodleCourseId);
 
     /**
      * Busca un usuario en Moodle por su correo electrónico.
@@ -24,4 +33,14 @@ public interface LmsClientPort {
      * @param roleId ID de rol en Moodle (5 = Student por defecto).
      */
     void matricularUsuarioEnCurso(Long moodleUserId, Long moodleCourseId, int roleId);
+
+    /**
+     * Consulta si un usuario ya se encuentra matriculado en un curso de Moodle.
+     * Permite validar idempotencia y recuperar operaciones con resultado desconocido.
+     *
+     * @param moodleUserId ID del usuario en Moodle.
+     * @param moodleCourseId ID del curso en Moodle.
+     * @return true si el usuario ya está matriculado en el curso, false en caso contrario.
+     */
+    boolean estaUsuarioMatriculado(Long moodleUserId, Long moodleCourseId);
 }

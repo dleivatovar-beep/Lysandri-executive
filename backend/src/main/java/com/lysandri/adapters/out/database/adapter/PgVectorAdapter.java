@@ -77,7 +77,7 @@ public class PgVectorAdapter implements VectorStorePort {
             return chunks;
         } catch (Exception e) {
             log.error("Error ejecutando búsqueda vectorial en pgvector: {}", e.getMessage(), e);
-            return List.of();
+            throw new IllegalStateException("Error al consultar el almacén vectorial pgvector: " + e.getMessage(), e);
         }
     }
 

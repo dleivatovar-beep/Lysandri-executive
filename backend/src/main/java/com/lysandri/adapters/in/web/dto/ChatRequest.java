@@ -7,7 +7,9 @@ public class ChatRequest {
     private String pregunta;
     private String mensaje; // Alias para compatibilidad con clientes existentes
     private String sesionId;
+    private String sessionToken;
     private Long idPrograma;
+    private Long idUsuario; // Protegido: el backend valida contra la sesión autenticada
 
     public String obtenerTextoConsulta() {
         if (pregunta != null && !pregunta.isBlank()) {

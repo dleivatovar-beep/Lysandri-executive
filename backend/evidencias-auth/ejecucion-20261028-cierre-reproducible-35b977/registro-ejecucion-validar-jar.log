@@ -1,0 +1,56 @@
+[2026-10-28 21:55:42] ================================================================================
+[2026-10-28 21:55:42] INICIO DE VALIDACIÓN REPRODUCIBLE DEL ARTEFACTO JAR (validar-jar.py)
+[2026-10-28 21:55:42] Identificador único de ejecución: run-20261028-215542-35b977
+[2026-10-28 21:55:42] Carpeta de evidencias propia: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261028-cierre-reproducible-35b977
+[2026-10-28 21:55:42] ================================================================================
+[2026-10-28 21:55:43] [ARTEFACTO] JAR localizado: F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar
+[2026-10-28 21:55:43] [ARTEFACTO] SHA-256 del JAR probado: 62533BEC0AA066E75F280ED029CDEB65249A643B6E33B08726718159B1502EC0
+[2026-10-28 21:55:43] [INFRAESTRUCTURA] Iniciando servidor Mock SMTP local en puerto 1025...
+[2026-10-28 21:55:43] [INFRAESTRUCTURA] Iniciando servidor Mock WhatsApp Cloud API en puerto 19099...
+[2026-10-28 21:55:43] [INFRAESTRUCTURA] Lanzando contenedor PostgreSQL desechable (lysandri-pg-35b977) en puerto 15445...
+[2026-10-28 21:55:43] [INFRAESTRUCTURA] Contenedor creado con ID: 771b8254853f
+[2026-10-28 21:55:43] [INFRAESTRUCTURA] Esperando a que PostgreSQL desechable esté completamente listo...
+[2026-10-28 21:55:48] [DB] Destino efectivo PostgreSQL: 127.0.0.1:15445/lysandri_disposable_jar_db (usuario: lysandri_test_runner, contrasena: [PROTEGIDA])
+[2026-10-28 21:55:48] [DB] Inicializando roles administrativos mínimos para migración V25...
+[2026-10-28 21:55:48] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-10-28 21:55:48] [JAR] Proceso hijo iniciado con PID: 32576
+[2026-10-28 21:55:48] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-10-28 21:56:13] [JAR] Backend JAR completamente inicializado y aceptando peticiones HTTP.
+[2026-10-28 21:56:13] [DB] Configurando datos base en base desechable...
+[2026-10-28 21:56:13] [PROVISIÓN] Registrando cuenta administrativa con hash BCrypt nativo de Spring Security...
+[2026-10-28 21:56:14] [PROVISIÓN] Cuenta elevada a ADMIN y habilitada correctamente en BD.
+[2026-10-28 21:56:14] [HTTP] Inicio de sesión exitoso de Administrador -> APROBADO (HTTP 200 / esperado 200) Retorna HTTP 200 y token JWT emitido por el servidor
+[2026-10-28 21:56:15] [HTTP] Rechazo de contraseña incorrecta con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-28 21:56:15] [HTTP] Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración) -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-28 21:56:15] [HTTP] Creación de orden checkout para invitado -> APROBADO (HTTP 200 / esperado 200) Orden checkout creada con Session ID: izisess_mock_5449bce6e4dc43a38345d9823ee73cee
+[2026-10-28 21:56:16] [HTTP] Confirmación de pago de orden y disparo de outbox de activación -> APROBADO (HTTP 200 / esperado 200) Pago confirmado. Evento de activación encolado en outbox.
+[2026-10-28 21:56:16] [MAIL] Esperando entrega de correo de activación en servidor Mock SMTP local...
+[2026-10-28 21:56:16] [MAIL] Recepción de correo de activación en Mock SMTP -> APROBADO (HTTP EMAIL_RECIBIDO / esperado EMAIL_RECIBIDO) Correo capturado por el outbox worker sin tocar servicios externos
+[2026-10-28 21:56:16] [MAIL] Token de activación válido capturado (longitud 43 chars): huZr4n52...
+[2026-10-28 21:56:16] [HTTP] Rechazo de login para cuenta pendiente de activación con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-28 21:56:16] [HTTP] Activación de cuenta con token válido y establecimiento de contraseña -> APROBADO (HTTP 200 / esperado 200) Cuenta activada y token de sesión retornado
+[2026-10-28 21:56:16] [HTTP] Rechazo de token de activación ya consumido (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Retorna HTTP 409 Conflict ante intento de reusar token consumido
+[2026-10-28 21:56:16] [HTTP] Rechazo de token manipulado / alterado -> APROBADO (HTTP 400 / esperado 400) Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos
+[2026-10-28 21:56:16] [DB] Hash SHA-256 recuperado de la base de datos (longitud 64).
+[2026-10-28 21:56:16] [HTTP] Rechazo del hash de BD presentado directamente como token -> APROBADO (HTTP 400 / esperado 400) El hash almacenado no puede utilizarse como sustituto del token en claro
+[2026-10-28 21:56:16] [HTTP] Inicio de sesión exitoso de Usuario 1 activado -> APROBADO (HTTP 200 / esperado 200) Sesión iniciada correctamente con la nueva contraseña
+[2026-10-28 21:56:16] [HTTP] Registro de Usuario 2 -> APROBADO (HTTP 201 / esperado 201) Usuario 2 registrado exitosamente
+[2026-10-28 21:56:17] [DB] IDs asignados en BD: Usuario 1 = 5, Usuario 2 = 6
+[2026-10-28 21:56:17] [HTTP] Administrador desactiva cuenta de Usuario 2 -> APROBADO (HTTP 200 / esperado 200) Usuario 2 marcado como inactivo/desactivado por la administración
+[2026-10-28 21:56:17] [HTTP] Rechazo de login para cuenta desactivada con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-28 21:56:17] [HTTP] Rechazo de petición no autenticada a ruta protegida -> APROBADO (HTTP 401 / esperado 401) Ruta protegida rechaza peticiones sin cabecera Authorization
+[2026-10-28 21:56:17] [HTTP] Rechazo de JWT manipulado / firma inválida -> APROBADO (HTTP 401 / esperado 401) Filtro de seguridad rechaza JWT con firma alterada
+[2026-10-28 21:56:17] [HTTP] Rechazo de JWT firmado con clave distinta -> APROBADO (HTTP 401 / esperado 401) El servidor rechaza tokens firmados con llaves no autorizadas
+[2026-10-28 21:56:17] [HTTP] Usuario común bloqueado de endpoints administrativos (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios
+[2026-10-28 21:56:17] [HTTP] Administrador autorizado accede a endpoints administrativos (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 5 usuarios correctamente
+[2026-10-28 21:56:17] [HTTP] Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Acceso concedido al propietario de la cuenta
+[2026-10-28 21:56:17] [HTTP] Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Lectura cruzada entre usuarios bloqueada por control de autorización
+[2026-10-28 21:56:17] [HTTP] Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Modificación no autorizada rechazada con AccessDeniedException
+[2026-10-28 21:56:17] [DB] Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó -> APROBADO (HTTP Segundo / esperado Segundo) El nombre en BD permanece intacto: 'Segundo'
+[2026-10-28 21:56:18] [DB] Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado -> APROBADO (HTTP ENVIADO|t / esperado ENVIADO|t) Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)
+[2026-10-28 21:56:18] [HTTP] WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR
+[2026-10-28 21:56:18] [HTTP] WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud -> FALLIDO (HTTP 201 / esperado 201) Mensaje creado con ID 1, estado RESULTADO_INCIERTO, contactó al proveedor simulado
+[2026-10-28 21:56:18] [EVIDENCIA] Reporte estructurado guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261028-cierre-reproducible-35b977\recorrido-http-jar-real.json
+[2026-10-28 21:56:18] [LIMPIEZA] Deteniendo proceso JAR...
+[2026-10-28 21:56:18] [LIMPIEZA] Deteniendo servidores mock (SMTP y WhatsApp)...
+[2026-10-28 21:56:18] [LIMPIEZA] Destruyendo contenedor PostgreSQL desechable creado en esta corrida (771b8254853ff091fa1818cfd4743d6857e02a1523e778918c87b52c0bb66af1)...

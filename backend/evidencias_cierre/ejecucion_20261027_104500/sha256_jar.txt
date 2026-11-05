@@ -1,0 +1,5 @@
+Artefacto: lysandri-backend-1.0.0-SNAPSHOT.jar
+Algoritmo: SHA-256
+Hash: F8023B7E0C5A062A8A52FFE1F66A8EEB56ADEA23CC3C2631FC66D8939CA040C0
+Fecha: 2026-10-27 10:42:32
+Ruta: F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar

@@ -1,0 +1,166 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-11-01T20:41:54.722-05:00  INFO 36280 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 36280 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-11-01T20:41:54.733-05:00  INFO 36280 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-11-01T20:41:57.911-05:00  INFO 36280 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-11-01T20:41:58.298-05:00  INFO 36280 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 367 ms. Found 15 JPA repository interfaces.
+2026-11-01T20:42:00.863-05:00  INFO 36280 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-11-01T20:42:00.906-05:00  INFO 36280 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-11-01T20:42:00.907-05:00  INFO 36280 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-11-01T20:42:01.019-05:00  INFO 36280 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-11-01T20:42:01.022-05:00  INFO 36280 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 6110 ms
+2026-11-01T20:42:02.174-05:00  INFO 36280 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-11-01T20:42:02.174-05:00  INFO 36280 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-11-01T20:42:02.174-05:00  INFO 36280 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-11-01T20:42:02.235-05:00  INFO 36280 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-11-01T20:42:02.258-05:00  WARN 36280 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-11-01T20:42:02.367-05:00  INFO 36280 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 40 migrations (execution time 00:00.082s)
+2026-11-01T20:42:02.417-05:00  INFO 36280 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 39
+2026-11-01T20:42:02.422-05:00  INFO 36280 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-11-01T20:42:02.657-05:00  INFO 36280 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-11-01T20:42:02.805-05:00  INFO 36280 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-11-01T20:42:02.868-05:00  INFO 36280 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-11-01T20:42:03.219-05:00  INFO 36280 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-11-01T20:42:03.263-05:00  INFO 36280 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-11-01T20:42:03.310-05:00  INFO 36280 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@6fdaef04
+2026-11-01T20:42:03.312-05:00  INFO 36280 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-11-01T20:42:05.431-05:00  INFO 36280 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-11-01T20:42:05.516-05:00  INFO 36280 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-11-01T20:42:06.092-05:00  INFO 36280 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-11-01T20:42:07.877-05:00  INFO 36280 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-11-01T20:42:09.530-05:00  INFO 36280 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-11-01T20:42:09.533-05:00  INFO 36280 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-11-01T20:42:09.817-05:00  INFO 36280 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-11-01T20:42:10.134-05:00  WARN 36280 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-11-01T20:42:10.655-05:00  INFO 36280 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@270bbf31, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@54e6635e, org.springframework.security.web.context.SecurityContextHolderFilter@733b9726, org.springframework.security.web.header.HeaderWriterFilter@18973d91, org.springframework.web.filter.CorsFilter@42707ecf, org.springframework.security.web.authentication.logout.LogoutFilter@7aca8561, com.lysandri.security.JwtAuthenticationFilter@1e4d3c2e, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4b7217a2, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@5ff27105, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@3d0eefba, org.springframework.security.web.session.SessionManagementFilter@542f275, org.springframework.security.web.access.ExceptionTranslationFilter@63028db, org.springframework.security.web.access.intercept.AuthorizationFilter@372896d8]
+2026-11-01T20:42:11.328-05:00  INFO 36280 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-11-01T20:42:11.352-05:00  INFO 36280 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 17.897 seconds (process running for 19.02)
+2026-11-01T20:42:11.445-05:00  WARN 36280 --- [           main] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Recuperación tras reinicio: 1 mensajes en estado EN_PROCESO_ENVIO fueron marcados conservadoramente como RESULTADO_INCIERTO
+2026-11-01T20:42:12.455-05:00  INFO 36280 --- [io-18099-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-11-01T20:42:12.455-05:00  INFO 36280 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-11-01T20:42:12.459-05:00  INFO 36280 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2026-11-01T20:42:13.255-05:00  INFO 36280 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-restart-1793583711 ya finalizada o incierta (estado: RESULTADO_INCIERTO). No autoriza despacho redundante.
+2026-11-01T20:42:13.278-05:00  INFO 36280 --- [io-18099-exec-3] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-restart-1793583711 no autorizada para nuevo despacho de red (estado: RESULTADO_INCIERTO). Retornando estado actual.
+2026-11-01T20:42:13.419-05:00  INFO 36280 --- [io-18099-exec-6] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Estado de mensaje WhatsApp conciliado exitosamente [id: 4, previo: RESULTADO_INCIERTO, nuevo: ENTREGADO]
+2026-11-01T20:42:13.689-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-11-01T20:42:13.826-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Orden 384cbc47-3151-44c0-b49f-667895c1c1af registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-11-01T20:42:14.077-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-11-01T20:42:14.106-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-94f3ce. Validando autorización de acceso para orden 384cbc47-3151-44c0-b49f-667895c1c1af
+2026-11-01T20:42:14.354-05:00  INFO 36280 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:14.371-05:00  INFO 36280 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-94f3ce. Validando autorización de acceso para orden 384cbc47-3151-44c0-b49f-667895c1c1af
+2026-11-01T20:42:14.372-05:00  WARN 36280 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Conflicto de idempotencia en orden 384cbc47-3151-44c0-b49f-667895c1c1af: Programas difieren (existente: [102], solicitado: [101])
+2026-11-01T20:42:14.377-05:00  WARN 36280 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): Conflicto de idempotencia: La clave ya existe pero con una selección de programas diferente
+2026-11-01T20:42:14.402-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-11-01T20:42:14.419-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-94f3ce. Validando autorización de acceso para orden 384cbc47-3151-44c0-b49f-667895c1c1af
+2026-11-01T20:42:14.419-05:00  WARN 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR: El usuario 4 intentó acceder a la orden 384cbc47-3151-44c0-b49f-667895c1c1af creada por otro usuario
+2026-11-01T20:42:14.420-05:00  WARN 36280 --- [io-18099-exec-2] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: la clave de compra pertenece a otro usuario
+2026-11-01T20:42:14.441-05:00  INFO 36280 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-11-01T20:42:14.450-05:00  WARN 36280 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Rechazo de compra: Método de pago no admitido: BITCOIN
+2026-11-01T20:42:14.451-05:00  WARN 36280 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Método de pago no admitido: BITCOIN. Los métodos admitidos son: IZIPAY, STRIPE, TRANSFERENCIA, YAPE, PLIN.
+2026-11-01T20:42:14.493-05:00  INFO 36280 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 2 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:14.494-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 2
+2026-11-01T20:42:14.494-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 2
+2026-11-01T20:42:14.582-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 2 (código 384cbc47-3151-44c0-b49f-667895c1c1af) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-11-01T20:42:14.585-05:00  WARN 36280 --- [o-18099-exec-10] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-11-01T20:42:14.590-05:00  WARN 36280 --- [o-18099-exec-10] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-11-01T20:42:14.605-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 384cbc47-3151-44c0-b49f-667895c1c1af
+2026-11-01T20:42:14.615-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 384cbc47-3151-44c0-b49f-667895c1c1af. Token: f084ed2e-7055-487f-9a21-159e82048464, Intento: 1
+2026-11-01T20:42:14.628-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 2, código: 384cbc47-3151-44c0-b49f-667895c1c1af
+2026-11-01T20:42:14.629-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Usuario ya existente en Moodle con ID: 9901
+2026-11-01T20:42:14.635-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando cursos activos en Moodle para usuario ID: 9901 (Curso buscado: 102)
+2026-11-01T20:42:15.058-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.out.moodle.MoodleServiceAdapter    : Matriculando estudiante ID 9901 en curso ID 102 con rol 5
+2026-11-01T20:42:15.070-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.out.moodle.MoodleServiceAdapter    : Matrícula confirmada en Moodle para usuario 9901 en curso 102
+2026-11-01T20:42:15.070-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Usuario 9901 matriculado con éxito en curso Moodle 102
+2026-11-01T20:42:15.071-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 2
+2026-11-01T20:42:15.095-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=2, Total=200.00, Detracción=0, Cliente=Cliente Invitado
+2026-11-01T20:42:15.105-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 384cbc47-3151-44c0-b49f-667895c1c1af (allEnrolled=true)
+2026-11-01T20:42:15.112-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 384cbc47-3151-44c0-b49f-667895c1c1af persistido como COMPLETADO. Lease liberado.
+2026-11-01T20:42:15.124-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_2
+2026-11-01T20:42:15.270-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_2
+2026-11-01T20:42:15.273-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Orden 384cbc47-3151-44c0-b49f-667895c1c1af procesada con éxito. Comprobante B001-2 emitido. Sincronización Moodle: true
+2026-11-01T20:42:15.535-05:00  INFO 36280 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-11-01T20:42:15.569-05:00  INFO 36280 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Orden 831c5c6a-12ee-4570-b242-ab6b1c473f19 registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-11-01T20:42:15.788-05:00  INFO 36280 --- [io-18099-exec-3] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:15.788-05:00  INFO 36280 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:15.788-05:00  INFO 36280 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:15.811-05:00  WARN 36280 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Rechazo por abono ya aplicado: orden nueva=3, orden pagada existente=2, operación normalizada=OP0012345
+2026-11-01T20:42:15.815-05:00  WARN 36280 --- [io-18099-exec-3] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: 2
+2026-11-01T20:42:15.849-05:00  INFO 36280 --- [io-18099-exec-6] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:15.849-05:00  INFO 36280 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:15.849-05:00  INFO 36280 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:15.858-05:00  WARN 36280 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: Destino bancario no resoluble o ambiguo en orden 831c5c6a-12ee-4570-b242-ab6b1c473f19: La cuenta o CCI ingresado (999-9999999-9-99) no coincide con la cuenta oficial activa del banco BCP
+2026-11-01T20:42:15.862-05:00  WARN 36280 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede resolver con certeza el destino del abono bancario. La cuenta o CCI ingresado (999-9999999-9-99) no coincide con la cuenta oficial activa del banco BCP
+2026-11-01T20:42:15.892-05:00  INFO 36280 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:15.926-05:00  INFO 36280 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Orden e1cd014c-ca83-4141-94a4-ce309620814c registrada con método manual YAPE. Esperando validación administrativa.
+2026-11-01T20:42:16.196-05:00  INFO 36280 --- [io-18099-exec-8] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:16.197-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-11-01T20:42:16.198-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-11-01T20:42:16.222-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 4 (código e1cd014c-ca83-4141-94a4-ce309620814c) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-11-01T20:42:16.223-05:00  WARN 36280 --- [io-18099-exec-8] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-11-01T20:42:16.228-05:00  WARN 36280 --- [io-18099-exec-8] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-11-01T20:42:16.239-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: e1cd014c-ca83-4141-94a4-ce309620814c
+2026-11-01T20:42:16.244-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden e1cd014c-ca83-4141-94a4-ce309620814c. Token: 82da47f0-814a-472f-bb31-fbbabe5f875f, Intento: 1
+2026-11-01T20:42:16.253-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 4, código: e1cd014c-ca83-4141-94a4-ce309620814c
+2026-11-01T20:42:16.253-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Usuario ya existente en Moodle con ID: 9901
+2026-11-01T20:42:16.259-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando cursos activos en Moodle para usuario ID: 9901 (Curso buscado: 101)
+2026-11-01T20:42:16.267-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Usuario 9901 ya se encuentra matriculado en curso Moodle 101
+2026-11-01T20:42:16.267-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Usuario 9901 ya figura matriculado remotamente en curso Moodle 101
+2026-11-01T20:42:16.268-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 4
+2026-11-01T20:42:16.280-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=3, Total=150.00, Detracción=0, Cliente=Cliente Invitado
+2026-11-01T20:42:16.288-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden e1cd014c-ca83-4141-94a4-ce309620814c (allEnrolled=true)
+2026-11-01T20:42:16.293-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden e1cd014c-ca83-4141-94a4-ce309620814c persistido como COMPLETADO. Lease liberado.
+2026-11-01T20:42:16.305-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_4
+2026-11-01T20:42:16.339-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_4
+2026-11-01T20:42:16.344-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Orden e1cd014c-ca83-4141-94a4-ce309620814c procesada con éxito. Comprobante B001-3 emitido. Sincronización Moodle: true
+2026-11-01T20:42:16.835-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:16.884-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Orden 30796ece-9121-4d20-b335-59f128401d61 creada con éxito en pasarela Izipay. Sesión/Tx: izisess_mock_bd477e961b5c4268a515bdc57fcd2e85
+2026-11-01T20:42:17.154-05:00  INFO 36280 --- [io-18099-exec-5] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 5 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:17.154-05:00  INFO 36280 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 5
+2026-11-01T20:42:17.154-05:00  INFO 36280 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 5
+2026-11-01T20:42:17.164-05:00  WARN 36280 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: La orden 30796ece-9121-4d20-b335-59f128401d61 fue creada bajo pasarela online (IZIPAY)
+2026-11-01T20:42:17.166-05:00  WARN 36280 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede aprobar manualmente una orden configurada para pasarela online (IZIPAY). La orden debe confirmarse mediante la pasarela de pago.
+2026-11-01T20:42:17.184-05:00  INFO 36280 --- [io-18099-exec-2] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:17.184-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:17.185-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:17.208-05:00  WARN 36280 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Rechazo por abono ya aplicado: orden nueva=3, orden pagada existente=2, operación normalizada=OP0012345
+2026-11-01T20:42:17.214-05:00  WARN 36280 --- [io-18099-exec-2] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El abono ya fue aplicado a otra orden pagada. Referencia interna de la orden existente: 2
+2026-11-01T20:42:17.249-05:00  INFO 36280 --- [io-18099-exec-9] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:17.249-05:00  INFO 36280 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:17.250-05:00  INFO 36280 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:17.258-05:00  WARN 36280 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: Destino bancario no resoluble o ambiguo en orden 831c5c6a-12ee-4570-b242-ab6b1c473f19: Método de pago incompatible: La orden requiere método 'TRANSFERENCIA' pero se especificó la entidad Yape.
+2026-11-01T20:42:17.262-05:00  WARN 36280 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede resolver con certeza el destino del abono bancario. Método de pago incompatible: La orden requiere método 'TRANSFERENCIA' pero se especificó la entidad Yape.
+2026-11-01T20:42:17.278-05:00  INFO 36280 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:17.278-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:17.279-05:00  INFO 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:17.286-05:00  WARN 36280 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: Destino bancario no resoluble o ambiguo en orden 831c5c6a-12ee-4570-b242-ab6b1c473f19: Banco de destino no reconocido o no autorizado: SCOTIABANK. Solo se admiten cuentas oficiales BCP e Interbank para transferencias.
+2026-11-01T20:42:17.289-05:00  WARN 36280 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede resolver con certeza el destino del abono bancario. Banco de destino no reconocido o no autorizado: SCOTIABANK. Solo se admiten cuentas oficiales BCP e Interbank para transferencias.
+2026-11-01T20:42:17.551-05:00  INFO 36280 --- [io-18099-exec-1] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-11-01T20:42:17.551-05:00  INFO 36280 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-11-01T20:42:17.552-05:00  INFO 36280 --- [io-18099-exec-1] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-11-01T20:42:17.573-05:00 ERROR 36280 --- [io-18099-exec-1] c.l.a.s.OrderFinancialTransactionService : ABONO HISTÓRICO REQUIERE REVISIÓN ADMINISTRATIVA: operación normalizada=OPAMBIGUO94F3CE, orden nueva=3, órdenes candidatas inciertas=[6]
+2026-11-01T20:42:17.578-05:00  WARN 36280 --- [io-18099-exec-1] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): Conflicto por abono histórico ambiguo. La aprobación automática está bloqueada y requiere revisión administrativa. Referencias internas: [6]
+2026-11-01T20:42:18.059-05:00  INFO 36280 --- [io-18099-exec-3] c.l.adapters.in.web.OrderController      : Sesión de invitado emitida de forma segura para email: invitado.recuperacion.94f3ce@empresa.pe
+2026-11-01T20:42:18.070-05:00  INFO 36280 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:18.184-05:00  INFO 36280 --- [io-18099-exec-6] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 7 (almacenado como hash SHA-256)
+2026-11-01T20:42:18.205-05:00  INFO 36280 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-11-01T20:42:18.213-05:00  INFO 36280 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:18.223-05:00  INFO 36280 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-guest-session-94f3ce. Validando autorización de acceso para orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df
+2026-11-01T20:42:18.230-05:00  WARN 36280 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR para invitado: Ausencia de token de sesión en intento de recuperación de orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df
+2026-11-01T20:42:18.231-05:00  WARN 36280 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: la clave de compra pertenece a otro comprador
+2026-11-01T20:42:18.261-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:18.274-05:00  INFO 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-guest-session-94f3ce. Validando autorización de acceso para orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df
+2026-11-01T20:42:18.280-05:00  WARN 36280 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR para invitado: Token de sesión inválido o expirado en orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df
+2026-11-01T20:42:18.280-05:00  WARN 36280 --- [io-18099-exec-8] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: credencial de recuperación inválida o expirada
+2026-11-01T20:42:18.285-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:18.299-05:00  INFO 36280 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-guest-session-94f3ce. Validando autorización de acceso para orden 97b3a58f-c433-4f6d-b705-24a6cc2f90df
+2026-11-01T20:42:18.322-05:00  INFO 36280 --- [io-18099-exec-5] c.l.adapters.in.web.OrderController      : Sesión de invitado emitida de forma segura para email: invitado.restart.94f3ce@empresa.pe
+2026-11-01T20:42:18.337-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-11-01T20:42:18.434-05:00  INFO 36280 --- [io-18099-exec-2] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 8 (almacenado como hash SHA-256)
+2026-11-01T20:42:18.455-05:00  INFO 36280 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Orden 6e018412-3711-4c28-b4d4-46df685c76c0 registrada con método manual TRANSFERENCIA. Esperando validación administrativa.

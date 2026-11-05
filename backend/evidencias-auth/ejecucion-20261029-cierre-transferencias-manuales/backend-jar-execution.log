@@ -1,0 +1,240 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-29T01:17:40.585-05:00  INFO 37396 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 37396 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive)
+2026-10-29T01:17:40.589-05:00  INFO 37396 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-29T01:17:42.513-05:00  INFO 37396 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T01:17:42.867-05:00  INFO 37396 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 327 ms. Found 14 JPA repository interfaces.
+2026-10-29T01:17:44.143-05:00  INFO 37396 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-29T01:17:44.163-05:00  INFO 37396 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-29T01:17:44.163-05:00  INFO 37396 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-29T01:17:44.229-05:00  INFO 37396 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-29T01:17:44.231-05:00  INFO 37396 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3536 ms
+2026-10-29T01:17:44.957-05:00  INFO 37396 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-29T01:17:44.957-05:00  INFO 37396 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-29T01:17:44.957-05:00  INFO 37396 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-29T01:17:45.054-05:00  INFO 37396 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:18432/lysandri_disposable_test (PostgreSQL 16.15)
+2026-10-29T01:17:45.076-05:00  WARN 37396 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-29T01:17:45.130-05:00  INFO 37396 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "public"."flyway_schema_history" does not exist yet
+2026-10-29T01:17:45.138-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 33 migrations (execution time 00:00.041s)
+2026-10-29T01:17:45.165-05:00  INFO 37396 --- [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "public"."flyway_schema_history" ...
+2026-10-29T01:17:45.284-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": << Empty Schema >>
+2026-10-29T01:17:45.307-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "1 - init"
+2026-10-29T01:17:45.343-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "chat_mensajes" does not exist, skipping
+2026-10-29T01:17:45.345-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "progreso_leccion" does not exist, skipping
+2026-10-29T01:17:45.346-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "inscripciones" does not exist, skipping
+2026-10-29T01:17:45.348-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "suscripciones" does not exist, skipping
+2026-10-29T01:17:45.350-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "detalle_ordenes" does not exist, skipping
+2026-10-29T01:17:45.353-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "ordenes" does not exist, skipping
+2026-10-29T01:17:45.355-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "leccion" does not exist, skipping
+2026-10-29T01:17:45.357-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "programa" does not exist, skipping
+2026-10-29T01:17:45.359-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "instructor" does not exist, skipping
+2026-10-29T01:17:45.361-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: table "usuarios" does not exist, skipping
+2026-10-29T01:17:45.735-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "2 - add leccion fields"
+2026-10-29T01:17:45.738-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:45.739-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "orden" of relation "leccion" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:45.741-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_leccion_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:45.767-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "3 - add instructor user unique constraint"
+2026-10-29T01:17:45.813-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "4 - create solicitud informacion"
+2026-10-29T01:17:45.911-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "5 - optimize indexes and integrity"
+2026-10-29T01:17:45.980-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "6 - create estructura academica"
+2026-10-29T01:17:46.193-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7 - create vector store"
+2026-10-29T01:17:46.200-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T01:17:46.265-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "7.1 - prepare legacy schema for v8"
+2026-10-29T01:17:46.605-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "8 - purge lms and refactor knowledge store"
+2026-10-29T01:17:46.608-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T01:17:46.716-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:46.740-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "detalle_ordenes" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:46.891-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "9 - create billing and accounting module"
+2026-10-29T01:17:46.934-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "codigo_hash" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:46.936-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "monto_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:46.938-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "porcentaje_detraccion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:46.940-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "medio_pago" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:46.942-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "motivo_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:46.944-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_anulacion" of relation "comprobante_pago" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:47.021-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "10 - ensure ai service documento chunks"
+2026-10-29T01:17:47.024-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: extension "vector" already exists, skipping (SQL State: 42710 - Error Code: 0)
+2026-10-29T01:17:47.025-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "documento_chunks" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:47.027-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "idx_documento_chunks_embedding" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:47.049-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "11 - expand user roles"
+2026-10-29T01:17:47.055-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T01:17:47.080-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "12 - seed founding admins"
+2026-10-29T01:17:47.084-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : +--------+
+| setval |
++--------+
+| 1      |
++--------+
+
+2026-10-29T01:17:47.112-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "13 - add manual payment and corporate fields"
+2026-10-29T01:17:47.190-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "14 - add izipay support"
+2026-10-29T01:17:47.236-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "15 - stripe events idempotency"
+2026-10-29T01:17:47.338-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "16 - stripe events lease and recovery"
+2026-10-29T01:17:47.381-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "17 - stripe unique payment intent"
+2026-10-29T01:17:47.432-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "18 - add cancelado to estado orden"
+2026-10-29T01:17:47.435-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "ordenes_estado_orden_check" of relation "ordenes" does not exist, skipping
+2026-10-29T01:17:47.465-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "19 - add provisioning lease and notifications"
+2026-10-29T01:17:47.545-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "20 - create user audit table"
+2026-10-29T01:17:47.611-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "21 - allow all internal user roles"
+2026-10-29T01:17:47.614-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T01:17:47.637-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "22 - atomic receipt counters"
+2026-10-29T01:17:47.681-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "23 - align postgres schema with jpa"
+2026-10-29T01:17:47.690-05:00  INFO 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: constraint "chk_usuario_rol" of relation "usuario" does not exist, skipping
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "titulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "precio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moneda" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "moodle_course_id" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "slug" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "subtitulo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_corta" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "descripcion_detallada" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "imagen_portada_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.146-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "syllabus_url" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.147-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_nombre" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.147-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "instructor_bio" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.147-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "duracion_horas" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.147-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "activo" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.147-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: column "fecha_creacion" of relation "programa" already exists, skipping (SQL State: 42701 - Error Code: 0)
+2026-10-29T01:17:48.187-05:00  WARN 37396 --- [           main] o.f.c.i.s.DefaultSqlScriptExecutor       : DB: relation "uq_ordenes_codigo_orden" already exists, skipping (SQL State: 42P07 - Error Code: 0)
+2026-10-29T01:17:48.218-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "24 - accounting audit log"
+2026-10-29T01:17:48.288-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "25 - least privilege app security"
+2026-10-29T01:17:48.312-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "26 - programa pricing governance and activation tokens"
+2026-10-29T01:17:48.381-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "27 - separate activation and administrative blocking"
+2026-10-29T01:17:48.413-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "28 - invalidate legacy plaintext tokens and outbox"
+2026-10-29T01:17:48.494-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "29 - create whatsapp tables"
+2026-10-29T01:17:48.582-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "30 - add whatsapp outbox and idempotency"
+2026-10-29T01:17:48.627-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "31 - add whatsapp lease and attempt tracking"
+2026-10-29T01:17:48.675-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "public" to version "32 - add manual payment transfer fields"
+2026-10-29T01:17:48.709-05:00  INFO 37396 --- [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 33 migrations to schema "public", now at version v32 (execution time 00:02.600s)
+2026-10-29T01:17:48.849-05:00  INFO 37396 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T01:17:48.924-05:00  INFO 37396 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-29T01:17:48.978-05:00  INFO 37396 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T01:17:49.325-05:00  INFO 37396 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T01:17:49.375-05:00  INFO 37396 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T01:17:49.415-05:00  INFO 37396 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@18f8ebd4
+2026-10-29T01:17:49.418-05:00  INFO 37396 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T01:17:52.095-05:00  INFO 37396 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T01:17:52.156-05:00  INFO 37396 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T01:17:52.639-05:00  INFO 37396 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-29T01:17:54.075-05:00  INFO 37396 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-29T01:17:55.080-05:00  INFO 37396 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-29T01:17:55.083-05:00  INFO 37396 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-29T01:17:55.310-05:00  INFO 37396 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API deshabilitada por configuración (whatsapp.enabled=false)
+2026-10-29T01:17:55.584-05:00  WARN 37396 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T01:17:55.957-05:00  INFO 37396 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@4baf4a5b, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@5977c989, org.springframework.security.web.context.SecurityContextHolderFilter@7153164a, org.springframework.security.web.header.HeaderWriterFilter@e6f8674, org.springframework.web.filter.CorsFilter@4d097e4e, org.springframework.security.web.authentication.logout.LogoutFilter@688ab131, com.lysandri.security.JwtAuthenticationFilter@17c533f3, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@5d4ece5, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3898511a, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@17b48da1, org.springframework.security.web.session.SessionManagementFilter@565e0e8f, org.springframework.security.web.access.ExceptionTranslationFilter@1cc33ca9, org.springframework.security.web.access.intercept.AuthorizationFilter@59096877]
+2026-10-29T01:17:56.450-05:00  INFO 37396 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-29T01:17:56.466-05:00  INFO 37396 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 16.466 seconds (process running for 17.102)
+2026-10-29T01:17:56.654-05:00  INFO 37396 --- [io-18099-exec-6] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-29T01:17:56.654-05:00  INFO 37396 --- [io-18099-exec-6] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-29T01:17:56.656-05:00  INFO 37396 --- [io-18099-exec-6] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-10-29T01:17:57.055-05:00  INFO 37396 --- [io-18099-exec-4] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T01:17:57.399-05:00  INFO 37396 --- [io-18099-exec-1] c.l.application.service.AuthService      : Registrando nuevo cliente ejecutivo (solicitud recibida)
+2026-10-29T01:17:57.582-05:00  INFO 37396 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T01:17:57.624-05:00  INFO 37396 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T01:17:57.834-05:00  INFO 37396 --- [io-18099-exec-9] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:57.835-05:00  INFO 37396 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:57.835-05:00  INFO 37396 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:57.872-05:00  WARN 37396 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): El importe verificado (10.0) no coincide con el total de la orden (499.00)
+2026-10-29T01:17:57.888-05:00  INFO 37396 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:57.888-05:00  INFO 37396 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:57.888-05:00  INFO 37396 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:57.901-05:00  WARN 37396 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La moneda verificada (PEN) no coincide con la moneda de la orden (USD)
+2026-10-29T01:17:57.917-05:00  INFO 37396 --- [io-18099-exec-6] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:57.917-05:00  INFO 37396 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:57.918-05:00  INFO 37396 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:57.932-05:00  WARN 37396 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La fecha del abono no puede ser futura
+2026-10-29T01:17:57.957-05:00  INFO 37396 --- [io-18099-exec-5] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:57.957-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:57.958-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:57.992-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 1 (código 3f2248b5-5bae-4318-8a46-59d2fe9caa99) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-10-29T01:17:57.998-05:00  WARN 37396 --- [io-18099-exec-5] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.009-05:00  WARN 37396 --- [io-18099-exec-5] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.024-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.032-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99. Token: 33cd6653-289c-46ba-8a4d-094b5b683dca, Intento: 1
+2026-10-29T01:17:58.044-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 1, código: 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.045-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: comprador.transfer@lysandri.test
+2026-10-29T01:17:58.336-05:00 ERROR 37396 --- [io-18099-exec-5] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.337-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: comprador.transfer@lysandri.test (comprador.transferlysandri.test)
+2026-10-29T01:17:58.342-05:00 ERROR 37396 --- [io-18099-exec-5] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.343-05:00 ERROR 37396 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.345-05:00 ERROR 37396 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 101 para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99: usuario sin moodleUserId
+2026-10-29T01:17:58.345-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 1
+2026-10-29T01:17:58.404-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=1, Total=499.00, Detracción=0, Cliente=Cliente Transferencia
+2026-10-29T01:17:58.414-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 (allEnrolled=false)
+2026-10-29T01:17:58.421-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 persistido como FALLIDO. Lease liberado.
+2026-10-29T01:17:58.432-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_1
+2026-10-29T01:17:58.569-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_1
+2026-10-29T01:17:58.574-05:00  INFO 37396 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 procesada con éxito. Comprobante B001-1 emitido. Sincronización Moodle: false
+2026-10-29T01:17:58.612-05:00  INFO 37396 --- [io-18099-exec-4] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:58.612-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:58.613-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:58.624-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : La orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 ya fue aprobada previamente con los mismos datos del abono. Retornando estado actual.
+2026-10-29T01:17:58.635-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.643-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99. Token: 6e42ce66-8cd4-48b7-a955-78631fa7e961, Intento: 2
+2026-10-29T01:17:58.644-05:00  WARN 37396 --- [io-18099-exec-4] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.647-05:00  WARN 37396 --- [io-18099-exec-4] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.658-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 1, código: 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.658-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: comprador.transfer@lysandri.test
+2026-10-29T01:17:58.662-05:00 ERROR 37396 --- [io-18099-exec-4] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.663-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: comprador.transfer@lysandri.test (comprador.transferlysandri.test)
+2026-10-29T01:17:58.666-05:00 ERROR 37396 --- [io-18099-exec-4] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.666-05:00 ERROR 37396 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.667-05:00 ERROR 37396 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 101 para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99: usuario sin moodleUserId
+2026-10-29T01:17:58.668-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 1
+2026-10-29T01:17:58.674-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.out.billing.BillingServiceAdapter  : Comprobante ya emitido previamente para orden ID: 1 (B001-1)
+2026-10-29T01:17:58.677-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 (allEnrolled=false)
+2026-10-29T01:17:58.682-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 persistido como FALLIDO. Lease liberado.
+2026-10-29T01:17:58.692-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_1
+2026-10-29T01:17:58.696-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.o.n.EmailNotificationAdapter       : Notificación de accesos y factura ya enviada previamente (Clave: ACCESOS_ORDEN_1). Omitiendo reenvío innecesario.
+2026-10-29T01:17:58.700-05:00  INFO 37396 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 procesada con éxito. Comprobante B001-1 emitido. Sincronización Moodle: false
+2026-10-29T01:17:58.715-05:00  INFO 37396 --- [io-18099-exec-1] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 1 por usuario: danny@lysandri.com
+2026-10-29T01:17:58.715-05:00  INFO 37396 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 1
+2026-10-29T01:17:58.715-05:00  INFO 37396 --- [io-18099-exec-1] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 1
+2026-10-29T01:17:58.728-05:00  WARN 37396 --- [io-18099-exec-1] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): La orden ya fue pagada previamente con un abono diferente (Operación registrada: OP-BCP-778899, Banco: BCP)
+2026-10-29T01:17:58.742-05:00  INFO 37396 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T01:17:58.754-05:00  INFO 37396 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T01:17:58.792-05:00  INFO 37396 --- [io-18099-exec-2] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 2 por usuario: danny@lysandri.com
+2026-10-29T01:17:58.792-05:00  INFO 37396 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 2
+2026-10-29T01:17:58.792-05:00  INFO 37396 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 2
+2026-10-29T01:17:58.808-05:00  WARN 37396 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Rechazo por abono duplicado: El abono [banco: BCP, cuenta: 191-99887766-0-55, op: OP-BCP-778899] ya fue aplicado a la orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.810-05:00  WARN 37396 --- [io-18099-exec-2] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El abono bancario [banco: BCP, cuenta: 191-99887766-0-55, operación: OP-BCP-778899] ya fue utilizado para pagar la orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99
+2026-10-29T01:17:58.822-05:00  INFO 37396 --- [io-18099-exec-8] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 2 por usuario: danny@lysandri.com
+2026-10-29T01:17:58.823-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 2
+2026-10-29T01:17:58.823-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 2
+2026-10-29T01:17:58.837-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 2 (código 353af538-a8fb-4aa0-8e56-d58fd8abc2af) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-10-29T01:17:58.838-05:00  WARN 37396 --- [io-18099-exec-8] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.842-05:00  WARN 37396 --- [io-18099-exec-8] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T01:17:58.852-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 353af538-a8fb-4aa0-8e56-d58fd8abc2af
+2026-10-29T01:17:58.857-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af. Token: 7ca84657-08a8-4193-9b6d-61fb6413f3fb, Intento: 1
+2026-10-29T01:17:58.865-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 2, código: 353af538-a8fb-4aa0-8e56-d58fd8abc2af
+2026-10-29T01:17:58.865-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: comprador.transfer@lysandri.test
+2026-10-29T01:17:58.868-05:00 ERROR 37396 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.868-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: comprador.transfer@lysandri.test (comprador.transferlysandri.test)
+2026-10-29T01:17:58.872-05:00 ERROR 37396 --- [io-18099-exec-8] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.872-05:00 ERROR 37396 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T01:17:58.873-05:00 ERROR 37396 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 101 para orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af: usuario sin moodleUserId
+2026-10-29T01:17:58.873-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 2
+2026-10-29T01:17:58.884-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=2, Total=499.00, Detracción=0, Cliente=Cliente Transferencia
+2026-10-29T01:17:58.889-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af (allEnrolled=false)
+2026-10-29T01:17:58.893-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af persistido como FALLIDO. Lease liberado.
+2026-10-29T01:17:58.902-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_2
+2026-10-29T01:17:58.933-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_2
+2026-10-29T01:17:58.937-05:00  INFO 37396 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Orden 353af538-a8fb-4aa0-8e56-d58fd8abc2af procesada con éxito. Comprobante B001-2 emitido. Sincronización Moodle: false
+2026-10-29T01:17:58.948-05:00  INFO 37396 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T01:17:58.963-05:00  INFO 37396 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Orden 141e35aa-062b-4e89-abe5-ce3d97ece496 creada con éxito en pasarela Izipay. Sesión/Tx: izisess_mock_f389d3903c084296a90a45f6058d8888
+2026-10-29T01:17:59.000-05:00  INFO 37396 --- [io-18099-exec-6] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.com
+2026-10-29T01:17:59.000-05:00  INFO 37396 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-10-29T01:17:59.001-05:00  INFO 37396 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-10-29T01:17:59.009-05:00  WARN 37396 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: La orden 141e35aa-062b-4e89-abe5-ce3d97ece496 fue creada bajo pasarela online (IZIPAY)
+2026-10-29T01:17:59.011-05:00  WARN 37396 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede aprobar manualmente una orden configurada para pasarela online (IZIPAY). La orden debe confirmarse mediante la pasarela de pago.
+2026-10-29T01:17:59.062-05:00  INFO 37396 --- [io-18099-exec-4] c.l.application.service.AuthService      : Registrando nuevo cliente ejecutivo (solicitud recibida)
+2026-10-29T01:17:59.154-05:00  WARN 37396 --- [io-18099-exec-1] c.l.adapters.in.web.OrderController      : Usuario espia@lysandri.test intentó consultar la orden 3f2248b5-5bae-4318-8a46-59d2fe9caa99 sin autorización
+2026-10-29T01:17:59.154-05:00  WARN 37396 --- [io-18099-exec-1] c.l.exception.GlobalExceptionHandler     : Acceso denegado: No tiene permisos para consultar información de esta orden
+2026-10-29T01:17:59.180-05:00  INFO 37396 --- [io-18099-exec-7] c.l.application.service.AuthService      : Intento de login para usuario (solicitud recibida)
+2026-10-29T01:17:59.243-05:00  WARN 37396 --- [io-18099-exec-7] c.l.application.service.AuthService      : Fallo de login: contraseña incorrecta [userId: 4]
+2026-10-29T01:17:59.245-05:00  WARN 37396 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Fallo de autenticación en acceso de usuarios: No se pudo iniciar sesión con los datos proporcionados

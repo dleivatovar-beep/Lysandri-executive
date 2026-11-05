@@ -562,7 +562,19 @@ export const AdminEnrollments: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={enrollStudent} className="mt-6 space-y-4">
+              <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200 flex items-start gap-2.5">
+                <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Aviso Operativo de Matrículas</p>
+                  <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                    Las matrículas automáticas de órdenes pagadas son gestionadas al confirmar la pasarela o el abono bancario.
+                    La inscripción manual directa vía API se encuentra en desarrollo. Para inscripciones manuales inmediatas,
+                    ingrese a <a href="https://campus.yunixingenieros.com" target="_blank" rel="noopener noreferrer" className="underline font-bold text-amber-100">campus.yunixingenieros.com</a>.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={enrollStudent} className="mt-4 space-y-4">
                 <Field label="Estudiante">
                   <select
                     required

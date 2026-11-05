@@ -1,6 +1,8 @@
 INSERT INTO USUARIO (id_user, nombres, apellidos, email, passw, telefono, rol, moodle_user_id) VALUES
-(1, 'Administrador', 'Lysandri', 'admin@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '941238905', 'ADMIN', 2),
-(2, 'Carlos', 'Mendoza Torres', 'carlos.mendoza@corporativo.com', '$2a$10$WEX4ZF7I7KTjt1H7I25O5esf/EFiuZhing/Gd9uTZSFocFphUhRQq', '987654321', 'CLIENTE', 3)
+(1, 'Danny Ronaldo', 'Leiva Tovar', 'danny@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '+51 941 238 905', 'ADMIN', 1),
+(2, 'Antony Brayan', 'Ruiz Susanibar', 'antonybrayanruizsusanibar@gmail.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '+51 987 242 796', 'ADMIN', 2),
+(3, 'Administrador General', 'Lysandri', 'admin@lysandri.com', '$2a$10$NeFAj3nOfE3/FliITxEYT.FjAoeRL1pa3IE7eesqhPKfErgO91.C6', '+51 999 000 111', 'ADMIN', 3),
+(4, 'Carlos', 'Mendoza Torres', 'carlos.mendoza@corporativo.com', '$2a$10$WEX4ZF7I7KTjt1H7I25O5esf/EFiuZhing/Gd9uTZSFocFphUhRQq', '+51 987 654 321', 'CLIENTE', 4)
 ON CONFLICT (email) DO UPDATE SET
   nombres = EXCLUDED.nombres,
   apellidos = EXCLUDED.apellidos,

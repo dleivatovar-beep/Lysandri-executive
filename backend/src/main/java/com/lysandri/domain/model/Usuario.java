@@ -1,5 +1,6 @@
 package com.lysandri.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,10 +18,14 @@ public class Usuario {
     private String nombres;
     private String apellidos;
     private String email;
+
+    @JsonIgnore
     private String passw;
     private String telefono;
     private RolUsuario rol;
     private boolean activo;
+    private boolean bloqueadoAdmin;
+    private boolean pendienteActivacion;
     private OffsetDateTime fechaCreacion;
     private OffsetDateTime fechaActualizacion;
 

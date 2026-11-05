@@ -1,0 +1,596 @@
+{
+  "identificadorEjecucion": "run-20261102-232217-f1a964",
+  "fechaEjecucion": "2026-11-02T23:23:11.542395",
+  "artefactoProbado": "F:\\Lysandri-executive\\backend\\target\\lysandri-backend-1.0.0-SNAPSHOT.jar",
+  "sha256": "E98240227972634B49590CA677348D82EC2DBA5A215EEADDCED615D940FBD607",
+  "entorno": {
+    "disposableContainer": "lysandri-pg-f1a964",
+    "disposableDatabase": "127.0.0.1:15445/lysandri_disposable_jar_db",
+    "disposableDatabaseUser": "lysandri_test_runner",
+    "mockSmtpPort": 1025,
+    "mockWhatsAppPort": 19099,
+    "backendHttpPort": 18099
+  },
+  "totalPasos": 64,
+  "pasosAprobados": 56,
+  "pasosFallidos": 1,
+  "pasosNoEjecutados": 7,
+  "resultadosDetallados": [
+    {
+      "paso": 1,
+      "nombre": "Inicio de sesión exitoso de Administrador",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 200 y token JWT emitido por el servidor"
+    },
+    {
+      "paso": 2,
+      "nombre": "Rechazo de contraseña incorrecta con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 3,
+      "nombre": "Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración)",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 4,
+      "nombre": "Creación de orden checkout para invitado con token previo",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden checkout creada con Session ID: izisess_mock_c8bf3e44df0c42b1b8364dd96ba9a56e (Rechazo sin token comprobado: HTTP 400)"
+    },
+    {
+      "paso": 5,
+      "nombre": "Confirmación de pago de orden y disparo de outbox de activación",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Pago confirmado. Evento de activación encolado en outbox."
+    },
+    {
+      "paso": 6,
+      "nombre": "Recepción de correo de activación en Mock SMTP",
+      "tipo": "MAIL",
+      "esperado": "EMAIL_RECIBIDO",
+      "obtenido": "EMAIL_RECIBIDO",
+      "resultado": "APROBADO",
+      "detalles": "Correo capturado por el outbox worker sin tocar servicios externos"
+    },
+    {
+      "paso": 7,
+      "nombre": "Rechazo de login para cuenta pendiente de activación con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 8,
+      "nombre": "Activación de cuenta con token válido y establecimiento de contraseña",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Cuenta activada y token de sesión retornado"
+    },
+    {
+      "paso": 9,
+      "nombre": "Rechazo de token de activación ya consumido (anti-reuso)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 409 Conflict ante intento de reusar token consumido"
+    },
+    {
+      "paso": 10,
+      "nombre": "Rechazo de token manipulado / alterado",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos"
+    },
+    {
+      "paso": 11,
+      "nombre": "Rechazo del hash de BD presentado directamente como token",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "El hash almacenado no puede utilizarse como sustituto del token en claro"
+    },
+    {
+      "paso": 12,
+      "nombre": "Inicio de sesión exitoso de Usuario 1 activado",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Sesión iniciada correctamente con la nueva contraseña"
+    },
+    {
+      "paso": 13,
+      "nombre": "Registro de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "APROBADO",
+      "detalles": "Usuario 2 registrado exitosamente"
+    },
+    {
+      "paso": 14,
+      "nombre": "Administrador desactiva cuenta de Usuario 2",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Usuario 2 marcado como inactivo/desactivado por la administración"
+    },
+    {
+      "paso": 15,
+      "nombre": "Rechazo de login para cuenta desactivada con mensaje uniforme",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'"
+    },
+    {
+      "paso": 16,
+      "nombre": "Rechazo de petición no autenticada a ruta protegida",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Ruta protegida rechaza peticiones sin cabecera Authorization"
+    },
+    {
+      "paso": 17,
+      "nombre": "Rechazo de JWT manipulado / firma inválida",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Filtro de seguridad rechaza JWT con firma alterada"
+    },
+    {
+      "paso": 18,
+      "nombre": "Rechazo de JWT firmado con clave distinta",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "El servidor rechaza tokens firmados con llaves no autorizadas"
+    },
+    {
+      "paso": 19,
+      "nombre": "Usuario común bloqueado de endpoints administrativos (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios"
+    },
+    {
+      "paso": 20,
+      "nombre": "Administrador autorizado accede a endpoints administrativos (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Se listaron 5 usuarios correctamente"
+    },
+    {
+      "paso": 21,
+      "nombre": "Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Acceso concedido al propietario de la cuenta"
+    },
+    {
+      "paso": 22,
+      "nombre": "Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Lectura cruzada entre usuarios bloqueada por control de autorización"
+    },
+    {
+      "paso": 23,
+      "nombre": "Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Modificación no autorizada rechazada con AccessDeniedException"
+    },
+    {
+      "paso": 24,
+      "nombre": "Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó",
+      "tipo": "DB",
+      "esperado": "Segundo",
+      "obtenido": "Segundo",
+      "resultado": "APROBADO",
+      "detalles": "El nombre en BD permanece intacto: 'Segundo'"
+    },
+    {
+      "paso": 25,
+      "nombre": "Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado",
+      "tipo": "DB",
+      "esperado": "ENVIADO|t",
+      "obtenido": "ENVIADO|t",
+      "resultado": "APROBADO",
+      "detalles": "Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)"
+    },
+    {
+      "paso": 26,
+      "nombre": "WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR"
+    },
+    {
+      "paso": 27,
+      "nombre": "WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "APROBADO",
+      "detalles": "Mensaje creado con ID 1, estado ENVIADO, contactó al proveedor simulado"
+    },
+    {
+      "paso": 28,
+      "nombre": "WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "APROBADO",
+      "detalles": "Proveedor llamado 1 veces (0 llamadas nuevas). Mensaje ID consistente: 1"
+    },
+    {
+      "paso": 29,
+      "nombre": "WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Rechazado con IllegalArgumentException al intentar reusar idSolicitud con datos diferentes"
+    },
+    {
+      "paso": 30,
+      "nombre": "WhatsApp Reinicio Real: Recuperación a RESULTADO_INCIERTO tras muerte del proceso JVM",
+      "tipo": "DB",
+      "esperado": "RESULTADO_INCIERTO",
+      "obtenido": "RESULTADO_INCIERTO",
+      "resultado": "APROBADO",
+      "detalles": "La solicitud fue recuperada conservadoramente como RESULTADO_INCIERTO por el nuevo proceso JVM"
+    },
+    {
+      "paso": 31,
+      "nombre": "WhatsApp Reinicio Real: Solicitud en RESULTADO_INCIERTO rechaza nuevo despacho a la red",
+      "tipo": "HTTP",
+      "esperado": "201",
+      "obtenido": "201",
+      "resultado": "APROBADO",
+      "detalles": "No se reenvió a la red. Llamadas al proveedor para esta solicitud se mantuvieron en 1"
+    },
+    {
+      "paso": 32,
+      "nombre": "WhatsApp Reinicio Real: Webhook autenticado concilia solicitud recuperada",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Webhook procesado exitosamente por el segundo proceso JVM"
+    },
+    {
+      "paso": 33,
+      "nombre": "WhatsApp Reinicio Real: Estado final ENTREGADO y llamadas totales al proveedor igual a 1",
+      "tipo": "DB",
+      "esperado": "ENTREGADO|wamid.restart.delivered.1793679775|1",
+      "obtenido": "ENTREGADO|wamid.restart.delivered.1793679775|1",
+      "resultado": "APROBADO",
+      "detalles": "Estado final ENTREGADO conciliado, id_proveedor guardado, y exactamente 1 llamada al proveedor"
+    },
+    {
+      "paso": 34,
+      "nombre": "Cuentas Bancarias: Consulta pública retorna cuentas oficiales autorizadas (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Se listaron 4 cuentas y billeteras activas oficiales"
+    },
+    {
+      "paso": 35,
+      "nombre": "Transferencia Manual: Creación de orden para transferencia bancaria en USD",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden creada con código 4f0bfa18-eb7d-4239-9685-8ce50657009c, ID 2, monto None USD"
+    },
+    {
+      "paso": 36,
+      "nombre": "Idempotencia Órdenes: Reintento transparente recupera la misma orden sin duplicar en BD",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Recuperada orden existente 4f0bfa18-eb7d-4239-9685-8ce50657009c y conteo en BD se mantuvo en 1 fila"
+    },
+    {
+      "paso": 37,
+      "nombre": "Idempotencia Órdenes: Intento de reuso de clave con datos divergentes es rechazado (HTTP 409)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Rechazado con HTTP 409 Conflict ante colisión de clave de idempotencia con contenido diferente"
+    },
+    {
+      "paso": 38,
+      "nombre": "Idempotencia Órdenes: Aislamiento por comprador y prevención IDOR de clave (HTTP 403)",
+      "tipo": "HTTP",
+      "esperado": "403",
+      "obtenido": "403",
+      "resultado": "APROBADO",
+      "detalles": "Bloqueado con HTTP 403 al intentar acceder o reaprovechar clave de idempotencia de otro comprador"
+    },
+    {
+      "paso": 39,
+      "nombre": "Validación Método de Pago: Creación con método no permitido es rechazada (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Método de pago no admitido ('BITCOIN') rechazado con IllegalArgumentException"
+    },
+    {
+      "paso": 40,
+      "nombre": "Aprobación Manual BCP: Aprobación oficial con cuenta configurada y ceros a la izquierda en operación",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Estado PAGADO, operación normalizada con ceros 'OP0012345', cuenta normalizada '19398218491028'"
+    },
+    {
+      "paso": 41,
+      "nombre": "Detección Duplicados: Bloqueo de segundo abono con misma operación normalizada (anti-reuso)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Rechazado con HTTP 409 Conflict al detectar número de operación previamente registrado tras normalización"
+    },
+    {
+      "paso": 42,
+      "nombre": "Validación Cuenta Destino: Rechazo de abono hacia cuenta bancaria no configurada o ajena (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Cuenta destino no autorizada rechazada con IllegalArgumentException sin alterar la orden"
+    },
+    {
+      "paso": 43,
+      "nombre": "Billeteras Digitales: Creación y aprobación con Yape en moneda PEN",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden Yape aprobada a PAGADO, operación '00887766' (ceros conservados) y destino '987654321'"
+    },
+    {
+      "paso": 44,
+      "nombre": "Seguridad de Pasarela: Rechazo de aprobación manual sobre orden de pasarela en línea (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Bloqueado con IllegalArgumentException: órdenes de pasarelas en línea (IZIPAY) no admiten aprobación manual"
+    },
+    {
+      "paso": 45,
+      "nombre": "Anti-reuso Variantes: Bloqueo de abono con variante de nombre de banco o CCI (HTTP 409)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Rechazado con HTTP 409 Conflict: la resolución canónica detecta que 'BANCO DE CREDITO DEL PERU' y CCI corresponden al abono BCP ya aplicado a otra orden"
+    },
+    {
+      "paso": 46,
+      "nombre": "Compatibilidad Método/Destino: Rechazo de método y destino incompatibles o banco no aprobado (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Rechazados con HTTP 400 Bad Request: validación estricta de destinos y compatibilidad con método de pago"
+    },
+    {
+      "paso": 47,
+      "nombre": "Abono Histórico Incierto: Bloqueo de abono con destino histórico ambiguo para revisión (HTTP 409)",
+      "tipo": "HTTP",
+      "esperado": "409",
+      "obtenido": "409",
+      "resultado": "APROBADO",
+      "detalles": "Rechazado con HTTP 409: 'Conflicto por abono histórico ambiguo. La aprobación automática está bloqueada y requiere revisión administrativa. Referencias internas: [6]', orden permanece PENDIENTE, comprobantes emitidos=0"
+    },
+    {
+      "paso": 48,
+      "nombre": "Contexto Invitado: Validación de token criptográfico y rechazo 403 ante ausencia o manipulación",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden 'b09e80b2-d3b0-4ddf-8b3c-de69e73bc1c2' protegida contra IDOR: rechaza recuperación sin token (HTTP 403) y con token alterado (HTTP 403); autoriza con token válido (HTTP 200)"
+    },
+    {
+      "paso": 49,
+      "nombre": "Contexto Invitado Reinicio: Recuperación de orden de invitado tras reinicio real de JVM (DB count=1)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Mismo código '2aba6720-1218-489f-9963-1e4b4a88c312' recuperado en JVM 3 (PID 2780, previo PID 38528), sin token HTTP 403, conteo en BD=1"
+    },
+    {
+      "paso": 50,
+      "nombre": "Moodle Catálogo Público: Sólo programas activos y con vinculación verificada vigente son visibles (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Catálogo público retornó 2 programas (IDs visibles: [101, 102]). Programas 103 (sin vincular) y 104 (expirado) excluidos correctamente."
+    },
+    {
+      "paso": 51,
+      "nombre": "Moodle Regla Checkout: Rechazo de compra para programa sin vinculación verificada o con verificación expirada (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "400",
+      "resultado": "APROBADO",
+      "detalles": "Rechazo HTTP 400 para programa sin vinculación (ID 103: 'El programa 'Programa Borrador Sin Moodle' (ID: 103) no cuenta con vinculación verificada a un curso de Moodle LMS y no está disponible para compra.') y para programa con verificación expirada (ID 104: 'La verificación del curso Moodle para el programa 'Programa Con Moodle Expirado' (ID: 104) ha expirado. Requiere revalidación antes de permitir compras.')"
+    },
+    {
+      "paso": 52,
+      "nombre": "Moodle Congelamiento Checkout: moodleCourseId y origen congelados inmutablemente en detalle_ordenes (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Orden '91e531d0-88df-46bd-a3bd-eaefbcb95ebf' congeló moodle_course_id=101 con origen='CHECKOUT_CONGELADO' en base de datos"
+    },
+    {
+      "paso": 53,
+      "nombre": "Moodle Resolución Administrativa: Auditoría documental completa y habilitación de reintento de aprovisionamiento (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Resolución HTTP 200 (moodleCourseId=101, origen='RESOLUCION_ADMINISTRATIVA', autor='danny@lysandri.invalid'); Reintento HTTP 200 completó aprovisionamiento (estado=COMPLETADO, sync=t)"
+    },
+    {
+      "paso": 54,
+      "nombre": "Moodle Desvinculación Programa: Limpieza de datos LMS, desactivación comercial y retiro automático del catálogo público (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Desvinculación HTTP 200: programa 102 desactivado (activo=f, verif=f, estado=SIN_VINCULACION, courseId=null). Retirado del catálogo público: 102 not in [101]"
+    },
+    {
+      "paso": 55,
+      "nombre": "Contabilidad Autorización: Rechazo de acceso a contabilidad sin PIN o con PIN inválido (HTTP 401/403)",
+      "tipo": "HTTP",
+      "esperado": "401",
+      "obtenido": "401",
+      "resultado": "APROBADO",
+      "detalles": "Sin PIN: HTTP 401 (código=AUDIT_PIN_INVALID); Con PIN incorrecto: HTTP 401 (código=AUDIT_PIN_INVALID)"
+    },
+    {
+      "paso": 56,
+      "nombre": "Contabilidad Reporte: Administrador consulta reporte general consolidado con PIN oficial y período TODOS (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "200",
+      "obtenido": "200",
+      "resultado": "APROBADO",
+      "detalles": "Reporte HTTP 200: período=TODOS, ventasPen=450.0, ventasUsd=200.0, comprobantes=4"
+    },
+    {
+      "paso": 57,
+      "nombre": "Contabilidad SIRE Validación Período: Rechazo de exportación sin período o con período TODOS (HTTP 400)",
+      "tipo": "HTTP",
+      "esperado": "400",
+      "obtenido": "500",
+      "resultado": "FALLIDO",
+      "detalles": "Sin período: HTTP 500 (código=None); Con período TODOS: HTTP 500 (código=None)"
+    },
+    {
+      "paso": 58,
+      "nombre": "Contabilidad SIRE Validación Integridad: Rechazo con HTTP 422 si existen comprobantes incompletos identificando idComprobante e idOrden",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 59,
+      "nombre": "Contabilidad SIRE Validación Divisa: Rechazo con HTTP 422 ante transacciones en USD sin tipo de cambio oficial verificado",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 60,
+      "nombre": "Contabilidad Integridad Transaccional: Comprobación de que las solicitudes 400 y 422 no mutaron registros ni causaron inconsistencias",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 61,
+      "nombre": "Contabilidad Emisión y Anulación: Anulación formal mediante idComprobante persistente y motivo auditado (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 62,
+      "nombre": "Contabilidad Persistencia Auditoría: Verificación en BD del estado ANULADO y registro inmutable en auditoria_contable",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 63,
+      "nombre": "Contabilidad SIRE Exportación Exitosa: Exportación con período YYYY-MM, Content-Disposition y CUO determinista CP%08d (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    },
+    {
+      "paso": 64,
+      "nombre": "Administración Usuarios: Separación estricta entre actualización de perfil (PUT) y modificación de rol auditada (PATCH) (HTTP 200)",
+      "tipo": "HTTP",
+      "esperado": "N/A",
+      "obtenido": "NO_EJECUTADO",
+      "resultado": "NO_EJECUTADO",
+      "detalles": "Paso no alcanzado debido a interrupción o fallo previo en la secuencia"
+    }
+  ]
+}

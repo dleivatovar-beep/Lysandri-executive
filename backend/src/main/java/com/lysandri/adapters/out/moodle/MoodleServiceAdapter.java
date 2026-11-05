@@ -2,7 +2,9 @@ package com.lysandri.adapters.out.moodle;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lysandri.domain.model.MoodleCourseVerification;
 import com.lysandri.domain.ports.out.LmsClientPort;
+import com.lysandri.security.SanitizerUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -35,6 +37,55 @@ public class MoodleServiceAdapter implements LmsClientPort {
     }
 
     @Override
+    public MoodleCourseVerification verificarCurso(Long moodleCourseId) {
+        if (moodleCourseId == null || moodleCourseId <= 0) {
+            return MoodleCourseVerification.sinVinculacion();
+        }
+
+        log.info("Verificando existencia de curso en Moodle LMS por ID: {}", moodleCourseId);
+        try {
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("wstoken", this.wsToken);
+            formData.add("wsfunction", "core_course_get_courses_by_field");
+            formData.add("moodlewsrestformat", "json");
+            formData.add("field", "id");
+            formData.add("value", String.valueOf(moodleCourseId));
+
+            String rawResponse = executeMoodlePost(formData);
+            if (rawResponse == null || rawResponse.isBlank()) {
+                return MoodleCourseVerification.noDisponible(moodleCourseId, "Moodle devolvió una respuesta vacía");
+            }
+
+            JsonNode rootNode = objectMapper.readTree(rawResponse);
+            if (rootNode.has("exception") || rootNode.has("errorcode")) {
+                String errorCode = rootNode.path("errorcode").asText("N/A");
+                String message = rootNode.path("message").asText("Error devuelto por Moodle");
+                log.warn("Moodle reportó error al verificar curso ID {}: [{}] {}", moodleCourseId, errorCode, SanitizerUtils.sanitizeMessage(message));
+                return MoodleCourseVerification.noDisponible(moodleCourseId, "Error en Moodle LMS (" + errorCode + "): " + SanitizerUtils.sanitizeMessage(message));
+            }
+
+            JsonNode coursesNode = rootNode.path("courses");
+            if (coursesNode.isArray() && !coursesNode.isEmpty()) {
+                for (JsonNode courseNode : coursesNode) {
+                    if (courseNode.path("id").asLong() == moodleCourseId) {
+                        String fullName = courseNode.path("fullname").asText(courseNode.path("displayname").asText("Curso Moodle #" + moodleCourseId));
+                        String shortName = courseNode.path("shortname").asText();
+                        log.info("Curso Moodle ID {} verificado exitosamente: '{}'", moodleCourseId, fullName);
+                        return MoodleCourseVerification.verificado(moodleCourseId, fullName, shortName);
+                    }
+                }
+            }
+
+            log.info("Curso con ID {} no encontrado en catálogo de Moodle", moodleCourseId);
+            return MoodleCourseVerification.noEncontrado(moodleCourseId);
+        } catch (Exception e) {
+            String sanitizedError = SanitizerUtils.sanitizeMessage(e.getMessage());
+            log.warn("Fallo o timeout al consultar Moodle para curso ID {}: {}", moodleCourseId, sanitizedError);
+            return MoodleCourseVerification.noDisponible(moodleCourseId, "Verificación no disponible por conexión o tiempo de espera con Moodle LMS: " + sanitizedError);
+        }
+    }
+
+    @Override
     public Optional<Long> buscarUsuarioPorEmail(String email) {
         log.info("Consultando existencia de usuario en Moodle por email: {}", email);
         try {
@@ -59,7 +110,6 @@ public class MoodleServiceAdapter implements LmsClientPort {
             return Optional.empty();
         } catch (Exception e) {
             log.error("Fallo al verificar usuario en Moodle: {}", e.getMessage());
-            // Fallback no bloqueante en desarrollo
             return Optional.empty();
         }
     }
@@ -93,8 +143,7 @@ public class MoodleServiceAdapter implements LmsClientPort {
             throw new IllegalStateException("Respuesta inesperada al crear usuario en Moodle: " + rawResponse);
         } catch (Exception e) {
             log.error("Error creando usuario en Moodle: {}", e.getMessage());
-            // En caso de error o entorno offline de dev, retornar ID temporal basado en hash
-            return (long) Math.abs(email.hashCode());
+            throw new RuntimeException("Error al crear usuario en Moodle LMS: " + e.getMessage(), e);
         }
     }
 
@@ -119,24 +168,59 @@ public class MoodleServiceAdapter implements LmsClientPort {
 
             log.info("Matrícula confirmada en Moodle para usuario {} en curso {}", moodleUserId, moodleCourseId);
         } catch (Exception e) {
-            log.error("Fallo durante la matrícula en Moodle: {}", e.getMessage());
+            log.warn("Fallo o timeout durante la matrícula en Moodle: {}. Verificando estado remoto para confirmar si ya se procesó...", e.getMessage());
+            if (estaUsuarioMatriculado(moodleUserId, moodleCourseId)) {
+                log.info("Verificación remota exitosa: El usuario {} ya se encuentra matriculado en curso Moodle {}. Operación idempotente.", moodleUserId, moodleCourseId);
+                return;
+            }
+            log.error("Fallo definitivo durante la matrícula en Moodle: {}", e.getMessage());
+            throw new RuntimeException("Fallo durante la matrícula en Moodle: " + e.getMessage(), e);
         }
     }
 
-    private String executeMoodlePost(MultiValueMap<String, String> formData) {
-        try {
-            return this.webClient.post()
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromFormData(formData))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
-                    .block();
-        } catch (Exception e) {
-            log.warn("Llamada HTTP a Moodle falló: {}", e.getMessage());
-            return null;
+    @Override
+    public boolean estaUsuarioMatriculado(Long moodleUserId, Long moodleCourseId) {
+        if (moodleUserId == null || moodleCourseId == null) {
+            return false;
         }
+        log.info("Consultando cursos activos en Moodle para usuario ID: {} (Curso buscado: {})", moodleUserId, moodleCourseId);
+        try {
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            formData.add("wstoken", this.wsToken);
+            formData.add("wsfunction", "core_enrol_get_users_courses");
+            formData.add("moodlewsrestformat", "json");
+            formData.add("userid", String.valueOf(moodleUserId));
+
+            String rawResponse = executeMoodlePost(formData);
+            if (rawResponse == null || rawResponse.isBlank()) {
+                return false;
+            }
+
+            JsonNode rootNode = objectMapper.readTree(rawResponse);
+            if (rootNode.isArray()) {
+                for (JsonNode courseNode : rootNode) {
+                    if (courseNode.path("id").asLong() == moodleCourseId) {
+                        log.info("Usuario {} ya se encuentra matriculado en curso Moodle {}", moodleUserId, moodleCourseId);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("No se pudo verificar matrícula previa en Moodle: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public String executeMoodlePost(MultiValueMap<String, String> formData) {
+        return this.webClient.post()
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromFormData(formData))
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofSeconds(10))
+                .block();
     }
 
     private void validarRespuestaMoodle(JsonNode rootNode) {

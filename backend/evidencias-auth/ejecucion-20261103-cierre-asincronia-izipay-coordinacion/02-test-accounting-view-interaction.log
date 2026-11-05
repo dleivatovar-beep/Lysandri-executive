@@ -1,0 +1,31 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN FRONTEND: test-accounting-view-interaction
+================================================================================
+Comando exacto:        node.exe test-accounting-view-interaction.js
+Directorio:            F:\Lysandri-executive\frontend
+Fecha y hora inicio:   2026-11-03T07:02:50.779Z
+Fecha y hora fin:      2026-11-03T07:02:58.160Z
+Código de salida real: 0
+Descripción:           Pruebas de interacción de vista contable (descarte de respuestas fuera de orden, anulación y sesión)
+================================================================================
+SALIDA COMPLETA (STDOUT):
+--------------------------------------------------------------------------------
+--- TEST DE INTERACCIÓN: AccountingView y AdminDashboard ---
+PASS 1: AccountingView autenticado con PIN muestra métricas PEN y USD separadas y sección de pendientes.
+PASS 2: Cambio de período actualiza consulta y conserva histórico de períodos conocidos.
+PASS 3: Descarga SIRE rechaza "TODOS" con alerta explicativa sin llamar al backend.
+PASS 4: Anulación de comprobante utiliza idComprobante (501) sin cruzar con idOrden (101).
+PASS 5: AdminDashboard separa estrictamente PUT /usuarios/{id} (perfil) y PATCH /usuarios/{id}/rol (auditoría).
+PASS 6: Promesas controladas: Respuestas y errores fuera de orden descartados correctamente.
+PASS 7: Rechazo estricto de sesión contable por PIN inválido o permisos insuficientes.
+PASS 8: Intento de anulación rechazado por servidor preserva estado no-anulado y notifica error.
+PASS 9: Anulación exitosa con recarga fallida informa confirmación en servidor y pide refresco manual.
+PASS 10: AdminDashboard notifica guardado parcial vs fallo total y preserva formulario.
+
+RESUMEN: 10/10 pruebas de interacción frontend aprobadas.
+
+--------------------------------------------------------------------------------
+SALIDA COMPLETA (STDERR):
+--------------------------------------------------------------------------------
+(vacío)
+================================================================================

@@ -1,5 +1,6 @@
 package com.lysandri.adapters.out.database.entity;
 
+import com.lysandri.domain.model.MoodleVerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,8 +21,30 @@ public class ProgramaEntity {
     @Column(name = "id_programa")
     private Long idPrograma;
 
-    @Column(name = "moodle_course_id", nullable = false, unique = true)
+    @Column(name = "moodle_course_id", unique = true)
     private Long moodleCourseId;
+
+    @Column(name = "moodle_course_nombre")
+    private String moodleCourseNombre;
+
+    @Column(name = "moodle_verificado", nullable = false)
+    @Builder.Default
+    private boolean moodleVerificado = false;
+
+    @Column(name = "moodle_verificado_en")
+    private OffsetDateTime moodleVerificadoEn;
+
+    @Column(name = "moodle_ultimo_intento_en")
+    private OffsetDateTime moodleUltimoIntentoEn;
+
+    @Column(name = "moodle_vinculacion_revision", nullable = false)
+    @Builder.Default
+    private Long moodleVinculacionRevision = 1L;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "moodle_estado_verificacion", length = 50, nullable = false)
+    @Builder.Default
+    private MoodleVerificationStatus moodleEstadoVerificacion = MoodleVerificationStatus.PENDIENTE_VERIFICACION;
 
     @Column(name = "titulo", nullable = false, length = 200)
     private String titulo;
@@ -45,7 +68,7 @@ public class ProgramaEntity {
     @Builder.Default
     private String moneda = "USD";
 
-    @Column(name = "imagen_portada_url", length = 500)
+    @Column(name = "imagen_portada_url", columnDefinition = "TEXT")
     private String imagenPortadaUrl;
 
     @Column(name = "syllabus_url", length = 500)
@@ -66,6 +89,14 @@ public class ProgramaEntity {
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private boolean activo = true;
+
+    @Column(name = "precio_aprobado", nullable = false)
+    @Builder.Default
+    private boolean precioAprobado = false;
+
+    @Column(name = "es_gratuito", nullable = false)
+    @Builder.Default
+    private boolean esGratuito = false;
 
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     @Builder.Default

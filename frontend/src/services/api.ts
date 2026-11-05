@@ -1,8 +1,8 @@
 import axios, { AxiosError } from 'axios';
-import { ChatResponse } from '../types';
+import type { ChatResponse } from '../types/index.ts';
 
 const RAW_API_URL =
-  import.meta.env.VITE_API_URL ||
+  ((import.meta as any)?.env?.VITE_API_URL) ||
   (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8080/api/v1');
 
 export const API_BASE_URL = RAW_API_URL.replace(/\/api\/v1\/?$/, '');

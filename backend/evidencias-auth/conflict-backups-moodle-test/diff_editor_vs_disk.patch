@@ -1,0 +1,969 @@
+--- editor_version
++++ disk_version
+@@ -8,10 +8,22 @@
+ import com.lysandri.adapters.out.database.repository.SpringDataProgramRepository;
+ import com.lysandri.adapters.out.database.repository.SpringDataUserRepository;
+ import com.lysandri.application.service.CatalogService;
++import com.lysandri.application.service.OrderFinancialTransactionService;
++import com.lysandri.application.service.ResultadoReservaAprovisionamiento;
+ import com.lysandri.domain.model.*;
+ import com.lysandri.domain.ports.in.BuyCourseUseCase;
+ import com.lysandri.domain.ports.out.LmsClientPort;
+ import com.lysandri.domain.ports.out.ProgramRepositoryPort;
++import com.lysandri.domain.ports.out.OrderRepositoryPort;
++import org.springframework.test.util.AopTestUtils;
++import org.springframework.test.util.ReflectionTestUtils;
++
++import java.io.*;
++import java.net.ServerSocket;
++import java.net.Socket;
++import java.net.URLDecoder;
++import java.util.function.BiConsumer;
++
+ import com.sun.net.httpserver.HttpExchange;
+ import com.sun.net.httpserver.HttpHandler;
+ import com.sun.net.httpserver.HttpServer;
+@@ -47,12 +59,60 @@
+     private static HttpServer mockMoodleServer;
+     private static int mockMoodlePort;
+ 
++    private static SimpleMockSmtpServer mockSmtpServer;
++    private static int mockSmtpPort;
++
+     private static final AtomicBoolean pauseMoodleVerification = new AtomicBoolean(false);
+     private static CountDownLatch inMoodleLatch;
+     private static CountDownLatch releaseMoodleLatch;
+ 
++    public static class MoodleCallRecord {
++        private final String function;
++        private final String rawBody;
++        private final Map<String, String> parameters;
++
++        public MoodleCallRecord(String function, String rawBody, Map<String, String> parameters) {
++            this.function = function;
++            this.rawBody = rawBody;
++            this.parameters = parameters;
++        }
++
++        public String getFunction() { return function; }
++        public String getRawBody() { return rawBody; }
++        public String getParameter(String name) { return parameters.get(name); }
++    }
++
++    private static final List<MoodleCallRecord> moodleCallHistory = new CopyOnWriteArrayList<>();
++    private static final Set<Long> mockMoodleEnrolledCourses = new ConcurrentSkipListSet<>();
++
++
++    public static List<MoodleCallRecord> getMoodleEnrolCalls() {
++        return moodleCallHistory.stream()
++                .filter(c -> "enrol_manual_enrol_users".equals(c.getFunction()))
++                .toList();
++    }
++
++    public static List<MoodleCallRecord> getMoodleUserCreateCalls() {
++        return moodleCallHistory.stream()
++                .filter(c -> "core_user_create_users".equals(c.getFunction()))
++                .toList();
++    }
++
++    public static List<MoodleCallRecord> getMoodleReadOnlyQueryCalls() {
++        return moodleCallHistory.stream()
++                .filter(c -> !"enrol_manual_enrol_users".equals(c.getFunction()) && !"core_user_create_users".equals(c.getFunction()))
++                .toList();
++    }
++
++    public static void clearMoodleCallHistory() {
++        moodleCallHistory.clear();
++    }
++
+     @BeforeAll
+-    static void startMockMoodle() throws IOException {
++    static void startServices() throws IOException {
++        mockSmtpServer = new SimpleMockSmtpServer(0);
++        mockSmtpPort = mockSmtpServer.getPort();
++
+         mockMoodleServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+         mockMoodlePort = mockMoodleServer.getAddress().getPort();
+ 
+@@ -61,6 +121,20 @@
+             public void handle(HttpExchange exchange) throws IOException {
+                 InputStream is = exchange.getRequestBody();
+                 String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
++
++                Map<String, String> params = new HashMap<>();
++                if (body != null && !body.isBlank()) {
++                    for (String pair : body.split("&")) {
++                        int idx = pair.indexOf("=");
++                        if (idx > 0) {
++                            String k = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8);
++                            String v = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8);
++                            params.put(k, v);
++                        }
++                    }
++                }
++                String wsfunction = params.getOrDefault("wsfunction", "unknown");
++                moodleCallHistory.add(new MoodleCallRecord(wsfunction, body, params));
+ 
+                 if (pauseMoodleVerification.get() && body.contains("wsfunction=core_course_get_courses_by_field")) {
+                     if (inMoodleLatch != null) {
+@@ -81,9 +155,23 @@
+                 } else if (body.contains("wsfunction=core_user_create_users")) {
+                     jsonResponse = "[{\"id\": 7001}]";
+                 } else if (body.contains("enrol_manual_enrol_users")) {
++                    String cidStr = params.get("enrolments[0][courseid]");
++                    if (cidStr != null) {
++                        try {
++                            mockMoodleEnrolledCourses.add(Long.valueOf(cidStr));
++                        } catch (NumberFormatException ignored) {}
++                    }
+                     jsonResponse = "null";
+                 } else if (body.contains("wsfunction=core_enrol_get_users_courses")) {
+-                    jsonResponse = "[{\"id\": 101}, {\"id\": 505}]";
++                    StringBuilder sb = new StringBuilder("[");
++                    boolean first = true;
++                    for (Long cid : mockMoodleEnrolledCourses) {
++                        if (!first) sb.append(",");
++                        sb.append("{\"id\": ").append(cid).append("}");
++                        first = false;
++                    }
++                    sb.append("]");
++                    jsonResponse = sb.toString();
+                 } else {
+                     jsonResponse = "[]";
+                 }
+@@ -101,9 +189,12 @@
+     }
+ 
+     @AfterAll
+-    static void stopMockMoodle() {
++    static void stopServices() {
+         if (mockMoodleServer != null) {
+             mockMoodleServer.stop(0);
++        }
++        if (mockSmtpServer != null) {
++            mockSmtpServer.close();
+         }
+     }
+ 
+@@ -111,6 +202,8 @@
+     static void moodleProperties(DynamicPropertyRegistry registry) {
+         registry.add("moodle.url", () -> "http://127.0.0.1:" + mockMoodlePort);
+         registry.add("moodle.token", () -> "mock-test-token");
++        registry.add("spring.mail.host", () -> "127.0.0.1");
++        registry.add("spring.mail.port", () -> mockSmtpPort);
+     }
+ 
+     @Autowired
+@@ -120,7 +213,19 @@
+     private BuyCourseUseCase buyCourseService;
+ 
+     @Autowired
++    private com.lysandri.application.service.OrderFinancialTransactionService orderFinancialTransactionService;
++
++    @Autowired
+     private ProgramRepositoryPort programRepositoryPort;
++
++    @Autowired
++    private OrderRepositoryPort orderRepositoryPort;
++
++    @Autowired
++    private com.lysandri.adapters.out.billing.BillingServiceAdapter billingServiceAdapter;
++
++    @Autowired
++    private com.lysandri.adapters.out.notification.EmailNotificationAdapter emailNotificationAdapter;
+ 
+     @Autowired
+     private SpringDataProgramRepository springDataProgramRepository;
+@@ -139,13 +244,31 @@
+ 
+     @Autowired
+     private PlatformTransactionManager transactionManager;
++
++    private CoordinatingOrderRepositoryPort coordinatingOrderRepository;
+ 
+     @BeforeEach
+     void cleanUp() {
+         pauseMoodleVerification.set(false);
+         inMoodleLatch = null;
+         releaseMoodleLatch = null;
+-        jdbcTemplate.execute("TRUNCATE TABLE detalle_ordenes, comprobante_pago, ordenes, programa CASCADE");
++        clearMoodleCallHistory();
++        mockMoodleEnrolledCourses.clear();
++        if (mockSmtpServer != null) {
++            mockSmtpServer.clear();
++        }
++        if (coordinatingOrderRepository == null) {
++            coordinatingOrderRepository = new CoordinatingOrderRepositoryPort(orderRepositoryPort);
++            Object targetTxService = AopTestUtils.getTargetObject(orderFinancialTransactionService);
++            ReflectionTestUtils.setField(targetTxService, "orderRepository", (Object) coordinatingOrderRepository);
++            Object targetBuyService = AopTestUtils.getTargetObject(buyCourseService);
++            ReflectionTestUtils.setField(targetBuyService, "orderRepository", (Object) coordinatingOrderRepository);
++        }
++        coordinatingOrderRepository.clearHooks();
++        jdbcTemplate.execute("TRUNCATE TABLE detalle_ordenes, comprobante_pago, notificaciones_log, outbox_notificacion_activacion, ordenes, programa CASCADE");
++        try {
++            jdbcTemplate.execute("INSERT INTO comprobante_correlativo (serie, ultimo_correlativo) VALUES ('B001', 0), ('F001', 0) ON CONFLICT (serie) DO UPDATE SET ultimo_correlativo = 0");
++        } catch (Exception ignored) {}
+     }
+ 
+     private Programa crearProgramaBase(String suffix, Long moodleCourseId) {
+@@ -384,7 +507,18 @@
+     // PRUEBAS DE RESOLUCIÓN ADMINISTRATIVA (ITEM 2)
+     // =========================================================================
+ 
+-    private Long crearOrdenConDetalleHistoricoPendiente() {
++    static class OrdenHistoricaFixture {
++        final Long idOrden;
++        final Long idDetalle;
++        final String codigoOrden;
++        OrdenHistoricaFixture(Long idOrden, Long idDetalle, String codigoOrden) {
++            this.idOrden = idOrden;
++            this.idDetalle = idDetalle;
++            this.codigoOrden = codigoOrden;
++        }
++    }
++
++    private OrdenHistoricaFixture crearOrdenHistoricaCompleta() {
+         TransactionTemplate tx = new TransactionTemplate(transactionManager);
+         return tx.execute(status -> {
+             ProgramaEntity prog = springDataProgramRepository.save(ProgramaEntity.builder()
+@@ -408,9 +542,10 @@
+                     .activo(true)
+                     .build());
+ 
++            String cod = "ORD-" + UUID.randomUUID().toString().substring(0, 8);
+             OrdenEntity o = springDataOrderRepository.save(OrdenEntity.builder()
+                     .idUser(u.getIdUser())
+-                    .codigoOrden("ORD-" + UUID.randomUUID().toString().substring(0, 8))
++                    .codigoOrden(cod)
+                     .estadoOrden(EstadoOrden.PAGADO)
+                     .estadoAprovisionamiento(EstadoAprovisionamiento.PENDIENTE)
+                     .total(new BigDecimal("150.00"))
+@@ -433,8 +568,12 @@
+ 
+             o.getItems().add(det);
+             OrdenEntity saved = springDataOrderRepository.save(o);
+-            return saved.getItems().get(0).getIdDetalle();
++            return new OrdenHistoricaFixture(saved.getIdOrden(), saved.getItems().get(0).getIdDetalle(), cod);
+         });
++    }
++
++    private Long crearOrdenConDetalleHistoricoPendiente() {
++        return crearOrdenHistoricaCompleta().idDetalle;
+     }
+ 
+     @Test
+@@ -501,8 +640,9 @@
+         );
+ 
+         Orden o1 = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd);
+-        DetalleOrden det1 = o1.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+-        OffsetDateTime fecha1 = det1.getMoodleResolucionFecha();
++        OffsetDateTime fecha1 = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow()
++                .getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow()
++                .getMoodleResolucionFecha();
+         assertNotNull(fecha1);
+ 
+         // Repetir exactamente la misma resolución
+@@ -595,4 +735,701 @@
+         assertEquals("EXP-FINAL", detFinal.getMoodleResolucionEvidencia());
+         assertTrue(detFinal.isMoodleMatriculado());
+     }
++
++
++    @Test
++    @DisplayName("Item 1.8: Transacción real en PostgreSQL -> Una excepción antes de confirmar revierte los cambios en BD")
++    void testTransaccionRealRevierteEnExcepcion() {
++        Programa p = crearProgramaBase("rollback", 101L);
++
++        MoodleCourseVerification verif = MoodleCourseVerification.verificado(101L, "Curso Rollback", "CRB");
++        OffsetDateTime t = OffsetDateTime.now(ZoneOffset.UTC);
++
++        TransactionTemplate tx = new TransactionTemplate(transactionManager);
++        assertThrows(RuntimeException.class, () -> {
++            tx.execute(status -> {
++                catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, t, verif);
++                // Provocar fallo antes del commit para verificar rollback de la transacción real
++                throw new RuntimeException("Fallo forzado antes de confirmar para verificar rollback");
++            });
++        });
++
++        // Verificar que en PostgreSQL los cambios fueron revertidos completamente
++        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
++        assertFalse(enBd.isMoodleVerificado(), "El rollback debe revertir la verificación en PostgreSQL");
++        assertEquals(MoodleVerificationStatus.PENDIENTE_VERIFICACION, enBd.getMoodleEstadoVerificacion());
++        assertNull(enBd.getMoodleCourseNombre());
++    }
++
++    @Test
++    @DisplayName("Item 3.1 (Orden A): Aprovisionamiento adquiere primero la reserva -> resolución real rechazada sin modificar destino")
++    void testConcurrenciaReal_AprovisionamientoPrimeroRechazaResolucion() throws Exception {
++        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
++
++        CountDownLatch reservaAdquiridaLatch = new CountDownLatch(1);
++        CountDownLatch resolucionTerminadaLatch = new CountDownLatch(1);
++        List<Throwable> resolucionErrors = Collections.synchronizedList(new ArrayList<>());
++
++        ExecutorService executor = Executors.newFixedThreadPool(2);
++
++        // Hilo 1: Adquiere la reserva de aprovisionamiento usando el método real del backend
++        Future<ResultadoReservaAprovisionamiento> futureReserva = executor.submit(() -> {
++            ResultadoReservaAprovisionamiento res =
++                    orderFinancialTransactionService.reservarAprovisionamiento(fix.codigoOrden);
++            reservaAdquiridaLatch.countDown();
++            return res;
++        });
++
++        // Hilo 2: Intenta resolver concurrentemente mientras el aprovisionamiento tiene la reserva activa
++        executor.submit(() -> {
++            try {
++                assertTrue(reservaAdquiridaLatch.await(5, TimeUnit.SECONDS), "La reserva debió adquirirse primero");
++                BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
++                        606L, "Intento durante aprovisionamiento real", "EXP-BLOQ", "admin@test.pe"
++                );
++                buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
++            } catch (Throwable t) {
++                resolucionErrors.add(t);
++            } finally {
++                resolucionTerminadaLatch.countDown();
++            }
++        });
++
++        assertTrue(resolucionTerminadaLatch.await(5, TimeUnit.SECONDS), "La resolución debió responder dentro del timeout");
++        ResultadoReservaAprovisionamiento reserva =
++                futureReserva.get(5, TimeUnit.SECONDS);
++
++        assertNotNull(reserva);
++        assertNotNull(reserva.getOwnerToken());
++        assertEquals(1, resolucionErrors.size(), "La resolución debió fallar con excepción");
++        assertTrue(resolucionErrors.get(0).getMessage().contains("arrendamiento activo de aprovisionamiento"));
++
++        // Comprobación de estado final persistido en base de datos:
++        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
++        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(fix.idDetalle)).findFirst().orElseThrow();
++        assertNull(det.getMoodleCourseId(), "El destino no debe ser modificado por la resolución rechazada");
++        assertEquals("PENDIENTE_RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
++        assertNull(det.getMoodleResolucionAutorizadaPor(), "No deben escribirse campos de auditoría");
++        assertFalse(det.isMoodleMatriculado(), "No debe producirse matrícula a destino diferente");
++        executor.shutdownNow();
++    }
++
++    @Test
++    @DisplayName("Item 3.2 (Orden B): Resolución confirma primero -> aprovisionamiento real utiliza destino confirmado y conserva auditoría")
++    void testConcurrenciaReal_ResolucionPrimeroAprovisionamientoUtilizaDestinoConfirmado() throws Exception {
++        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
++
++        CountDownLatch resolucionConfirmadaLatch = new CountDownLatch(1);
++        CountDownLatch aprovisionamientoTerminadoLatch = new CountDownLatch(1);
++        List<Orden> ordenesAprovisionadas = Collections.synchronizedList(new ArrayList<>());
++        List<Throwable> aprovisionamientoErrors = Collections.synchronizedList(new ArrayList<>());
++
++        ExecutorService executor = Executors.newFixedThreadPool(2);
++
++        // Hilo 1: Resuelve primero el destino legítimo hacia curso 505L
++        Future<Orden> futureResolucion = executor.submit(() -> {
++            BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
++                    505L, "Resolución Legítima Previa", "EXP-LEGITIMO", "auditor_seguro@test.pe"
++            );
++            Orden res = buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
++            resolucionConfirmadaLatch.countDown();
++            return res;
++        });
++
++        // Hilo 2: Ejecuta aprovisionamiento usando el método real del backend
++        executor.submit(() -> {
++            try {
++                assertTrue(resolucionConfirmadaLatch.await(5, TimeUnit.SECONDS), "La resolución debió confirmar primero");
++                Orden ordenProcesada = buyCourseService.reintentarMatricula(fix.idOrden);
++                ordenesAprovisionadas.add(ordenProcesada);
++            } catch (Throwable t) {
++                aprovisionamientoErrors.add(t);
++            } finally {
++                aprovisionamientoTerminadoLatch.countDown();
++            }
++        });
++
++        assertTrue(aprovisionamientoTerminadoLatch.await(10, TimeUnit.SECONDS), "El aprovisionamiento debió terminar dentro del timeout");
++        Orden res1 = futureResolucion.get(5, TimeUnit.SECONDS);
++        assertNotNull(res1);
++        assertEquals(0, aprovisionamientoErrors.size(), "El aprovisionamiento no debió lanzar error");
++        assertEquals(1, ordenesAprovisionadas.size());
++
++        // Comprobación de estado final persistido:
++        OrdenEntity ordenPersistida = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
++        DetalleOrdenEntity det = ordenPersistida.getItems().stream().filter(i -> i.getIdDetalle().equals(fix.idDetalle)).findFirst().orElseThrow();
++
++        assertEquals(505L, det.getMoodleCourseId(), "El aprovisionamiento debe haber utilizado el destino confirmado (505)");
++        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
++        assertEquals("auditor_seguro@test.pe", det.getMoodleResolucionAutorizadaPor(), "La auditoría se conserva");
++        assertEquals("Resolución Legítima Previa", det.getMoodleResolucionMotivo());
++        assertEquals("EXP-LEGITIMO", det.getMoodleResolucionEvidencia());
++        assertTrue(det.isMoodleMatriculado(), "La matrícula debe quedar completada");
++
++        // Verificación de idempotencia de reintentos: no duplicar matrícula, comprobantes ni facturación
++        Orden ordenReintento = buyCourseService.reintentarMatricula(fix.idOrden);
++        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenReintento.getEstadoAprovisionamiento());
++
++        Integer countComprobantes = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countComprobantes, "No debe duplicarse la facturación ni emitirse más de 1 comprobante");
++
++        Integer countDetalles = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM detalle_ordenes WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countDetalles, "No deben duplicarse los detalles de la orden");
++        executor.shutdownNow();
++    }
++
++    // =========================================================================
++    // ITEM 1: PRUEBAS DE CONTENCIÓN REAL ENTRE TRANSACCIONES EN POSTGRESQL
++    // =========================================================================
++
++    static class BlockingLockEvidence {
++        final int blockedPid;
++        final int blockingPid;
++        final String waitEventType;
++        final String waitEvent;
++        final String blockedQuery;
++
++        BlockingLockEvidence(int blockedPid, int blockingPid, String waitEventType, String waitEvent, String blockedQuery) {
++            this.blockedPid = blockedPid;
++            this.blockingPid = blockingPid;
++            this.waitEventType = waitEventType;
++            this.waitEvent = waitEvent;
++            this.blockedQuery = blockedQuery;
++        }
++    }
++
++    private List<BlockingLockEvidence> consultarBloqueosContencion() {
++        String sql = """
++                SELECT
++                    blocked.pid AS blocked_pid,
++                    blocking.pid AS blocking_pid,
++                    blocked.wait_event_type,
++                    blocked.wait_event,
++                    COALESCE(blocked.query, '') AS blocked_query
++                FROM pg_stat_activity blocked
++                JOIN unnest(pg_blocking_pids(blocked.pid)) AS blocking_pid_val ON true
++                JOIN pg_stat_activity blocking ON blocking.pid = blocking_pid_val
++                WHERE blocked.pid != pg_backend_pid()
++                """;
++        return jdbcTemplate.query(sql, (rs, rowNum) -> new BlockingLockEvidence(
++                rs.getInt("blocked_pid"),
++                rs.getInt("blocking_pid"),
++                rs.getString("wait_event_type"),
++                rs.getString("wait_event"),
++                rs.getString("blocked_query")
++        ));
++    }
++
++    private List<BlockingLockEvidence> esperarContencionPostgres(long timeoutMs) throws InterruptedException {
++        long deadline = System.currentTimeMillis() + timeoutMs;
++        while (System.currentTimeMillis() < deadline) {
++            List<BlockingLockEvidence> list = consultarBloqueosContencion();
++            if (!list.isEmpty()) {
++                return list;
++            }
++            Thread.sleep(50);
++        }
++        return Collections.emptyList();
++    }
++
++    private void esperarMensajesSmtp(int esperados, long timeoutMs) throws InterruptedException {
++        long deadline = System.currentTimeMillis() + timeoutMs;
++        while (System.currentTimeMillis() < deadline) {
++            if (mockSmtpServer.getMessageCount() >= esperados) {
++                return;
++            }
++            Thread.sleep(50);
++        }
++    }
++
++    @Test
++    @DisplayName("Item 3.1b (Contención Real - Escenario A): Aprovisionamiento mantiene bloqueo en transacción abierta -> Resolución compite, queda bloqueada en PostgreSQL, y al liberarse es rechazada")
++    void testContencionReal_AprovisionamientoMantieneBloqueoSolapado_ResolucionRechazada() throws Exception {
++        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
++
++        CountDownLatch tx1BloqueoAdquiridoLatch = new CountDownLatch(1);
++        CountDownLatch tx1LiberarLatch = new CountDownLatch(1);
++        CountDownLatch tx2TerminadoLatch = new CountDownLatch(1);
++
++        List<Throwable> resolucionErrors = Collections.synchronizedList(new ArrayList<>());
++        ExecutorService executor = Executors.newFixedThreadPool(2);
++
++        try {
++            // Hilo 1: Adquiere la reserva de aprovisionamiento y mantiene abierta su transacción mientras retiene el bloqueo de fila
++            coordinatingOrderRepository.setOnGuardarHook((orden, saveAction) -> {
++                // Notificar que el Hilo 1 ya adquirió el bloqueo pesimista mediante buscarPorCodigoConBloqueo
++                tx1BloqueoAdquiridoLatch.countDown();
++                try {
++                    // Mantener abierta la transacción de reserva con el bloqueo activo
++                    boolean liberado = tx1LiberarLatch.await(10, TimeUnit.SECONDS);
++                    assertTrue(liberado, "El Hilo 1 debió ser liberado dentro del timeout");
++                } catch (InterruptedException e) {
++                    Thread.currentThread().interrupt();
++                }
++                saveAction.run();
++            });
++
++            Future<ResultadoReservaAprovisionamiento> futureReserva = executor.submit(() ->
++                    orderFinancialTransactionService.reservarAprovisionamiento(fix.codigoOrden)
++            );
++
++            // Esperar que Hilo 1 haya adquirido el bloqueo y mantenga su transacción abierta
++            assertTrue(tx1BloqueoAdquiridoLatch.await(5, TimeUnit.SECONDS),
++                    "Hilo 1 debió adquirir el bloqueo pesimista en PostgreSQL");
++
++            // Hilo 2: Inicia resolución administrativa mientras Hilo 1 retiene el bloqueo
++            executor.submit(() -> {
++                try {
++                    BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
++                            606L, "Intento durante contención real", "EXP-CONTENCION-A", "admin@test.pe"
++                    );
++                    buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
++                } catch (Throwable t) {
++                    resolucionErrors.add(t);
++                } finally {
++                    tx2TerminadoLatch.countDown();
++                }
++            });
++
++            // Comprobar evidencia observable de contención en PostgreSQL (pg_blocking_pids / pg_stat_activity)
++            List<BlockingLockEvidence> bloqueos = esperarContencionPostgres(5000);
++            assertFalse(bloqueos.isEmpty(),
++                    "PostgreSQL debe evidenciar contención observable: Hilo 2 bloqueado por Hilo 1 en pg_stat_activity/pg_blocking_pids");
++            BlockingLockEvidence bloqueo = bloqueos.get(0);
++            assertEquals("Lock", bloqueo.waitEventType, "El tipo de espera en PostgreSQL debe ser Lock");
++            String q1 = bloqueo.blockedQuery.toLowerCase();
++            assertTrue(q1.contains("for update") || q1.contains("for no key update") || q1.contains("update"),
++                    "La consulta bloqueada debe ser un SELECT con bloqueo pesimista en PostgreSQL (obtenido: " + bloqueo.blockedQuery + ")");
++
++            // Liberar la primera transacción para que confirme
++            tx1LiberarLatch.countDown();
++
++            // Esperar finalización de la resolución (Hilo 2)
++            assertTrue(tx2TerminadoLatch.await(10, TimeUnit.SECONDS),
++                    "La resolución debe desbloquearse y completarse tras el commit de Hilo 1");
++
++            ResultadoReservaAprovisionamiento reserva = futureReserva.get(5, TimeUnit.SECONDS);
++            assertNotNull(reserva);
++            assertTrue(reserva.isReservado());
++
++            // La resolución debió ser rechazada por colisión con el lease de aprovisionamiento
++            assertEquals(1, resolucionErrors.size(), "La resolución debió ser rechazada con conflicto");
++            assertTrue(resolucionErrors.get(0).getMessage().contains("arrendamiento activo de aprovisionamiento"));
++
++            // Estado final persistido inalterado en base de datos
++            OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
++            DetalleOrdenEntity det = ordenActual.getItems().get(0);
++            assertNull(det.getMoodleCourseId(), "El destino no debe ser modificado por la resolución rechazada");
++            assertEquals("PENDIENTE_RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
++            assertNull(det.getMoodleResolucionAutorizadaPor(), "No deben escribirse campos de auditoría");
++            assertFalse(det.isMoodleMatriculado(), "No debe producirse matrícula a destino diferente");
++            assertEquals(EstadoOrden.PAGADO, ordenActual.getEstadoOrden(), "El estado del pago se mantiene intacto");
++
++            // Comprobar que la resolución rechazada NO disparó matrícula, facturación ni notificaciones
++            assertEquals(0, getMoodleEnrolCalls().size(), "Una resolución rechazada no debe disparar matrícula en Moodle");
++            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden),
++                    "Una resolución rechazada no debe emitir comprobantes");
++            assertEquals(0, mockSmtpServer.getMessageCount(),
++                    "Una resolución rechazada no debe enviar correos");
++
++        } finally {
++            coordinatingOrderRepository.clearHooks();
++            tx1LiberarLatch.countDown();
++            executor.shutdownNow();
++            executor.awaitTermination(5, TimeUnit.SECONDS);
++        }
++    }
++
++    @Test
++    @DisplayName("Item 3.2b (Contención Real - Escenario B): Resolución mantiene bloqueo en transacción abierta -> Reserva compite, queda bloqueada en PostgreSQL, y al liberarse usa el destino confirmado")
++    void testContencionReal_ResolucionMantieneBloqueoSolapado_AprovisionamientoUsaDestinoConfirmado() throws Exception {
++        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
++
++        CountDownLatch tx1BloqueoAdquiridoLatch = new CountDownLatch(1);
++        CountDownLatch tx1LiberarLatch = new CountDownLatch(1);
++        CountDownLatch tx2TerminadoLatch = new CountDownLatch(1);
++
++        List<Throwable> aprovisionamientoErrors = Collections.synchronizedList(new ArrayList<>());
++        List<Orden> ordenesAprovisionadas = Collections.synchronizedList(new ArrayList<>());
++        ExecutorService executor = Executors.newFixedThreadPool(2);
++
++        try {
++            // Hilo 1: Resuelve hacia curso 505L y mantiene la transacción abierta tras escribir en el buffer pero antes del commit
++            coordinatingOrderRepository.setOnGuardarHook((orden, saveAction) -> {
++                saveAction.run(); // Persistir en el contexto de la transacción abierta
++                tx1BloqueoAdquiridoLatch.countDown();
++                try {
++                    boolean liberado = tx1LiberarLatch.await(10, TimeUnit.SECONDS);
++                    assertTrue(liberado, "El Hilo 1 debió ser liberado dentro del timeout");
++                } catch (InterruptedException e) {
++                    Thread.currentThread().interrupt();
++                }
++            });
++
++            Future<Orden> futureResolucion = executor.submit(() -> {
++                BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
++                        505L, "Resolución Legítima Solapada", "EXP-SOLAPADA-B", "auditor_solapado@test.pe"
++                );
++                return buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
++            });
++
++            assertTrue(tx1BloqueoAdquiridoLatch.await(5, TimeUnit.SECONDS),
++                    "Hilo 1 debió adquirir el bloqueo pesimista en PostgreSQL y preparar la resolución");
++
++            // Hilo 2: Intenta aprovisionar mediante reintentarMatricula mientras Hilo 1 retiene el bloqueo
++            executor.submit(() -> {
++                try {
++                    Orden ordenProc = buyCourseService.reintentarMatricula(fix.idOrden);
++                    ordenesAprovisionadas.add(ordenProc);
++                } catch (Throwable t) {
++                    aprovisionamientoErrors.add(t);
++                } finally {
++                    tx2TerminadoLatch.countDown();
++                }
++            });
++
++            // Comprobar evidencia observable de contención en PostgreSQL (Hilo 2 bloqueado por Hilo 1)
++            List<BlockingLockEvidence> bloqueos = esperarContencionPostgres(5000);
++            assertFalse(bloqueos.isEmpty(),
++                    "PostgreSQL debe evidenciar contención observable: Hilo 2 bloqueado por Hilo 1 en pg_stat_activity/pg_blocking_pids");
++            BlockingLockEvidence bloqueo = bloqueos.get(0);
++            assertEquals("Lock", bloqueo.waitEventType, "El tipo de espera en PostgreSQL debe ser Lock");
++            String q1 = bloqueo.blockedQuery.toLowerCase();
++            assertTrue(q1.contains("for update") || q1.contains("for no key update") || q1.contains("update"),
++                    "La consulta bloqueada debe ser un SELECT con bloqueo pesimista en PostgreSQL (obtenido: " + bloqueo.blockedQuery + ")");
++
++            // Liberar la primera transacción para que confirme la resolución
++            tx1LiberarLatch.countDown();
++
++            assertTrue(tx2TerminadoLatch.await(10, TimeUnit.SECONDS),
++                    "El aprovisionamiento debe desbloquearse y completarse tras el commit de la resolución");
++
++            Orden res1 = futureResolucion.get(5, TimeUnit.SECONDS);
++            assertNotNull(res1);
++            assertEquals(0, aprovisionamientoErrors.size(), "El aprovisionamiento no debió fallar una vez liberado el bloqueo");
++            assertEquals(1, ordenesAprovisionadas.size());
++
++            Orden ordenAprovisionada = ordenesAprovisionadas.get(0);
++            assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenAprovisionada.getEstadoAprovisionamiento());
++            assertTrue(ordenAprovisionada.isMoodleMatriculaSincronizada());
++
++            OrdenEntity ordenPersistida = springDataOrderRepository.findById(fix.idOrden).orElseThrow();
++            DetalleOrdenEntity det = ordenPersistida.getItems().get(0);
++            assertEquals(505L, det.getMoodleCourseId(), "El aprovisionamiento debió utilizar el destino confirmado 505L");
++            assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
++            assertEquals("auditor_solapado@test.pe", det.getMoodleResolucionAutorizadaPor(), "La auditoría se preserva");
++            assertEquals("Resolución Legítima Solapada", det.getMoodleResolucionMotivo());
++            assertEquals("EXP-SOLAPADA-B", det.getMoodleResolucionEvidencia());
++            assertTrue(det.isMoodleMatriculado());
++
++        } finally {
++            coordinatingOrderRepository.clearHooks();
++            tx1LiberarLatch.countDown();
++            executor.shutdownNow();
++            executor.awaitTermination(5, TimeUnit.SECONDS);
++        }
++    }
++
++    // =========================================================================
++    // ITEM 2: COMPROBACIÓN EXHAUSTIVA DE EFECTOS EXTERNOS EN REINTENTOS
++    // =========================================================================
++
++    @Test
++    @DisplayName("Item 3.3 (Efectos Externos en Reintentos): Verificación exhaustiva de llamadas a Moodle, facturación y notificaciones antes y después del reintento")
++    void testEfectosExternosEnReintentos_ComprobantesMoodleYNotificacionesNoSeDuplican() {
++        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
++
++        // 1. Resolver destino documentalmente hacia curso 505L
++        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
++                505L, "Resolución de Prueba de Efectos", "EXP-EFECTOS-01", "auditor_efectos@test.pe"
++        );
++        Orden resResolucion = buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
++        assertNotNull(resResolucion);
++
++        // 2. Limpiar registros de llamadas antes de aprovisionar
++        clearMoodleCallHistory();
++        mockMoodleEnrolledCourses.clear();
++        mockSmtpServer.clear();
++
++        // =====================================================================
++        // PRIMER INTENTO DE MATRÍCULA
++        // =====================================================================
++        Orden ordenIntento1 = buyCourseService.reintentarMatricula(fix.idOrden);
++        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenIntento1.getEstadoAprovisionamiento());
++        assertTrue(ordenIntento1.isMoodleMatriculaSincronizada());
++
++        // Comprobación Moodle (Efectos mutantes vs consultas)
++        List<MoodleCallRecord> enrolCallsIntento1 = getMoodleEnrolCalls();
++        assertEquals(1, enrolCallsIntento1.size(), "Debe existir exactamente 1 llamada mutante de matrícula a Moodle");
++        assertEquals("505", enrolCallsIntento1.get(0).getParameter("enrolments[0][courseid]"), "Curso enviado a Moodle debe ser 505");
++        assertEquals("7001", enrolCallsIntento1.get(0).getParameter("enrolments[0][userid]"), "Usuario enviado a Moodle debe ser 7001");
++
++        List<MoodleCallRecord> userCreateCalls1 = getMoodleUserCreateCalls();
++        assertTrue(userCreateCalls1.size() <= 1, "A lo sumo 1 llamada de creación de usuario en Moodle");
++
++        List<MoodleCallRecord> queriesEstado1 = getMoodleReadOnlyQueryCalls();
++        assertTrue(queriesEstado1.size() >= 1, "Las consultas de estado se realizan para verificar condiciones previas");
++
++        // Comprobación Facturación (SUNAT)
++        Integer countComprobantes1 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countComprobantes1, "Debe emitirse exactamente 1 comprobante de pago");
++
++        Integer correlativo1 = jdbcTemplate.queryForObject(
++                "SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class);
++        assertNotNull(correlativo1);
++        assertEquals(1, correlativo1, "El correlativo de comprobante debe ser exactamente 1");
++
++        // Comprobación Notificaciones
++        Integer countNotifLogs1 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM notificaciones_log WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countNotifLogs1, "Debe registrarse exactamente 1 log de notificación");
++        String claveIdemp1 = jdbcTemplate.queryForObject(
++                "SELECT clave_idempotencia FROM notificaciones_log WHERE id_orden = ?", String.class, fix.idOrden);
++        assertEquals("ACCESOS_ORDEN_" + fix.idOrden, claveIdemp1);
++
++        try {
++            esperarMensajesSmtp(1, 3000);
++        } catch (InterruptedException ignored) {}
++        assertEquals(1, mockSmtpServer.getMessageCount(), "El servidor SMTP debe recibir exactamente 1 correo de accesos y factura");
++
++        // Comprobación Outbox (si aplica para activación de cuenta)
++        Integer countOutbox1 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM outbox_notificacion_activacion WHERE id_orden = ?", Integer.class, fix.idOrden);
++        if (countOutbox1 > 0) {
++            assertEquals(1, countOutbox1);
++            String claveOutbox1 = jdbcTemplate.queryForObject(
++                    "SELECT clave_idempotencia FROM outbox_notificacion_activacion WHERE id_orden = ?", String.class, fix.idOrden);
++            assertEquals("ACTIVACION_ORDEN_" + fix.idOrden, claveOutbox1);
++        }
++
++        // =====================================================================
++        // REINTENTO DE MATRÍCULA (SEGUNDO INTENTO IDEMPOTENTE)
++        // =====================================================================
++        Orden ordenIntento2 = buyCourseService.reintentarMatricula(fix.idOrden);
++        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenIntento2.getEstadoAprovisionamiento());
++        assertTrue(ordenIntento2.isMoodleMatriculaSincronizada());
++
++        // Comprobar que los efectos externos MUTANTES NO SE REPITEN:
++        List<MoodleCallRecord> enrolCallsIntento2 = getMoodleEnrolCalls();
++        assertEquals(1, enrolCallsIntento2.size(), "El reintento NO debe generar una segunda llamada de matrícula a Moodle");
++
++        List<MoodleCallRecord> userCreateCalls2 = getMoodleUserCreateCalls();
++        assertEquals(userCreateCalls1.size(), userCreateCalls2.size(), "El reintento NO debe repetir la creación de usuario");
++
++        Integer countComprobantes2 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countComprobantes2, "El reintento NO debe emitir un segundo comprobante");
++
++        Integer correlativo2 = jdbcTemplate.queryForObject(
++                "SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class);
++        assertEquals(correlativo1, correlativo2, "El reintento NO debe reservar un nuevo correlativo de factura/boleta");
++
++        Integer countNotifLogs2 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM notificaciones_log WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(1, countNotifLogs2, "El reintento NO debe duplicar los registros de log de notificación");
++
++        assertEquals(1, mockSmtpServer.getMessageCount(), "El reintento NO debe enviar un segundo correo de accesos/factura");
++
++        Integer countOutbox2 = jdbcTemplate.queryForObject(
++                "SELECT COUNT(*) FROM outbox_notificacion_activacion WHERE id_orden = ?", Integer.class, fix.idOrden);
++        assertEquals(countOutbox1, countOutbox2, "El reintento NO debe duplicar tareas en el outbox");
++
++        // Auditoría, pago y destino permanecen intactos
++        OrdenEntity ordenPersistida = springDataOrderRepository.findById(fix.idOrden).orElseThrow();
++        DetalleOrdenEntity det = ordenPersistida.getItems().get(0);
++        assertEquals(505L, det.getMoodleCourseId());
++        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
++        assertEquals("auditor_efectos@test.pe", det.getMoodleResolucionAutorizadaPor());
++        assertEquals("Resolución de Prueba de Efectos", det.getMoodleResolucionMotivo());
++        assertEquals("EXP-EFECTOS-01", det.getMoodleResolucionEvidencia());
++        assertTrue(det.isMoodleMatriculado());
++        assertEquals(EstadoOrden.PAGADO, ordenPersistida.getEstadoOrden());
++
++        // =====================================================================
++        // VERIFICACIÓN DIRECTA DEL CONTRATO DE IDEMPOTENCIA EN ADAPTADORES
++        // =====================================================================
++        // Facturación directa idempotente
++        ComprobantePago compReintentoDirecto = billingServiceAdapter.emitirComprobante(ordenIntento1);
++        assertNotNull(compReintentoDirecto);
++        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden));
++        assertEquals(correlativo1, jdbcTemplate.queryForObject("SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class));
++
++        // Notificación directa con clave idempotente
++        emailNotificationAdapter.enviarAccesosYFactura(
++                "cliente.efectos@test.pe", "Cliente Efectos", "Programa Test", "pwd123", compReintentoDirecto
++        );
++        assertEquals(1, mockSmtpServer.getMessageCount(), "La llamada directa de notificación con clave existente omite reenvío");
++    }
++
++    // =========================================================================
++    // CLASES DE COORDINACIÓN E INSTRUMENTACIÓN EN SRC/TEST
++    // =========================================================================
++
++    static class SimpleMockSmtpServer implements AutoCloseable {
++        private final ServerSocket serverSocket;
++        private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
++        private final ExecutorService executor = Executors.newCachedThreadPool();
++        private volatile boolean running = true;
++
++        public SimpleMockSmtpServer(int port) throws IOException {
++            this.serverSocket = new ServerSocket(port);
++            executor.submit(this::listen);
++        }
++
++        public int getPort() {
++            return serverSocket.getLocalPort();
++        }
++
++        public List<String> getReceivedMessages() {
++            return Collections.unmodifiableList(receivedMessages);
++        }
++
++        public int getMessageCount() {
++            return receivedMessages.size();
++        }
++
++        public void clear() {
++            receivedMessages.clear();
++        }
++
++        private void listen() {
++            while (running) {
++                try {
++                    Socket socket = serverSocket.accept();
++                    executor.submit(() -> handleClient(socket));
++                } catch (IOException e) {
++                    if (!running) break;
++                }
++            }
++        }
++
++        private void handleClient(Socket socket) {
++            try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
++                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
++
++                writer.write("220 localhost SimpleMockSmtpServer ready\r\n");
++                writer.flush();
++
++                StringBuilder currentData = new StringBuilder();
++                boolean readingData = false;
++
++                String line;
++                while ((line = reader.readLine()) != null) {
++                    if (readingData) {
++                        if (".".equals(line)) {
++                            readingData = false;
++                            receivedMessages.add(currentData.toString());
++                            writer.write("250 2.0.0 OK: message queued\r\n");
++                            writer.flush();
++                        } else {
++                            currentData.append(line).append("\n");
++                        }
++                    } else {
++                        String upper = line.toUpperCase(Locale.ROOT);
++                        if (upper.startsWith("HELO") || upper.startsWith("EHLO")) {
++                            writer.write("250-localhost Hello\r\n250 OK\r\n");
++                            writer.flush();
++                        } else if (upper.startsWith("MAIL FROM:")) {
++                            writer.write("250 2.1.0 OK\r\n");
++                            writer.flush();
++                        } else if (upper.startsWith("RCPT TO:")) {
++                            writer.write("250 2.1.5 OK\r\n");
++                            writer.flush();
++                        } else if (upper.equals("DATA")) {
++                            readingData = true;
++                            currentData.setLength(0);
++                            writer.write("354 Start mail input; end with <CRLF>.<CRLF>\r\n");
++                            writer.flush();
++                        } else if (upper.equals("QUIT")) {
++                            writer.write("221 2.0.0 Bye\r\n");
++                            writer.flush();
++                            break;
++                        } else if (upper.startsWith("RSET") || upper.startsWith("NOOP")) {
++                            writer.write("250 OK\r\n");
++                            writer.flush();
++                        } else {
++                            writer.write("250 OK\r\n");
++                            writer.flush();
++                        }
++                    }
++                }
++            } catch (IOException ignored) {
++            } finally {
++                try { socket.close(); } catch (IOException ignored) {}
++            }
++        }
++
++        @Override
++        public void close() {
++            running = false;
++            try { serverSocket.close(); } catch (IOException ignored) {}
++            executor.shutdownNow();
++        }
++    }
++
++    static class CoordinatingOrderRepositoryPort implements OrderRepositoryPort {
++        private final OrderRepositoryPort delegate;
++        private volatile BiConsumer<Orden, Runnable> onGuardarHook;
++
++        public CoordinatingOrderRepositoryPort(OrderRepositoryPort delegate) {
++            this.delegate = delegate;
++        }
++
++        public void setOnGuardarHook(BiConsumer<Orden, Runnable> hook) {
++            this.onGuardarHook = hook;
++        }
++
++        public void clearHooks() {
++            this.onGuardarHook = null;
++        }
++
++        @Override
++        public Orden guardar(Orden orden) {
++            BiConsumer<Orden, Runnable> currentHook = this.onGuardarHook;
++            if (currentHook != null) {
++                final Orden[] saved = new Orden[1];
++                currentHook.accept(orden, () -> saved[0] = delegate.guardar(orden));
++                return saved[0] != null ? saved[0] : delegate.guardar(orden);
++            }
++            return delegate.guardar(orden);
++        }
++
++        @Override
++        public Optional<Orden> buscarPorId(Long idOrden) { return delegate.buscarPorId(idOrden); }
++        @Override
++        public Optional<Orden> buscarPorCodigo(String codigoOrden) { return delegate.buscarPorCodigo(codigoOrden); }
++        @Override
++        public Optional<Orden> buscarPorCodigoConBloqueo(String codigoOrden) { return delegate.buscarPorCodigoConBloqueo(codigoOrden); }
++        @Override
++        public Optional<Orden> buscarPorIdConBloqueo(Long idOrden) { return delegate.buscarPorIdConBloqueo(idOrden); }
++        @Override
++        public Optional<Orden> buscarOrdenPorIdDetalle(Long idDetalle) { return delegate.buscarOrdenPorIdDetalle(idDetalle); }
++        @Override
++        public Optional<Orden> buscarOrdenPorIdDetalleConBloqueo(Long idDetalle) { return delegate.buscarOrdenPorIdDetalleConBloqueo(idDetalle); }
++        @Override
++        public Optional<Orden> buscarPorStripeSessionId(String stripeSessionId) { return delegate.buscarPorStripeSessionId(stripeSessionId); }
++        @Override
++        public Optional<Orden> buscarPorStripePaymentIntentId(String stripePaymentIntentId) { return delegate.buscarPorStripePaymentIntentId(stripePaymentIntentId); }
++        @Override
++        public Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId) { return delegate.buscarPorIzipayTransactionId(izipayTransactionId); }
++        @Override
++        public Optional<Orden> buscarPorCualquierIdentificador(String id) { return delegate.buscarPorCualquierIdentificador(id); }
++        @Override
++        public Optional<Orden> buscarPorClaveIdempotencia(String claveIdempotencia) { return delegate.buscarPorClaveIdempotencia(claveIdempotencia); }
++        @Override
++        public Optional<Orden> buscarPorAbonoBancario(String bancoDestino, String cuentaDestino, String numeroOperacion) { return delegate.buscarPorAbonoBancario(bancoDestino, cuentaDestino, numeroOperacion); }
++        @Override
++        public void bloquearAbonoBancario(String numeroOperacionNormalizado) { delegate.bloquearAbonoBancario(numeroOperacionNormalizado); }
++        @Override
++        public List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado) { return delegate.buscarAbonosHistoricosPorOperacion(numeroOperacionNormalizado); }
++        @Override
++        public List<Orden> buscarPorUsuario(Long idUsuario) { return delegate.buscarPorUsuario(idUsuario); }
++        @Override
++        public List<Orden> listarTodas() { return delegate.listarTodas(); }
++        @Override
++        public List<Orden> listarPorEstado(EstadoOrden estado) { return delegate.listarPorEstado(estado); }
++    }
+ }

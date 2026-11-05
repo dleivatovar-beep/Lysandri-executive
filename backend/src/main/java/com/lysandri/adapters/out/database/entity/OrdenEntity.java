@@ -51,13 +51,22 @@ public class OrdenEntity {
 
     @Column(name = "metodo_pago", nullable = false, length = 50)
     @Builder.Default
-    private String metodoPago = "STRIPE";
+    private String metodoPago = "IZIPAY";
 
     @Column(name = "stripe_session_id", unique = true, length = 255)
     private String stripeSessionId;
 
     @Column(name = "stripe_payment_intent_id", unique = true, length = 255)
     private String stripePaymentIntentId;
+
+    @Column(name = "izipay_transaction_id", length = 255)
+    private String izipayTransactionId;
+
+    @Column(name = "izipay_order_id", length = 255)
+    private String izipayOrderId;
+
+    @Column(name = "izipay_uuid", length = 255)
+    private String izipayUuid;
 
     @Column(name = "moodle_matricula_sincronizada", nullable = false)
     @Builder.Default
@@ -74,6 +83,61 @@ public class OrdenEntity {
 
     @Column(name = "nombre_facturacion", length = 200)
     private String nombreFacturacion;
+
+    @Column(name = "numero_operacion", length = 100)
+    private String numeroOperacion;
+
+    @Column(name = "notas_admin", length = 500)
+    private String notasAdmin;
+
+    @Column(name = "clave_idempotencia", length = 150)
+    private String claveIdempotencia;
+
+    @Column(name = "guest_session_hash", length = 64)
+    private String guestSessionHash;
+
+    // Campos de auditoría y verificación de transferencias bancarias y pagos manuales
+    @Column(name = "banco_destino", length = 50)
+    private String bancoDestino;
+
+    @Column(name = "cuenta_destino", length = 100)
+    private String cuentaDestino;
+
+    @Column(name = "monto_verificado", precision = 10, scale = 2)
+    private BigDecimal montoVerificado;
+
+    @Column(name = "moneda_verificada", length = 3)
+    private String monedaVerificada;
+
+    @Column(name = "fecha_abono")
+    private OffsetDateTime fechaAbono;
+
+    @Column(name = "aprobado_por", length = 150)
+    private String aprobadoPor;
+
+    @Column(name = "fecha_aprobacion")
+    private OffsetDateTime fechaAprobacion;
+
+    @Column(name = "observacion_verificacion", length = 500)
+    private String observacionVerificacion;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_aprovisionamiento", length = 30)
+    @Builder.Default
+    private com.lysandri.domain.model.EstadoAprovisionamiento estadoAprovisionamiento = com.lysandri.domain.model.EstadoAprovisionamiento.PENDIENTE;
+
+    @Column(name = "aprovisionamiento_lease_token", length = 100)
+    private String aprovisionamientoLeaseToken;
+
+    @Column(name = "aprovisionamiento_lease_expires_at")
+    private OffsetDateTime aprovisionamientoLeaseExpiresAt;
+
+    @Column(name = "aprovisionamiento_intentos")
+    @Builder.Default
+    private int aprovisionamientoIntentos = 0;
+
+    @Column(name = "aprovisionamiento_ultimo_error", columnDefinition = "TEXT")
+    private String aprovisionamientoUltimoError;
 
     @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

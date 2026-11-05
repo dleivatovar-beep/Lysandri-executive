@@ -69,4 +69,47 @@ class ChatRagServiceTest {
         verify(vectorStorePort).buscarSimilares(eq(mockVector), eq(4), eq(0.60), eq(101L));
         verify(historialRepository).guardar(any());
     }
+
+    @Test
+    void procesarConsulta_cuandoNoHayChunks_debeReconocerFaltaDeInformacionSinLlamarLLM() {
+        float[] mockVector = new float[]{0.1f, 0.2f, 0.3f};
+        when(llmClientPort.generarEmbedding("¿Tienen curso de astronomía?")).thenReturn(mockVector);
+        when(vectorStorePort.buscarSimilares(eq(mockVector), anyInt(), anyDouble(), isNull()))
+                .thenReturn(List.of());
+
+        ChatRagUseCase.ChatRagCommand command = new ChatRagUseCase.ChatRagCommand(
+                "¿Tienen curso de astronomía?",
+                "sess_general",
+                null,
+                null
+        );
+
+        ChatRagUseCase.ChatRagResponse response = chatRagService.procesarConsulta(command);
+
+        assertNotNull(response);
+        assertEquals(ChatRagService.RESPUESTA_SIN_INFORMACION_OFICIAL, response.respuesta());
+        assertTrue(response.fuentes().isEmpty(), "Las fuentes deben estar vacías cuando falta información");
+        assertEquals(0, response.tokensUsados());
+        // No debe realizar llamada de inferencia a LLM cuando no hay contexto
+        verify(llmClientPort, never()).completarChat(anyString(), anyString(), anyDouble());
+        verify(historialRepository).guardar(any());
+    }
+
+    @Test
+    void procesarConsulta_cuandoVectorStoreFalla_debePropagarErrorTecnico() {
+        float[] mockVector = new float[]{0.1f, 0.2f, 0.3f};
+        when(llmClientPort.generarEmbedding("consulta")).thenReturn(mockVector);
+        when(vectorStorePort.buscarSimilares(any(), anyInt(), anyDouble(), any()))
+                .thenThrow(new IllegalStateException("Error al consultar el almacén vectorial pgvector"));
+
+        ChatRagUseCase.ChatRagCommand command = new ChatRagUseCase.ChatRagCommand(
+                "consulta",
+                "sess_err",
+                null,
+                101L
+        );
+
+        assertThrows(IllegalStateException.class, () -> chatRagService.procesarConsulta(command));
+        verify(llmClientPort, never()).completarChat(anyString(), anyString(), anyDouble());
+    }
 }

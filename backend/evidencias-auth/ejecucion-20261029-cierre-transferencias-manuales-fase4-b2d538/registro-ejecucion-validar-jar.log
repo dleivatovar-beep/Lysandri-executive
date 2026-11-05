@@ -1,0 +1,65 @@
+[2026-10-29 02:27:22] ================================================================================
+[2026-10-29 02:27:22] INICIO DE VALIDACIÓN REPRODUCIBLE DEL ARTEFACTO JAR (validar-jar.py)
+[2026-10-29 02:27:22] Identificador único de ejecución: run-20261029-022722-b2d538
+[2026-10-29 02:27:22] Carpeta de evidencias propia: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4-b2d538
+[2026-10-29 02:27:22] ================================================================================
+[2026-10-29 02:27:22] [ARTEFACTO] JAR localizado: F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar
+[2026-10-29 02:27:22] [ARTEFACTO] SHA-256 del JAR probado: FBBD94BB897B8DC3A5410FE0223D7B61B7E252A2136733DAF0C86B6C92FC1C17
+[2026-10-29 02:27:22] [INFRAESTRUCTURA] Iniciando servidor Mock SMTP local en puerto 1025...
+[2026-10-29 02:27:22] [INFRAESTRUCTURA] Iniciando servidor Mock WhatsApp Cloud API en puerto 19099...
+[2026-10-29 02:27:22] [INFRAESTRUCTURA] Lanzando contenedor PostgreSQL desechable (lysandri-pg-b2d538) en puerto 15445...
+[2026-10-29 02:27:23] [INFRAESTRUCTURA] Contenedor creado con ID: 2cc36fbe9cfb
+[2026-10-29 02:27:23] [INFRAESTRUCTURA] Esperando a que PostgreSQL desechable esté listo...
+[2026-10-29 02:27:27] [DB] Destino efectivo PostgreSQL: 127.0.0.1:15445/lysandri_disposable_jar_db (usuario: lysandri_test_runner, contrasena: [PROTEGIDA])
+[2026-10-29 02:27:27] [DB] Inicializando roles administrativos mínimos para migración V25...
+[2026-10-29 02:27:27] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-10-29 02:27:27] [JAR] Proceso hijo iniciado con PID: 5436
+[2026-10-29 02:27:27] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-10-29 02:27:43] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-10-29 02:27:43] [JAR] Backend JAR completamente inicializado y aceptando peticiones HTTP.
+[2026-10-29 02:27:43] [DB] Configurando datos base en base desechable...
+[2026-10-29 02:27:44] [PROVISIÓN] Registrando cuenta administrativa con hash BCrypt nativo de Spring Security...
+[2026-10-29 02:27:44] [PROVISIÓN] Cuenta elevada a ADMIN y habilitada correctamente en BD.
+[2026-10-29 02:27:45] [HTTP] Inicio de sesión exitoso de Administrador -> APROBADO (HTTP 200 / esperado 200) Retorna HTTP 200 y token JWT emitido por el servidor
+[2026-10-29 02:27:45] [HTTP] Rechazo de contraseña incorrecta con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 02:27:45] [HTTP] Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración) -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 02:27:45] [HTTP] Creación de orden checkout para invitado -> APROBADO (HTTP 200 / esperado 200) Orden checkout creada con Session ID: izisess_mock_0a1c34fb152e48189dd63b867fa6318f
+[2026-10-29 02:27:46] [HTTP] Confirmación de pago de orden y disparo de outbox de activación -> APROBADO (HTTP 200 / esperado 200) Pago confirmado. Evento de activación encolado en outbox.
+[2026-10-29 02:27:46] [MAIL] Esperando entrega de correo de activación en servidor Mock SMTP local...
+[2026-10-29 02:27:46] [MAIL] Recepción de correo de activación en Mock SMTP -> APROBADO (HTTP EMAIL_RECIBIDO / esperado EMAIL_RECIBIDO) Correo capturado por el outbox worker sin tocar servicios externos
+[2026-10-29 02:27:46] [MAIL] Token de activación válido capturado (longitud 43 chars).
+[2026-10-29 02:27:46] [HTTP] Rechazo de login para cuenta pendiente de activación con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 02:27:46] [HTTP] Activación de cuenta con token válido y establecimiento de contraseña -> APROBADO (HTTP 200 / esperado 200) Cuenta activada y token de sesión retornado
+[2026-10-29 02:27:46] [HTTP] Rechazo de token de activación ya consumido (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Retorna HTTP 409 Conflict ante intento de reusar token consumido
+[2026-10-29 02:27:46] [HTTP] Rechazo de token manipulado / alterado -> APROBADO (HTTP 400 / esperado 400) Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos
+[2026-10-29 02:27:46] [DB] Hash SHA-256 recuperado de la base de datos (longitud 64).
+[2026-10-29 02:27:46] [HTTP] Rechazo del hash de BD presentado directamente como token -> APROBADO (HTTP 400 / esperado 400) El hash almacenado no puede utilizarse como sustituto del token en claro
+[2026-10-29 02:27:46] [HTTP] Inicio de sesión exitoso de Usuario 1 activado -> APROBADO (HTTP 200 / esperado 200) Sesión iniciada correctamente con la nueva contraseña
+[2026-10-29 02:27:46] [HTTP] Registro de Usuario 2 -> APROBADO (HTTP 201 / esperado 201) Usuario 2 registrado exitosamente
+[2026-10-29 02:27:47] [DB] IDs asignados en BD: Usuario 1 = 5, Usuario 2 = 6
+[2026-10-29 02:27:47] [HTTP] Administrador desactiva cuenta de Usuario 2 -> APROBADO (HTTP 200 / esperado 200) Usuario 2 marcado como inactivo/desactivado por la administración
+[2026-10-29 02:27:47] [HTTP] Rechazo de login para cuenta desactivada con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-10-29 02:27:47] [HTTP] Rechazo de petición no autenticada a ruta protegida -> APROBADO (HTTP 401 / esperado 401) Ruta protegida rechaza peticiones sin cabecera Authorization
+[2026-10-29 02:27:47] [HTTP] Rechazo de JWT manipulado / firma inválida -> APROBADO (HTTP 401 / esperado 401) Filtro de seguridad rechaza JWT con firma alterada
+[2026-10-29 02:27:47] [HTTP] Rechazo de JWT firmado con clave distinta -> APROBADO (HTTP 401 / esperado 401) El servidor rechaza tokens firmados con llaves no autorizadas
+[2026-10-29 02:27:47] [HTTP] Usuario común bloqueado de endpoints administrativos (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios
+[2026-10-29 02:27:47] [HTTP] Administrador autorizado accede a endpoints administrativos (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 5 usuarios correctamente
+[2026-10-29 02:27:47] [HTTP] Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Acceso concedido al propietario de la cuenta
+[2026-10-29 02:27:47] [HTTP] Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Lectura cruzada entre usuarios bloqueada por control de autorización
+[2026-10-29 02:27:47] [HTTP] Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Modificación no autorizada rechazada con AccessDeniedException
+[2026-10-29 02:27:47] [DB] Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó -> APROBADO (HTTP Segundo / esperado Segundo) El nombre en BD permanece intacto: 'Segundo'
+[2026-10-29 02:27:47] [DB] Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado -> APROBADO (HTTP ENVIADO|t / esperado ENVIADO|t) Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)
+[2026-10-29 02:27:47] [HTTP] WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR
+[2026-10-29 02:27:47] [HTTP] WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud -> APROBADO (HTTP 201 / esperado 201) Mensaje creado con ID 1, estado ENVIADO, contactó al proveedor simulado
+[2026-10-29 02:27:47] [HTTP] WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor -> APROBADO (HTTP 201 / esperado 201) Proveedor llamado 1 veces (0 llamadas nuevas). Mensaje ID consistente: 1
+[2026-10-29 02:27:48] [HTTP] WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazado con IllegalArgumentException al intentar reusar idSolicitud con datos diferentes
+[2026-10-29 02:27:48] ================================================================================
+[2026-10-29 02:27:48] [ESCENARIO 3B] INICIO DE PRUEBA DE REINICIO REAL DE PROCESO JAVA CONSERVANDO POSTGRESQL
+[2026-10-29 02:27:48] ================================================================================
+[2026-10-29 02:27:48] [REINICIO REAL] Esperando que la petición para req-restart-1793258868 contacte al servidor mock de WhatsApp...
+[2026-10-29 02:27:58] [EVIDENCIA] Reporte estructurado guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4-b2d538\recorrido-http-jar-real.json
+[2026-10-29 02:27:58] [EVIDENCIA] Checksum SHA-256 guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4\sha256-jar.txt
+[2026-10-29 02:27:58] [EVIDENCIA] Copiados 12 reportes XML de Surefire a: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261029-cierre-transferencias-manuales-fase4\surefire-reports
+[2026-10-29 02:27:58] [LIMPIEZA] Deteniendo procesos JAR...
+[2026-10-29 02:27:58] [LIMPIEZA] Deteniendo servidores mock (SMTP y WhatsApp)...
+[2026-10-29 02:27:58] [LIMPIEZA] Destruyendo contenedor PostgreSQL desechable creado en esta corrida (2cc36fbe9cfbeba5b745413da4c5194bfa5d0b3ce57acc6c9711272c492cc163)...

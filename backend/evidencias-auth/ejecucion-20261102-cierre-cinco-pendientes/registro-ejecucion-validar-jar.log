@@ -1,0 +1,139 @@
+[2026-11-02 23:29:45] ================================================================================
+[2026-11-02 23:29:45] INICIO DE VALIDACIÓN REPRODUCIBLE DEL ARTEFACTO JAR (validar-jar.py)
+[2026-11-02 23:29:45] Identificador único de ejecución: run-20261102-232945-089140
+[2026-11-02 23:29:45] Carpeta de evidencias propia: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261102-232945-cierre-moodle-fase6-089140
+[2026-11-02 23:29:45] ================================================================================
+[2026-11-02 23:29:45] [ARTEFACTO] JAR localizado: F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar
+[2026-11-02 23:29:45] [ARTEFACTO] SHA-256 del JAR probado: D5B513D16C0CF63EBD7A775F34765D2C15BBDFBF8A7940E59E2229F5CF589250
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Iniciando servidor Mock SMTP local en puerto 1025...
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Iniciando servidor Mock WhatsApp Cloud API en puerto 19099...
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Iniciando servidor Mock Moodle LMS en puerto 18081...
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Lanzando contenedor PostgreSQL desechable (lysandri-pg-089140) en puerto 15445...
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Contenedor creado con ID: 7430e196988b
+[2026-11-02 23:29:45] [INFRAESTRUCTURA] Esperando a que PostgreSQL desechable esté listo...
+[2026-11-02 23:29:50] [DB] Destino efectivo PostgreSQL: 127.0.0.1:15445/lysandri_disposable_jar_db (usuario: lysandri_test_runner, contrasena: [PROTEGIDA])
+[2026-11-02 23:29:50] [DB] Inicializando roles administrativos mínimos para migración V25...
+[2026-11-02 23:29:50] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-11-02 23:29:50] [JAR] Proceso hijo iniciado con PID: 37496
+[2026-11-02 23:29:50] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-11-02 23:30:04] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-11-02 23:30:04] [JAR] Backend JAR completamente inicializado y aceptando peticiones HTTP.
+[2026-11-02 23:30:04] [DB] Configurando datos base en base desechable...
+[2026-11-02 23:30:05] [PROVISIÓN] Registrando cuenta administrativa con hash BCrypt nativo de Spring Security...
+[2026-11-02 23:30:05] [PROVISIÓN] Cuenta elevada a ADMIN y habilitada correctamente en BD.
+[2026-11-02 23:30:06] [HTTP] Inicio de sesión exitoso de Administrador -> APROBADO (HTTP 200 / esperado 200) Retorna HTTP 200 y token JWT emitido por el servidor
+[2026-11-02 23:30:06] [HTTP] Rechazo de contraseña incorrecta con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje recibido: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-11-02 23:30:06] [HTTP] Rechazo de cuenta inexistente con mensaje idéntico (anti-enumeración) -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-11-02 23:30:06] [HTTP] Creación de orden checkout para invitado con token previo -> APROBADO (HTTP 200 / esperado 200) Orden checkout creada con Session ID: izisess_mock_09d0721c9d6a4170a39a444895a02b75 (Rechazo sin token comprobado: HTTP 400)
+[2026-11-02 23:30:07] [HTTP] Confirmación de pago de orden y disparo de outbox de activación -> APROBADO (HTTP 200 / esperado 200) Pago confirmado. Evento de activación encolado en outbox.
+[2026-11-02 23:30:07] [MAIL] Esperando entrega de correo de activación en servidor Mock SMTP local...
+[2026-11-02 23:30:07] [MAIL] Recepción de correo de activación en Mock SMTP -> APROBADO (HTTP EMAIL_RECIBIDO / esperado EMAIL_RECIBIDO) Correo capturado por el outbox worker sin tocar servicios externos
+[2026-11-02 23:30:07] [MAIL] Token de activación válido capturado (longitud 43 chars).
+[2026-11-02 23:30:07] [HTTP] Rechazo de login para cuenta pendiente de activación con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-11-02 23:30:07] [HTTP] Activación de cuenta con token válido y establecimiento de contraseña -> APROBADO (HTTP 200 / esperado 200) Cuenta activada y token de sesión retornado
+[2026-11-02 23:30:07] [HTTP] Rechazo de token de activación ya consumido (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Retorna HTTP 409 Conflict ante intento de reusar token consumido
+[2026-11-02 23:30:07] [HTTP] Rechazo de token manipulado / alterado -> APROBADO (HTTP 400 / esperado 400) Retorna HTTP 400 Bad Request ante token con firma/caracteres corruptos
+[2026-11-02 23:30:07] [DB] Hash SHA-256 recuperado de la base de datos (longitud 64).
+[2026-11-02 23:30:07] [HTTP] Rechazo del hash de BD presentado directamente como token -> APROBADO (HTTP 400 / esperado 400) El hash almacenado no puede utilizarse como sustituto del token en claro
+[2026-11-02 23:30:07] [HTTP] Inicio de sesión exitoso de Usuario 1 activado -> APROBADO (HTTP 200 / esperado 200) Sesión iniciada correctamente con la nueva contraseña
+[2026-11-02 23:30:07] [HTTP] Registro de Usuario 2 -> APROBADO (HTTP 201 / esperado 201) Usuario 2 registrado exitosamente
+[2026-11-02 23:30:08] [DB] IDs asignados en BD: Usuario 1 = 5, Usuario 2 = 6
+[2026-11-02 23:30:08] [HTTP] Administrador desactiva cuenta de Usuario 2 -> APROBADO (HTTP 200 / esperado 200) Usuario 2 marcado como inactivo/desactivado por la administración
+[2026-11-02 23:30:08] [HTTP] Rechazo de login para cuenta desactivada con mensaje uniforme -> APROBADO (HTTP 401 / esperado 401) Mensaje uniforme verificado: 'No se pudo iniciar sesión con los datos proporcionados'
+[2026-11-02 23:30:08] [HTTP] Rechazo de petición no autenticada a ruta protegida -> APROBADO (HTTP 401 / esperado 401) Ruta protegida rechaza peticiones sin cabecera Authorization
+[2026-11-02 23:30:08] [HTTP] Rechazo de JWT manipulado / firma inválida -> APROBADO (HTTP 401 / esperado 401) Filtro de seguridad rechaza JWT con firma alterada
+[2026-11-02 23:30:08] [HTTP] Rechazo de JWT firmado con clave distinta -> APROBADO (HTTP 401 / esperado 401) El servidor rechaza tokens firmados con llaves no autorizadas
+[2026-11-02 23:30:08] [HTTP] Usuario común bloqueado de endpoints administrativos (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Usuario CLIENTE no tiene privilegios para acceder a /api/v1/usuarios
+[2026-11-02 23:30:08] [HTTP] Administrador autorizado accede a endpoints administrativos (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 5 usuarios correctamente
+[2026-11-02 23:30:08] [HTTP] Control IDOR: Usuario 1 consulta su propio perfil legítimamente (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Acceso concedido al propietario de la cuenta
+[2026-11-02 23:30:08] [HTTP] Control IDOR: Usuario 1 intenta leer datos de Usuario 2 cambiando ID (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Lectura cruzada entre usuarios bloqueada por control de autorización
+[2026-11-02 23:30:08] [HTTP] Control IDOR: Usuario 1 intenta modificar perfil de Usuario 2 (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Modificación no autorizada rechazada con AccessDeniedException
+[2026-11-02 23:30:08] [DB] Integridad en BD: Verificación de que la modificación IDOR rechazada no se aplicó -> APROBADO (HTTP Segundo / esperado Segundo) El nombre en BD permanece intacto: 'Segundo'
+[2026-11-02 23:30:08] [DB] Verificación en BD: Tarea de Outbox en estado ENVIADO y enlace cifrado purgado -> APROBADO (HTTP ENVIADO|t / esperado ENVIADO|t) Estado es ENVIADO y enlace_cifrado IS NULL (secreto efímero destruido tras envío)
+[2026-11-02 23:30:08] [HTTP] WhatsApp Operador: Usuario común bloqueado de endpoints de operador (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Acceso restringido exclusivamente a roles ADMIN o TRABAJADOR
+[2026-11-02 23:30:08] [HTTP] WhatsApp Operador: Administrador envía mensaje oficial con idSolicitud -> APROBADO (HTTP 201 / esperado 201) Mensaje creado con ID 1, estado ENVIADO, contactó al proveedor simulado
+[2026-11-02 23:30:08] [HTTP] WhatsApp Idempotencia: Petición repetida no duplica envío al proveedor -> APROBADO (HTTP 201 / esperado 201) Proveedor llamado 1 veces (0 llamadas nuevas). Mensaje ID consistente: 1
+[2026-11-02 23:30:08] [HTTP] WhatsApp Integridad: Petición repetida con diferente contenido es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazado con IllegalArgumentException al intentar reusar idSolicitud con datos diferentes
+[2026-11-02 23:30:08] ================================================================================
+[2026-11-02 23:30:08] [ESCENARIO 3B] INICIO DE PRUEBA DE REINICIO REAL DE PROCESO JAVA CONSERVANDO POSTGRESQL
+[2026-11-02 23:30:08] ================================================================================
+[2026-11-02 23:30:08] [REINICIO REAL] Esperando que la petición para req-restart-1793680208 contacte al servidor mock de WhatsApp...
+[2026-11-02 23:30:08] [REINICIO REAL] Estado en BD en pleno vuelo de despacho: 'EN_PROCESO_ENVIO|t'
+[2026-11-02 23:30:08] [REINICIO REAL] Deteniendo forzosamente el proceso del SO Java #1 (PID 37496) antes de persistir resultado...
+[2026-11-02 23:30:08] [REINICIO REAL] Proceso Java #1 finalizado. La base de datos PostgreSQL permanece intacta.
+[2026-11-02 23:30:08] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-11-02 23:30:08] [JAR] Proceso hijo iniciado con PID: 14392
+[2026-11-02 23:30:08] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-11-02 23:30:20] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-11-02 23:30:21] [DB] WhatsApp Reinicio Real: Recuperación a RESULTADO_INCIERTO tras muerte del proceso JVM -> APROBADO (HTTP RESULTADO_INCIERTO / esperado RESULTADO_INCIERTO) La solicitud fue recuperada conservadoramente como RESULTADO_INCIERTO por el nuevo proceso JVM
+[2026-11-02 23:30:21] [HTTP] WhatsApp Reinicio Real: Solicitud en RESULTADO_INCIERTO rechaza nuevo despacho a la red -> APROBADO (HTTP 201 / esperado 201) No se reenvió a la red. Llamadas al proveedor para esta solicitud se mantuvieron en 1
+[2026-11-02 23:30:21] [HTTP] WhatsApp Reinicio Real: Webhook autenticado concilia solicitud recuperada -> APROBADO (HTTP 200 / esperado 200) Webhook procesado exitosamente por el segundo proceso JVM
+[2026-11-02 23:30:21] [DB] WhatsApp Reinicio Real: Estado final ENTREGADO y llamadas totales al proveedor igual a 1 -> APROBADO (HTTP ENTREGADO|wamid.restart.delivered.1793680221|1 / esperado ENTREGADO|wamid.restart.delivered.1793680221|1) Estado final ENTREGADO conciliado, id_proveedor guardado, y exactamente 1 llamada al proveedor
+[2026-11-02 23:30:21] ================================================================================
+[2026-11-02 23:30:21] [FASE 4] INICIO DE PRUEBAS DE TRANSFERENCIAS BANCARIAS, CUENTAS E IDEMPOTENCIA
+[2026-11-02 23:30:21] ================================================================================
+[2026-11-02 23:30:21] [HTTP] Cuentas Bancarias: Consulta pública retorna cuentas oficiales autorizadas (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Se listaron 4 cuentas y billeteras activas oficiales
+[2026-11-02 23:30:21] [HTTP] Transferencia Manual: Creación de orden para transferencia bancaria en USD -> APROBADO (HTTP 200 / esperado 200) Orden creada con código 5ff33a66-c61a-4984-8948-2bc2af9c6645, ID 2, monto None USD
+[2026-11-02 23:30:22] [HTTP] Idempotencia Órdenes: Reintento transparente recupera la misma orden sin duplicar en BD -> APROBADO (HTTP 200 / esperado 200) Recuperada orden existente 5ff33a66-c61a-4984-8948-2bc2af9c6645 y conteo en BD se mantuvo en 1 fila
+[2026-11-02 23:30:22] [HTTP] Idempotencia Órdenes: Intento de reuso de clave con datos divergentes es rechazado (HTTP 409) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict ante colisión de clave de idempotencia con contenido diferente
+[2026-11-02 23:30:22] [HTTP] Idempotencia Órdenes: Aislamiento por comprador y prevención IDOR de clave (HTTP 403) -> APROBADO (HTTP 403 / esperado 403) Bloqueado con HTTP 403 al intentar acceder o reaprovechar clave de idempotencia de otro comprador
+[2026-11-02 23:30:22] [HTTP] Validación Método de Pago: Creación con método no permitido es rechazada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Método de pago no admitido ('BITCOIN') rechazado con IllegalArgumentException
+[2026-11-02 23:30:22] [HTTP] Aprobación Manual BCP: Aprobación oficial con cuenta configurada y ceros a la izquierda en operación -> APROBADO (HTTP 200 / esperado 200) Estado PAGADO, operación normalizada con ceros 'OP0012345', cuenta normalizada '19398218491028'
+[2026-11-02 23:30:23] [HTTP] Detección Duplicados: Bloqueo de segundo abono con misma operación normalizada (anti-reuso) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict al detectar número de operación previamente registrado tras normalización
+[2026-11-02 23:30:23] [HTTP] Validación Cuenta Destino: Rechazo de abono hacia cuenta bancaria no configurada o ajena (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Cuenta destino no autorizada rechazada con IllegalArgumentException sin alterar la orden
+[2026-11-02 23:30:23] [HTTP] Billeteras Digitales: Creación y aprobación con Yape en moneda PEN -> APROBADO (HTTP 200 / esperado 200) Orden Yape aprobada a PAGADO, operación '00887766' (ceros conservados) y destino '987654321'
+[2026-11-02 23:30:23] [HTTP] Seguridad de Pasarela: Rechazo de aprobación manual sobre orden de pasarela en línea (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Bloqueado con IllegalArgumentException: órdenes de pasarelas en línea (IZIPAY) no admiten aprobación manual
+[2026-11-02 23:30:23] [TRANSFERENCIAS] Verificando detección de abono duplicado mediante variante de entidad bancaria y CCI...
+[2026-11-02 23:30:23] [HTTP] Anti-reuso Variantes: Bloqueo de abono con variante de nombre de banco o CCI (HTTP 409) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409 Conflict: la resolución canónica detecta que 'BANCO DE CREDITO DEL PERU' y CCI corresponden al abono BCP ya aplicado a otra orden
+[2026-11-02 23:30:23] [TRANSFERENCIAS] Verificando rechazo de combinaciones incompatibles entre método y destino...
+[2026-11-02 23:30:23] [HTTP] Compatibilidad Método/Destino: Rechazo de método y destino incompatibles o banco no aprobado (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazados con HTTP 400 Bad Request: validación estricta de destinos y compatibilidad con método de pago
+[2026-11-02 23:30:23] [TRANSFERENCIAS] Verificando rechazo de abono histórico con destino ambiguo/incierto...
+[2026-11-02 23:30:24] [HTTP] Abono Histórico Incierto: Bloqueo de abono con destino histórico ambiguo para revisión (HTTP 409) -> APROBADO (HTTP 409 / esperado 409) Rechazado con HTTP 409: 'Conflicto por abono histórico ambiguo. La aprobación automática está bloqueada y requiere revisión administrativa. Referencias internas: [6]', orden permanece PENDIENTE, comprobantes emitidos=0
+[2026-11-02 23:30:24] [INVITADOS] Probando autorización de recuperación con token criptográfico seguro...
+[2026-11-02 23:30:24] [INVITADOS] Token de sesión de invitado obtenido (longitud=404)
+[2026-11-02 23:30:24] [HTTP] Contexto Invitado: Validación de token criptográfico y rechazo 403 ante ausencia o manipulación -> APROBADO (HTTP 200 / esperado 200) Orden '6ade33c6-cf57-4435-be66-a8d24da3f9d4' protegida contra IDOR: rechaza recuperación sin token (HTTP 403) y con token alterado (HTTP 403); autoriza con token válido (HTTP 200)
+[2026-11-02 23:30:24] [REINICIO REAL JVM 3] Verificando persistencia y recuperación de contexto de invitado a través de reinicio del backend...
+[2026-11-02 23:30:24] [REINICIO REAL JVM 3] Orden creada en JVM 2 (PID 14392) con código '410b3ffb-9e6d-4686-ac5d-9846a6f625ea'
+[2026-11-02 23:30:24] [REINICIO REAL JVM 3] Terminando proceso Java #2 (PID 14392)...
+[2026-11-02 23:30:24] [REINICIO REAL JVM 3] Proceso Java #2 terminado.
+[2026-11-02 23:30:24] [JAR] Iniciando backend JAR en puerto 18099...
+[2026-11-02 23:30:24] [JAR] Proceso hijo iniciado con PID: 22316
+[2026-11-02 23:30:24] [JAR] Esperando disponibilidad HTTP en http://127.0.0.1:18099...
+[2026-11-02 23:30:34] [JAR] Backend JAR completamente inicializado en puerto 18099.
+[2026-11-02 23:30:34] [REINICIO REAL JVM 3] Proceso Java #3 iniciado con éxito (PID 22316)
+[2026-11-02 23:30:35] [HTTP] Contexto Invitado Reinicio: Recuperación de orden de invitado tras reinicio real de JVM (DB count=1) -> APROBADO (HTTP 200 / esperado 200) Mismo código '410b3ffb-9e6d-4686-ac5d-9846a6f625ea' recuperado en JVM 3 (PID 22316, previo PID 14392), sin token HTTP 403, conteo en BD=1
+[2026-11-02 23:30:35] [MOODLE 1] Verificando catálogo público filtrado exclusivamente por programas verificados y vigentes...
+[2026-11-02 23:30:35] [HTTP] Moodle Catálogo Público: Sólo programas activos y con vinculación verificada vigente son visibles (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Catálogo público retornó 2 programas (IDs visibles: [101, 102]). Programas 103 (sin vincular) y 104 (expirado) excluidos correctamente.
+[2026-11-02 23:30:35] [MOODLE 2] Verificando bloqueo en checkout de programas con vinculación inválida o expirada...
+[2026-11-02 23:30:35] [HTTP] Moodle Regla Checkout: Rechazo de compra para programa sin vinculación verificada o con verificación expirada (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Rechazo HTTP 400 para programa sin vinculación (ID 103: 'El programa 'Programa Borrador Sin Moodle' (ID: 103) no cuenta con vinculación verificada a un curso de Moodle LMS y no está disponible para compra.') y para programa con verificación expirada (ID 104: 'La verificación del curso Moodle para el programa 'Programa Con Moodle Expirado' (ID: 104) ha expirado. Requiere revalidación antes de permitir compras.')
+[2026-11-02 23:30:35] [MOODLE 3] Verificando congelamiento inmutable de moodleCourseId en detalle_ordenes...
+[2026-11-02 23:30:35] [HTTP] Moodle Congelamiento Checkout: moodleCourseId y origen congelados inmutablemente en detalle_ordenes (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Orden 'be2fea22-aa49-4398-b4e6-c875de809c9d' congeló moodle_course_id=101 con origen='CHECKOUT_CONGELADO' en base de datos
+[2026-11-02 23:30:35] [MOODLE 4] Verificando resolución administrativa de orden histórica y reintento de matrícula...
+[2026-11-02 23:30:36] [HTTP] Moodle Resolución Administrativa: Auditoría documental completa y habilitación de reintento de aprovisionamiento (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Resolución HTTP 200 (moodleCourseId=101, origen='RESOLUCION_ADMINISTRATIVA', autor='danny@lysandri.invalid'); Reintento HTTP 200 completó aprovisionamiento (estado=COMPLETADO, sync=t)
+[2026-11-02 23:30:36] [MOODLE 5] Verificando desvinculación administrativa de programa, desactivación y exclusión del catálogo...
+[2026-11-02 23:30:36] [HTTP] Moodle Desvinculación Programa: Limpieza de datos LMS, desactivación comercial y retiro automático del catálogo público (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Desvinculación HTTP 200: programa 102 desactivado (activo=f, verif=f, estado=SIN_VINCULACION, courseId=null). Retirado del catálogo público: 102 not in [101]
+[2026-11-02 23:30:36] [CONTABILIDAD 1] Verificando rechazo de acceso sin PIN o con PIN de auditoría inválido...
+[2026-11-02 23:30:36] [HTTP] Contabilidad Autorización: Rechazo de acceso a contabilidad sin PIN o con PIN inválido (HTTP 401/403) -> APROBADO (HTTP 401 / esperado 401) Sin PIN: HTTP 401 (código=AUDIT_PIN_INVALID); Con PIN incorrecto: HTTP 401 (código=AUDIT_PIN_INVALID)
+[2026-11-02 23:30:36] [CONTABILIDAD 2] Consultando reporte consolidado de ventas con PIN válido y período TODOS...
+[2026-11-02 23:30:37] [HTTP] Contabilidad Reporte: Administrador consulta reporte general consolidado con PIN oficial y período TODOS (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Reporte HTTP 200: período=TODOS, ventasPen=450.0, ventasUsd=200.0, comprobantes=4
+[2026-11-02 23:30:37] [CONTABILIDAD 3] Verificando rechazo de exportación SIRE sin período y con período 'TODOS'...
+[2026-11-02 23:30:37] [HTTP] Contabilidad SIRE Validación Período: Rechazo de exportación sin período o con período TODOS (HTTP 400) -> APROBADO (HTTP 400 / esperado 400) Sin período: HTTP 400 (código=PERIODO_REQUERIDO_SIRE); Con período TODOS: HTTP 400 (código=PERIODO_REQUERIDO_SIRE)
+[2026-11-02 23:30:37] [CONTABILIDAD 4] Registrando comprobante incompleto para 2026-09 y comprobando rechazo HTTP 422...
+[2026-11-02 23:30:37] [HTTP] Contabilidad SIRE Validación Integridad: Rechazo con HTTP 422 si existen comprobantes incompletos identificando idComprobante e idOrden -> APROBADO (HTTP 422 / esperado 422) Comprobante incompleto rechazado HTTP 422: código=COMPROBANTES_INCOMPLETOS, detalles=[{'camposFaltantes': ['serie', 'numeroDocumentoIdentidad', 'razonSocialONombre'], 'idComprobante': 9501, 'idOrden': 9101}]
+[2026-11-02 23:30:37] [CONTABILIDAD 5] Registrando transacción USD sin paridad oficial verificada y comprobando rechazo HTTP 422...
+[2026-11-02 23:30:37] [HTTP] Contabilidad SIRE Validación Divisa: Rechazo con HTTP 422 ante transacciones en USD sin tipo de cambio oficial verificado -> APROBADO (HTTP 422 / esperado 422) Transacción USD sin tipo de cambio oficial rechazada HTTP 422: código=TIPO_CAMBIO_USD_NO_VERIFICADO, detalles=[{'moneda': 'USD', 'idOrden': 9102, 'motivo': 'Carece de tipo de cambio oficial de la fecha verificado por la SBS o SUNAT', 'idComprobante': 9502}]
+[2026-11-02 23:30:37] [CONTABILIDAD 6] Comprobando que los rechazos HTTP 400 y 422 preservaron la integridad de la base sin mutaciones no autorizadas...
+[2026-11-02 23:30:37] [DB] Contabilidad Integridad Transaccional: Comprobación de que las solicitudes 400 y 422 no mutaron registros ni causaron inconsistencias -> APROBADO (HTTP NO_MUTADO / esperado NO_MUTADO) Registros en BD intactos tras intentos fallidos: 9501='|1|EMITIDO', 9502='F001|1|EMITIDO|USD'
+[2026-11-02 23:30:37] [CONTABILIDAD 7] Emitiendo comprobante 9503 (orden 9103) y ejecutando anulación contable oficial...
+[2026-11-02 23:30:38] [HTTP] Contabilidad Emisión y Anulación: Anulación formal mediante idComprobante persistente y motivo auditado (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) Anulación HTTP 200: idComprobante=9503, estado=ANULADO, motivo='Anulación fiscal por comprobante emitido por error'
+[2026-11-02 23:30:38] [CONTABILIDAD 8] Verificando persistencia del comprobante anulado y pista inmutable en auditoria_contable...
+[2026-11-02 23:30:38] [DB] Contabilidad Persistencia Auditoría: Verificación en BD del estado ANULADO y registro inmutable en auditoria_contable -> APROBADO (HTTP ANULADO_AUDITADO / esperado ANULADO_AUDITADO) BD comprobante 9503: 'ANULADO|AnulaciÃ³n fiscal por comprobante emitido por error'; Auditoría contable: 'COMPROBANTE_ANULADO|COMPROBANTE_PAGO|9503|AnulaciÃ³n fiscal por comprobante emitido por error'
+[2026-11-02 23:30:38] [CONTABILIDAD 9] Insertando comprobante 9504 activo para 2026-10 y descargando archivo SIRE oficial...
+[2026-11-02 23:30:38] [HTTP] Contabilidad SIRE Exportación Exitosa: Exportación con período YYYY-MM, Content-Disposition y CUO determinista CP%08d (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) SIRE HTTP 200: Content-Disposition='attachment; filename="LE2060981245120261000140100001111.txt"', CUO 9503 presente=True, CUO 9504 presente=True, tamaño=385 bytes
+[2026-11-02 23:30:38] [ADMIN 1] Verificando que PUT /usuarios/{id} rechaza cambios no auditados de rol/activo (HTTP 403), actualiza perfil limpio (HTTP 200) y PATCH /usuarios/{id}/rol audita rol...
+[2026-11-02 23:30:39] [HTTP] Administración Usuarios: Separación estricta entre actualización de perfil (PUT) y modificación de rol auditada (PATCH) (HTTP 200) -> APROBADO (HTTP 200 / esperado 200) PUT con rol rechazado HTTP 403; PUT perfil HTTP 200 (nombre='Usuario Dos Actualizado', rol='CLIENTE'); PATCH rol a CONTABILIDAD (HTTP 200): nuevo rol='CONTABILIDAD'
+[2026-11-02 23:30:39] ================================================================================
+[2026-11-02 23:30:39] VALIDACIÓN COMPLETADA EXITOSAMENTE: 64 PASOS APROBADOS DE 64
+[2026-11-02 23:30:39] ================================================================================
+[2026-11-02 23:30:39] [EVIDENCIA] Reporte estructurado guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-20261102-232945-cierre-moodle-fase6-089140\recorrido-http-jar-real.json
+[2026-11-02 23:30:39] [EVIDENCIA] Checksum SHA-256 guardado en: F:\Lysandri-executive\backend\evidencias-auth\ejecucion-cierre-moodle-fase6-latest\sha256-jar.txt

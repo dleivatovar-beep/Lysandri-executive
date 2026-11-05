@@ -1,0 +1,134 @@
+[
+  {
+    "num": 1,
+    "name": "Login exitoso de Administrador (danny@lysandri.com)",
+    "status": "APROBADO",
+    "details": "HTTP 200, Rol: ADMIN"
+  },
+  {
+    "num": 2,
+    "name": "Solicitud de compra como invitado (genera usuario pendiente)",
+    "status": "APROBADO",
+    "details": "HTTP 200, Orden: 5a997e78-b5e5-4055-ba33-ce7785c1b69f"
+  },
+  {
+    "num": 3,
+    "name": "Recepción de enlace de activación en servidor SMTP de pruebas local",
+    "status": "APROBADO",
+    "details": "Token extraído: RdFBUUBj3p... (longitud 43)"
+  },
+  {
+    "num": 4,
+    "name": "Rechazo uniforme de login para cuenta pendiente de activación",
+    "status": "APROBADO",
+    "details": "HTTP 401, Mensaje: 'No se pudo iniciar sesión con los datos proporcionados'"
+  },
+  {
+    "num": 5,
+    "name": "Activación de cuenta con token válido y establecimiento de contraseña",
+    "status": "APROBADO",
+    "details": "HTTP 200, UserID: 4"
+  },
+  {
+    "num": 6,
+    "name": "Rechazo de token de activación ya consumido (reutilización bloqueada)",
+    "status": "APROBADO",
+    "details": "HTTP 409, Mensaje: 'El token de activación ya ha sido utilizado'"
+  },
+  {
+    "num": 7,
+    "name": "Rechazo de token alterado o inválido",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 8,
+    "name": "Rechazo del hash SHA-256 almacenado presentado como token directo",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 9,
+    "name": "Login exitoso de Usuario 1 con nueva contraseña",
+    "status": "APROBADO",
+    "details": "HTTP 200, Email: usuario1@lysandri.test"
+  },
+  {
+    "num": 10,
+    "name": "Rechazo uniforme por contraseña incorrecta",
+    "status": "APROBADO",
+    "details": "HTTP 401, Mensaje: 'No se pudo iniciar sesión con los datos proporcionados'"
+  },
+  {
+    "num": 11,
+    "name": "Rechazo uniforme por cuenta inexistente (anti-enumeración)",
+    "status": "APROBADO",
+    "details": "HTTP 401, Mensaje: 'No se pudo iniciar sesión con los datos proporcionados'"
+  },
+  {
+    "num": 12,
+    "name": "Registro directo de Usuario 2 activo",
+    "status": "APROBADO",
+    "details": "HTTP 201, UserID 2: 5"
+  },
+  {
+    "num": 13,
+    "name": "Desactivación administrativa de Usuario 2 por Administrador",
+    "status": "APROBADO",
+    "details": "HTTP 200"
+  },
+  {
+    "num": 14,
+    "name": "Rechazo uniforme de login para cuenta desactivada/bloqueada",
+    "status": "APROBADO",
+    "details": "HTTP 401, Mensaje: 'No se pudo iniciar sesión con los datos proporcionados'"
+  },
+  {
+    "num": 15,
+    "name": "Petición a ruta protegida sin token retorna 401 Unauthorized",
+    "status": "APROBADO",
+    "details": "HTTP 401"
+  },
+  {
+    "num": 16,
+    "name": "Petición con token alterado retorna 401 Unauthorized",
+    "status": "APROBADO",
+    "details": "HTTP 401"
+  },
+  {
+    "num": 17,
+    "name": "Usuario 1 puede consultar su propio perfil",
+    "status": "APROBADO",
+    "details": "HTTP 200, Email devuelto: usuario1@lysandri.test"
+  },
+  {
+    "num": 18,
+    "name": "Usuario 1 NO puede leer perfil de Usuario 2 (IDOR bloqueado con 403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  },
+  {
+    "num": 19,
+    "name": "Usuario 1 NO puede modificar perfil de Usuario 2 (IDOR bloqueado con 403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  },
+  {
+    "num": 20,
+    "name": "Usuario común bloqueado de listar usuarios (403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  },
+  {
+    "num": 21,
+    "name": "Administrador autorizado para listar usuarios",
+    "status": "APROBADO",
+    "details": "HTTP 200, Usuarios encontrados: 5"
+  },
+  {
+    "num": 22,
+    "name": "Usuario común bloqueado de endpoints de operador de WhatsApp (403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  }
+]

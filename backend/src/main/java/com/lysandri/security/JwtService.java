@@ -68,6 +68,52 @@ public class JwtService {
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
+    public record GuestSessionClaims(String sessionId, String email) {}
+
+    /**
+     * Emite un token criptográfico HMAC-SHA256 para aislar y autorizar de forma segura
+     * las operaciones de checkout y recuperación de órdenes de invitados.
+     */
+    public String generateGuestCheckoutToken(String guestSessionId, String email) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("type", "GUEST_CHECKOUT_SESSION");
+        extraClaims.put("sessionId", guestSessionId);
+        extraClaims.put("email", email != null && !email.isBlank() ? email.trim().toLowerCase() : "");
+        long guestExpiration = 86_400_000L; // 24 horas
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject("guest:" + (email != null && !email.isBlank() ? email.trim().toLowerCase() : "anonymous"))
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + guestExpiration))
+                .signWith(getSignInKey())
+                .compact();
+    }
+
+    /**
+     * Valida el token de sesión de invitado verificando su firma HMAC y expiración.
+     * Retorna los claims extraídos o null si la firma o estructura es inválida.
+     */
+    public GuestSessionClaims validateGuestCheckoutToken(String token) {
+        if (token == null || token.isBlank()) return null;
+        try {
+            Claims claims = extractAllClaims(token);
+            if (!"GUEST_CHECKOUT_SESSION".equals(claims.get("type"))) {
+                return null;
+            }
+            if (claims.getExpiration().before(new Date())) {
+                return null;
+            }
+            String sessionId = (String) claims.get("sessionId");
+            String email = (String) claims.get("email");
+            if (sessionId == null || sessionId.isBlank()) {
+                return null;
+            }
+            return new GuestSessionClaims(sessionId, email);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }

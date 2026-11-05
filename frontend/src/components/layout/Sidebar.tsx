@@ -12,10 +12,15 @@ import {
   MessageSquareText,
   Store,
   Users,
+  CreditCard,
+  Building2,
   LogOut,
+<<<<<<< HEAD
   PanelLeftClose,
   PanelLeftOpen,
   Calculator,
+=======
+>>>>>>> origin/feature/danny-desarrollo
   type LucideIcon,
 } from 'lucide-react';
 
@@ -127,9 +132,14 @@ const ROLE_NAVIGATION: Record<
       icon: MessageSquareText,
     },
     {
-      label: 'Área Contable',
-      view: 'ACCOUNTING',
-      icon: Calculator,
+      label: 'Pagos Manuales',
+      view: 'MANUAL_PAYMENTS',
+      icon: CreditCard,
+    },
+    {
+      label: 'In-Company',
+      view: 'IN_COMPANY',
+      icon: Building2,
     },
   ],
 };

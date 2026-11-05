@@ -1,0 +1,87 @@
+{
+  "fechaEjecucionInicio": "2026-11-03T07:26:57.172Z",
+  "fechaEjecucionFin": "2026-11-03T07:27:40.093Z",
+  "directorioEjecucion": "F:\\Lysandri-executive\\frontend",
+  "directorioEvidencias": "F:\\Lysandri-executive\\backend\\evidencias-auth\\ejecucion-20261103-cierre-propiedad-render-izipay",
+  "comandos": [
+    {
+      "id": "01",
+      "nombre": "test-checkout-listeners-lifecycle",
+      "comando": "node.exe test-checkout-listeners-lifecycle.js",
+      "directorio": "F:\\Lysandri-executive\\frontend",
+      "inicio": "2026-11-03T07:26:57.179Z",
+      "fin": "2026-11-03T07:27:06.533Z",
+      "codigoSalida": 0,
+      "archivoLog": "01-test-checkout-listeners-lifecycle.log",
+      "resumenCasos": {
+        "passed": 22,
+        "failed": 0,
+        "skipped": 0,
+        "total": 22
+      }
+    },
+    {
+      "id": "02",
+      "nombre": "test-accounting-view-interaction",
+      "comando": "node.exe test-accounting-view-interaction.js",
+      "directorio": "F:\\Lysandri-executive\\frontend",
+      "inicio": "2026-11-03T07:27:06.534Z",
+      "fin": "2026-11-03T07:27:13.579Z",
+      "codigoSalida": 0,
+      "archivoLog": "02-test-accounting-view-interaction.log",
+      "resumenCasos": {
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "total": 10
+      }
+    },
+    {
+      "id": "03",
+      "nombre": "test-accounting-and-admin-services",
+      "comando": "node.exe test-accounting-and-admin-services.js",
+      "directorio": "F:\\Lysandri-executive\\frontend",
+      "inicio": "2026-11-03T07:27:13.579Z",
+      "fin": "2026-11-03T07:27:14.108Z",
+      "codigoSalida": 0,
+      "archivoLog": "03-test-accounting-and-admin-services.log",
+      "resumenCasos": {
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "total": 8
+      }
+    },
+    {
+      "id": "04",
+      "nombre": "test-checkout-modal-component",
+      "comando": "node.exe test-checkout-modal-component.js",
+      "directorio": "F:\\Lysandri-executive\\frontend",
+      "inicio": "2026-11-03T07:27:14.109Z",
+      "fin": "2026-11-03T07:27:21.686Z",
+      "codigoSalida": 0,
+      "archivoLog": "04-test-checkout-modal-component.log",
+      "resumenCasos": {
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "total": 14
+      }
+    },
+    {
+      "id": "05",
+      "nombre": "npm-run-build",
+      "comando": "cmd.exe /d /s /c npm run build",
+      "directorio": "F:\\Lysandri-executive\\frontend",
+      "inicio": "2026-11-03T07:27:21.687Z",
+      "fin": "2026-11-03T07:27:40.091Z",
+      "codigoSalida": 0,
+      "archivoLog": "05-npm-run-build.log",
+      "resumenCasos": {
+        "buildSuccess": true,
+        "typeCheckSuccess": true
+      }
+    }
+  ],
+  "estadoGlobal": "APROBADO_EXITOSO"
+}

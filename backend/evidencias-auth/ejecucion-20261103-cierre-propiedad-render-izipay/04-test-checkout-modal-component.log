@@ -1,0 +1,33 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN FRONTEND: test-checkout-modal-component
+================================================================================
+Comando exacto:        node.exe test-checkout-modal-component.js
+Directorio:            F:\Lysandri-executive\frontend
+Fecha y hora inicio:   2026-11-03T07:27:14.109Z
+Fecha y hora fin:      2026-11-03T07:27:21.686Z
+Código de salida real: 0
+Descripción:           Pruebas de componentes DOM de CheckoutModal (idempotencia, persistencia, estados y errores)
+================================================================================
+SALIDA COMPLETA (STDOUT):
+--------------------------------------------------------------------------------
+PRUEBAS DE INTERACCIÓN REAL: CheckoutModal con React Testing Library + jsdom
+PASS UI a: credencial y clave persistidas antes del POST de creación.
+PASS UI b: error de guest-session, botón recuperado y cero POST de creación.
+PASS UI c: retry tras timeout mantiene clave/token y no duplica el registro simulado.
+PASS UI d: remount recupera la orden persistida sin crear otra.
+PASS UI e: 409 visible, sin éxito ni WhatsApp, y botón reactivado.
+PASS UI f: cambio de comprador no muestra ni recupera la orden previa.
+PASS UI g: nueva compra explícita genera otra clave.
+PASS UI h: destino visible y error de carga backend mostrado.
+PASS UI i: error de red no genera éxito ni abre WhatsApp.
+PASS UI j: modo demo bloquea creación real y muestra aviso claro.
+PASS UI k: izipay formToken renderiza contenedor kr-embedded sin redirección.
+PASS UI l: respuesta incompleta (falta publicKey) bloquea renderizado y muestra aviso claro.
+PASS UI m & n: errores del SDK muestran reintento y reinicio de orden invoca KR.removeForms().
+RESULTADO UI: 14/14 escenarios aprobados (interacciones DOM reales).
+
+--------------------------------------------------------------------------------
+SALIDA COMPLETA (STDERR):
+--------------------------------------------------------------------------------
+(vacío)
+================================================================================

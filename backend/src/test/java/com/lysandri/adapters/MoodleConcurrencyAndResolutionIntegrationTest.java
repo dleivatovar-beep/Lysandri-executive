@@ -1,0 +1,1689 @@
+package com.lysandri.adapters;
+
+import com.lysandri.adapters.out.database.entity.DetalleOrdenEntity;
+import com.lysandri.adapters.out.database.entity.OrdenEntity;
+import com.lysandri.adapters.out.database.entity.ProgramaEntity;
+import com.lysandri.adapters.out.database.entity.UsuarioEntity;
+import com.lysandri.adapters.out.database.repository.SpringDataOrderRepository;
+import com.lysandri.adapters.out.database.repository.SpringDataProgramRepository;
+import com.lysandri.adapters.out.database.repository.SpringDataUserRepository;
+import com.lysandri.application.service.CatalogService;
+import com.lysandri.application.service.OrderFinancialTransactionService;
+import com.lysandri.application.service.ResultadoReservaAprovisionamiento;
+import com.lysandri.application.service.ActivationOutboxService;
+import com.lysandri.domain.model.*;
+import com.lysandri.domain.ports.in.BuyCourseUseCase;
+import com.lysandri.domain.ports.out.LmsClientPort;
+import com.lysandri.domain.ports.out.ProgramRepositoryPort;
+import com.lysandri.domain.ports.out.OrderRepositoryPort;
+import org.springframework.test.util.AopTestUtils;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URLDecoder;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.math.BigDecimal;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+@ActiveProfiles("test")
+public class MoodleConcurrencyAndResolutionIntegrationTest extends PostgresTestDatabase {
+
+    private static HttpServer mockMoodleServer;
+    private static int mockMoodlePort;
+
+    private static SimpleMockSmtpServer mockSmtpServer;
+    private static int mockSmtpPort;
+
+    private static final AtomicBoolean pauseMoodleVerification = new AtomicBoolean(false);
+    private static CountDownLatch inMoodleLatch;
+    private static CountDownLatch releaseMoodleLatch;
+
+    public static class MoodleCallRecord {
+        private final String function;
+        private final String rawBody;
+        private final Map<String, String> parameters;
+
+        public MoodleCallRecord(String function, String rawBody, Map<String, String> parameters) {
+            this.function = function;
+            this.rawBody = rawBody;
+            this.parameters = parameters;
+        }
+
+        public String getFunction() { return function; }
+        public String getRawBody() { return rawBody; }
+        public String getParameter(String name) { return parameters.get(name); }
+    }
+
+    private static final List<MoodleCallRecord> moodleCallHistory = new CopyOnWriteArrayList<>();
+    private static final Set<Long> mockMoodleEnrolledCourses = new ConcurrentSkipListSet<>();
+
+
+    public static List<MoodleCallRecord> getMoodleEnrolCalls() {
+        return moodleCallHistory.stream()
+                .filter(c -> "enrol_manual_enrol_users".equals(c.getFunction()))
+                .toList();
+    }
+
+    public static List<MoodleCallRecord> getMoodleUserCreateCalls() {
+        return moodleCallHistory.stream()
+                .filter(c -> "core_user_create_users".equals(c.getFunction()))
+                .toList();
+    }
+
+    public static List<MoodleCallRecord> getMoodleReadOnlyQueryCalls() {
+        return moodleCallHistory.stream()
+                .filter(c -> !"enrol_manual_enrol_users".equals(c.getFunction()) && !"core_user_create_users".equals(c.getFunction()))
+                .toList();
+    }
+
+    public static void clearMoodleCallHistory() {
+        moodleCallHistory.clear();
+    }
+
+    @BeforeAll
+    static void startServices() throws IOException {
+        mockSmtpServer = new SimpleMockSmtpServer(0);
+        mockSmtpPort = mockSmtpServer.getPort();
+
+        mockMoodleServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        mockMoodlePort = mockMoodleServer.getAddress().getPort();
+
+        mockMoodleServer.createContext("/webservice/rest/server.php", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange exchange) throws IOException {
+                InputStream is = exchange.getRequestBody();
+                String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+
+                Map<String, String> params = new HashMap<>();
+                if (body != null && !body.isBlank()) {
+                    for (String pair : body.split("&")) {
+                        int idx = pair.indexOf("=");
+                        if (idx > 0) {
+                            String k = URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8);
+                            String v = URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8);
+                            params.put(k, v);
+                        }
+                    }
+                }
+                String wsfunction = params.getOrDefault("wsfunction", "unknown");
+                moodleCallHistory.add(new MoodleCallRecord(wsfunction, body, params));
+
+                if (pauseMoodleVerification.get() && body.contains("wsfunction=core_course_get_courses_by_field")) {
+                    if (inMoodleLatch != null) {
+                        inMoodleLatch.countDown();
+                    }
+                    if (releaseMoodleLatch != null) {
+                        try {
+                            releaseMoodleLatch.await(10, TimeUnit.SECONDS);
+                        } catch (InterruptedException ignored) {}
+                    }
+                }
+
+                String jsonResponse;
+                if (body.contains("wsfunction=core_course_get_courses_by_field")) {
+                    jsonResponse = "{\"courses\": [{\"id\": 101, \"fullname\": \"Curso Concurrente 101\", \"shortname\": \"CC101\"}, {\"id\": 102, \"fullname\": \"Curso Concurrente 102\", \"shortname\": \"CC102\"}, {\"id\": 505, \"fullname\": \"Curso Resolucion 505\", \"shortname\": \"CR505\"}, {\"id\": 606, \"fullname\": \"Curso Resolucion 606\", \"shortname\": \"CR606\"}]}";
+                } else if (body.contains("wsfunction=core_user_get_users_by_field")) {
+                    jsonResponse = "[{\"id\": 7001}]";
+                } else if (body.contains("wsfunction=core_user_create_users")) {
+                    jsonResponse = "[{\"id\": 7001}]";
+                } else if (body.contains("enrol_manual_enrol_users")) {
+                    String cidStr = params.get("enrolments[0][courseid]");
+                    if (cidStr != null) {
+                        try {
+                            mockMoodleEnrolledCourses.add(Long.valueOf(cidStr));
+                        } catch (NumberFormatException ignored) {}
+                    }
+                    jsonResponse = "null";
+                } else if (body.contains("wsfunction=core_enrol_get_users_courses")) {
+                    StringBuilder sb = new StringBuilder("[");
+                    boolean first = true;
+                    for (Long cid : mockMoodleEnrolledCourses) {
+                        if (!first) sb.append(",");
+                        sb.append("{\"id\": ").append(cid).append("}");
+                        first = false;
+                    }
+                    sb.append("]");
+                    jsonResponse = sb.toString();
+                } else {
+                    jsonResponse = "[]";
+                }
+
+                byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, bytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(bytes);
+                }
+            }
+        });
+
+        mockMoodleServer.start();
+    }
+
+    @AfterAll
+    static void stopServices() {
+        if (mockMoodleServer != null) {
+            mockMoodleServer.stop(0);
+        }
+        if (mockSmtpServer != null) {
+            mockSmtpServer.close();
+        }
+    }
+
+    @DynamicPropertySource
+    static void moodleProperties(DynamicPropertyRegistry registry) {
+        registry.add("moodle.url", () -> "http://127.0.0.1:" + mockMoodlePort);
+        registry.add("moodle.token", () -> "mock-test-token");
+        registry.add("spring.mail.host", () -> "127.0.0.1");
+        registry.add("spring.mail.port", () -> mockSmtpPort);
+    }
+
+    @Autowired
+    private CatalogService catalogService;
+
+    @Autowired
+    private BuyCourseUseCase buyCourseService;
+
+    @Autowired
+    private com.lysandri.application.service.OrderFinancialTransactionService orderFinancialTransactionService;
+
+    @Autowired
+    private ProgramRepositoryPort programRepositoryPort;
+
+    @Autowired
+    private OrderRepositoryPort orderRepositoryPort;
+
+    @Autowired
+    private com.lysandri.adapters.out.billing.BillingServiceAdapter billingServiceAdapter;
+
+    @Autowired
+    private com.lysandri.adapters.out.notification.EmailNotificationAdapter emailNotificationAdapter;
+
+    @Autowired
+    private SpringDataProgramRepository springDataProgramRepository;
+
+    @Autowired
+    private SpringDataOrderRepository springDataOrderRepository;
+
+    @Autowired
+    private SpringDataUserRepository springDataUserRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private LmsClientPort lmsClientPort;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private ActivationOutboxService activationOutboxService;
+
+    private CoordinatingOrderRepositoryPort coordinatingOrderRepository;
+
+    @BeforeEach
+    void cleanUp() {
+        pauseMoodleVerification.set(false);
+        inMoodleLatch = null;
+        releaseMoodleLatch = null;
+        clearMoodleCallHistory();
+        mockMoodleEnrolledCourses.clear();
+        if (mockSmtpServer != null) {
+            mockSmtpServer.clear();
+        }
+        if (coordinatingOrderRepository == null) {
+            coordinatingOrderRepository = new CoordinatingOrderRepositoryPort(orderRepositoryPort);
+            Object targetTxService = AopTestUtils.getTargetObject(orderFinancialTransactionService);
+            ReflectionTestUtils.setField(targetTxService, "orderRepository", (Object) coordinatingOrderRepository);
+            Object targetBuyService = AopTestUtils.getTargetObject(buyCourseService);
+            ReflectionTestUtils.setField(targetBuyService, "orderRepository", (Object) coordinatingOrderRepository);
+        }
+        coordinatingOrderRepository.clearHooks();
+        jdbcTemplate.execute("TRUNCATE TABLE detalle_ordenes, comprobante_pago, notificaciones_log, outbox_notificacion_activacion, ordenes, programa CASCADE");
+        try {
+            jdbcTemplate.execute("INSERT INTO comprobante_correlativo (serie, ultimo_correlativo) VALUES ('B001', 0), ('F001', 0) ON CONFLICT (serie) DO UPDATE SET ultimo_correlativo = 0");
+        } catch (Exception ignored) {}
+    }
+
+    private Programa crearProgramaBase(String suffix, Long moodleCourseId) {
+        Programa p = Programa.builder()
+                .titulo("Programa Test " + suffix)
+                .slug("prog-test-" + suffix + "-" + UUID.randomUUID().toString().substring(0, 6))
+                .precio(new BigDecimal("299.00"))
+                .moneda("PEN")
+                .activo(true)
+                .precioAprobado(true)
+                .moodleCourseId(moodleCourseId)
+                .moodleVinculacionRevision(1L)
+                .moodleEstadoVerificacion(moodleCourseId != null ? MoodleVerificationStatus.PENDIENTE_VERIFICACION : MoodleVerificationStatus.SIN_VINCULACION)
+                .build();
+        return programRepositoryPort.guardar(p);
+    }
+
+    @Test
+    @DisplayName("Item 1.1: Verificación normal sin error de transacción vía TransactionTemplate")
+    void testVerificacionNormalSinErrorDeTransaccion() {
+        Programa p = crearProgramaBase("normal", 101L);
+
+        Programa verificado = catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma());
+
+        assertNotNull(verificado);
+        assertTrue(verificado.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, verificado.getMoodleEstadoVerificacion());
+        assertEquals("Curso Concurrente 101", verificado.getMoodleCourseNombre());
+        assertEquals(1L, verificado.getMoodleVinculacionRevision());
+
+        ProgramaEntity entity = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(entity.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, entity.getMoodleEstadoVerificacion());
+    }
+
+    @Test
+    @DisplayName("Item 1.2: Desvinculación mientras Moodle tarda -> descarta respuesta tardía y conserva desvinculación")
+    void testDesvinculacionMientrasMoodleTarda() throws Exception {
+        Programa p = crearProgramaBase("desv-lenta", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió ser alcanzado y pausado");
+
+        // Acción concurrente de administración: desvincular curso
+        Programa desvinculado = catalogService.desvincularCursoMoodle(p.getIdPrograma());
+        assertNull(desvinculado.getMoodleCourseId());
+        assertEquals(MoodleVerificationStatus.SIN_VINCULACION, desvinculado.getMoodleEstadoVerificacion());
+        assertEquals(2L, desvinculado.getMoodleVinculacionRevision());
+
+        // Liberar la llamada de Moodle para que intente aplicar su resultado
+        releaseMoodleLatch.countDown();
+        Programa resultadoH1 = futureVerif.get(5, TimeUnit.SECONDS);
+
+        // El resultado devuelto debe conservar el estado desvinculado
+        assertNull(resultadoH1.getMoodleCourseId());
+        assertFalse(resultadoH1.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.SIN_VINCULACION, resultadoH1.getMoodleEstadoVerificacion());
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertNull(enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.3: Cambio de curso mientras Moodle tarda -> descarta respuesta tardía del curso anterior")
+    void testCambioDeCursoMientrasMoodleTarda() throws Exception {
+        Programa p = crearProgramaBase("cambio-curso", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió pausar la verificación del 101");
+
+        // Acción concurrente: Cambiar curso a 102 directamente en la base con nueva revisión
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setMoodleCourseId(102L);
+            ent.setMoodleVinculacionRevision(2L);
+            ent.setMoodleVerificado(false);
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(102L, enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado(), "La verificación tardía del 101 no debe marcar verificado al 102");
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.4: Cambio A->B->A durante consulta a Moodle -> descarta por revisión de vinculación diferente")
+    void testCambioABA() throws Exception {
+        Programa p = crearProgramaBase("aba", 101L); // Rev 1, Course 101
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS), "Moodle debió pausar la verificación de 101 (rev 1)");
+
+        // Admin cambia a B (curso 102, rev 2) y luego vuelve a A (curso 101, rev 3)
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setMoodleCourseId(101L); // Vuelve a 101
+            ent.setMoodleVinculacionRevision(3L); // Pero con revisión 3
+            ent.setMoodleVerificado(false);
+            ent.setMoodleEstadoVerificacion(MoodleVerificationStatus.PENDIENTE_VERIFICACION);
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(101L, enBd.getMoodleCourseId());
+        assertEquals(3L, enBd.getMoodleVinculacionRevision());
+        assertFalse(enBd.isMoodleVerificado(), "La respuesta de la rev 1 no debe verificar la vinculación en rev 3");
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.5: Dos verificaciones con respuestas fuera de orden -> intento antiguo se descarta")
+    void testDosVerificacionesConRespuestasFueraDeOrden() {
+        Programa p = crearProgramaBase("fuera-de-orden", 101L);
+
+        OffsetDateTime tAntiguo = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(10);
+        OffsetDateTime tReciente = OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1);
+
+        MoodleCourseVerification verifExitoso = MoodleCourseVerification.verificado(101L, "Curso 101", "C101");
+        MoodleCourseVerification verifNoEncontrado = MoodleCourseVerification.noEncontrado(101L);
+
+        // 1. Aplica intento más reciente primero
+        catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, tReciente, verifExitoso);
+
+        ProgramaEntity trasReciente = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(trasReciente.isMoodleVerificado());
+        assertEquals(MoodleVerificationStatus.VERIFICADO, trasReciente.getMoodleEstadoVerificacion());
+
+        // 2. Llega respuesta tardía de intento antiguo (con fallo)
+        catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, tAntiguo, verifNoEncontrado);
+
+        ProgramaEntity trasTardio = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertTrue(trasTardio.isMoodleVerificado(), "El intento antiguo no debe sobreescribir al intento más reciente");
+        assertEquals(MoodleVerificationStatus.VERIFICADO, trasTardio.getMoodleEstadoVerificacion());
+    }
+
+    @Test
+    @DisplayName("Item 1.6: Edición de precio y título durante verificación -> se conservan cambios concurrentes")
+    void testEdicionDeOtrosCamposDuranteVerificacion() throws Exception {
+        Programa p = crearProgramaBase("edicion-otros", 101L);
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureVerif = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS));
+
+        // Edición concurrente de precio y título directamente en BD
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            ProgramaEntity ent = springDataProgramRepository.findByIdWithLock(p.getIdPrograma()).orElseThrow();
+            ent.setPrecio(new BigDecimal("888.00"));
+            ent.setTitulo("Título Modificado Concurrente");
+            springDataProgramRepository.save(ent);
+        });
+
+        releaseMoodleLatch.countDown();
+        futureVerif.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertEquals(new BigDecimal("888.00"), enBd.getPrecio());
+        assertEquals("Título Modificado Concurrente", enBd.getTitulo());
+        assertTrue(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 1.7: Instancias independientes sin mapa compartido se coordinan vía PostgreSQL row lock y revisión")
+    void testInstanciasIndependientesSinMapaCompartido() throws Exception {
+        Programa p = crearProgramaBase("instancias-indep", 101L);
+
+        // Crear instancia independiente de CatalogService sin compartir memoria
+        CatalogService instanciaB = new CatalogService(
+                programRepositoryPort,
+                lmsClientPort,
+                Clock.systemUTC(),
+                168L,
+                new TransactionTemplate(transactionManager)
+        );
+
+        pauseMoodleVerification.set(true);
+        inMoodleLatch = new CountDownLatch(1);
+        releaseMoodleLatch = new CountDownLatch(1);
+
+        // Instancia A inicia verificación lenta
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Programa> futureA = executor.submit(() -> catalogService.verificarYActualizarMoodlePrograma(p.getIdPrograma()));
+
+        assertTrue(inMoodleLatch.await(5, TimeUnit.SECONDS));
+
+        // Instancia B desvincula en base de datos independiente de mapa de memoria
+        Programa desvB = instanciaB.desvincularCursoMoodle(p.getIdPrograma());
+        assertNull(desvB.getMoodleCourseId());
+
+        releaseMoodleLatch.countDown();
+        futureA.get(5, TimeUnit.SECONDS);
+
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertNull(enBd.getMoodleCourseId());
+        assertFalse(enBd.isMoodleVerificado());
+        executor.shutdownNow();
+    }
+
+    // =========================================================================
+    // PRUEBAS DE RESOLUCIÓN ADMINISTRATIVA (ITEM 2)
+    // =========================================================================
+
+    static class OrdenHistoricaFixture {
+        final Long idOrden;
+        final Long idDetalle;
+        final String codigoOrden;
+        final String email;
+
+        OrdenHistoricaFixture(Long idOrden, Long idDetalle, String codigoOrden) {
+            this(idOrden, idDetalle, codigoOrden, null);
+        }
+
+        OrdenHistoricaFixture(Long idOrden, Long idDetalle, String codigoOrden, String email) {
+            this.idOrden = idOrden;
+            this.idDetalle = idDetalle;
+            this.codigoOrden = codigoOrden;
+            this.email = email;
+        }
+    }
+
+    private OrdenHistoricaFixture crearOrdenHistoricaCompleta() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ProgramaEntity prog = springDataProgramRepository.save(ProgramaEntity.builder()
+                    .titulo("Programa Auxiliar " + UUID.randomUUID().toString().substring(0, 6))
+                    .slug("prog-aux-" + UUID.randomUUID().toString().substring(0, 8))
+                    .precio(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .activo(true)
+                    .precioAprobado(true)
+                    .moodleCourseId(null)
+                    .moodleVinculacionRevision(1L)
+                    .moodleEstadoVerificacion(MoodleVerificationStatus.SIN_VINCULACION)
+                    .build());
+
+            UsuarioEntity u = springDataUserRepository.save(UsuarioEntity.builder()
+                    .email("cliente." + UUID.randomUUID().toString().substring(0, 6) + "@test.pe")
+                    .nombres("Cliente")
+                    .apellidos("Test")
+                    .passw("hash")
+                    .rol(RolUsuario.ESTUDIANTE)
+                    .activo(true)
+                    .build());
+
+            String cod = "ORD-" + UUID.randomUUID().toString().substring(0, 8);
+            OrdenEntity o = springDataOrderRepository.save(OrdenEntity.builder()
+                    .idUser(u.getIdUser())
+                    .codigoOrden(cod)
+                    .estadoOrden(EstadoOrden.PAGADO)
+                    .estadoAprovisionamiento(EstadoAprovisionamiento.PENDIENTE)
+                    .total(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .metodoPago("STRIPE")
+                    .moodleMatriculaSincronizada(false)
+                    .items(new ArrayList<>())
+                    .build());
+
+            DetalleOrdenEntity det = DetalleOrdenEntity.builder()
+                    .orden(o)
+                    .idPrograma(prog.getIdPrograma())
+                    .precioUnitario(new BigDecimal("150.00"))
+                    .cantidad(1)
+                    .subtotal(new BigDecimal("150.00"))
+                    .moodleMatriculado(false)
+                    .moodleCourseId(null)
+                    .origenMoodleCourseId("PENDIENTE_RESOLUCION_ADMINISTRATIVA")
+                    .build();
+
+            o.getItems().add(det);
+            OrdenEntity saved = springDataOrderRepository.save(o);
+            return new OrdenHistoricaFixture(saved.getIdOrden(), saved.getItems().get(0).getIdDetalle(), cod, u.getEmail());
+        });
+    }
+
+    private OrdenHistoricaFixture crearOrdenHistoricaInvitadoPendienteActivacion() {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        return tx.execute(status -> {
+            ProgramaEntity prog = springDataProgramRepository.save(ProgramaEntity.builder()
+                    .titulo("Programa Auxiliar " + UUID.randomUUID().toString().substring(0, 6))
+                    .slug("prog-aux-" + UUID.randomUUID().toString().substring(0, 8))
+                    .precio(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .activo(true)
+                    .precioAprobado(true)
+                    .moodleCourseId(null)
+                    .moodleVinculacionRevision(1L)
+                    .moodleEstadoVerificacion(MoodleVerificationStatus.SIN_VINCULACION)
+                    .build());
+
+            String guestEmail = "invitado." + UUID.randomUUID().toString().substring(0, 6) + "@test.pe";
+            UsuarioEntity u = springDataUserRepository.save(UsuarioEntity.builder()
+                    .email(guestEmail)
+                    .nombres("Invitado")
+                    .apellidos("Efectos")
+                    .passw("$2a$10$INVALIDATED_PROVISIONAL_PASSWORD_HASH_" + UUID.randomUUID().toString().substring(0, 8))
+                    .rol(RolUsuario.CLIENTE)
+                    .activo(false)
+                    .pendienteActivacion(true)
+                    .build());
+
+            String cod = "ORD-" + UUID.randomUUID().toString().substring(0, 8);
+            OrdenEntity o = springDataOrderRepository.save(OrdenEntity.builder()
+                    .idUser(u.getIdUser())
+                    .codigoOrden(cod)
+                    .estadoOrden(EstadoOrden.PENDIENTE)
+                    .estadoAprovisionamiento(EstadoAprovisionamiento.PENDIENTE)
+                    .total(new BigDecimal("150.00"))
+                    .moneda("PEN")
+                    .metodoPago("STRIPE")
+                    .moodleMatriculaSincronizada(false)
+                    .items(new ArrayList<>())
+                    .build());
+
+            DetalleOrdenEntity det = DetalleOrdenEntity.builder()
+                    .orden(o)
+                    .idPrograma(prog.getIdPrograma())
+                    .precioUnitario(new BigDecimal("150.00"))
+                    .cantidad(1)
+                    .subtotal(new BigDecimal("150.00"))
+                    .moodleMatriculado(false)
+                    .moodleCourseId(null)
+                    .origenMoodleCourseId("PENDIENTE_RESOLUCION_ADMINISTRATIVA")
+                    .build();
+
+            o.getItems().add(det);
+            OrdenEntity saved = springDataOrderRepository.save(o);
+            return new OrdenHistoricaFixture(saved.getIdOrden(), saved.getItems().get(0).getIdDetalle(), cod, guestEmail);
+        });
+    }
+
+    private Long crearOrdenConDetalleHistoricoPendiente() {
+        return crearOrdenHistoricaCompleta().idDetalle;
+    }
+
+    @Test
+    @DisplayName("Item 2.1: Dos administradores proponen cursos diferentes simultáneamente -> solo uno resuelve")
+    void testDosAdministradoresProponenCursosDiferentesSimultaneamente() throws Exception {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+        CountDownLatch done = new CountDownLatch(2);
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd1 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Propuesta Admin 1", "EXP-1", "admin1@test.com"
+        );
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd2 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                606L, "Propuesta Admin 2", "EXP-2", "admin2@test.com"
+        );
+
+        List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+        List<Orden> successes = Collections.synchronizedList(new ArrayList<>());
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        pool.submit(() -> {
+            try {
+                barrier.await();
+                successes.add(buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd1));
+            } catch (Throwable t) {
+                errors.add(t);
+            } finally {
+                done.countDown();
+            }
+        });
+
+        pool.submit(() -> {
+            try {
+                barrier.await();
+                successes.add(buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd2));
+            } catch (Throwable t) {
+                errors.add(t);
+            } finally {
+                done.countDown();
+            }
+        });
+
+        assertTrue(done.await(10, TimeUnit.SECONDS));
+        pool.shutdownNow();
+
+        assertEquals(1, successes.size(), "Exactamente una resolución debe triunfar");
+        assertEquals(1, errors.size(), "La otra solicitud debe fallar con conflicto");
+        assertTrue(errors.get(0).getMessage().contains("No se permite sobrescribir ni sustituir una resolución existente"));
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+        assertTrue(det.getMoodleCourseId().equals(505L) || det.getMoodleCourseId().equals(606L));
+    }
+
+    @Test
+    @DisplayName("Item 2.2: Repetición de la misma resolución -> sin cambios de auditoría (idempotente)")
+    void testRepeticionMismaResolucionSinCambiosAuditoria() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Inicial", "EXP-001", "admin@test.com"
+        );
+
+        Orden o1 = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd);
+        OffsetDateTime fecha1 = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow()
+                .getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow()
+                .getMoodleResolucionFecha();
+        assertNotNull(fecha1);
+
+        // Repetir exactamente la misma resolución
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmdRep = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Intento duplicado", "EXP-999", "otro_autor@test.com"
+        );
+        Orden o2 = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmdRep);
+        DetalleOrden det2 = o2.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+
+        // Debe conservar intactos fecha, autor y evidencia de la primera resolución
+        assertEquals(505L, det2.getMoodleCourseId());
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det2.getOrigenMoodleCourseId());
+        assertEquals("admin@test.com", det2.getMoodleResolucionAutorizadaPor());
+        assertEquals("Resolución Inicial", det2.getMoodleResolucionMotivo());
+        assertEquals("EXP-001", det2.getMoodleResolucionEvidencia());
+        assertEquals(fecha1, det2.getMoodleResolucionFecha());
+    }
+
+    @Test
+    @DisplayName("Item 2.3: Intento de sustituir resolución existente con otro curso -> lanza conflicto HTTP 409")
+    void testIntentoSustituirResolucionExistenteLanzaConflicto409() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd1 = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Inicial", "EXP-001", "admin@test.com"
+        );
+        buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd1);
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmdDistinto = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                606L, "Intento de cambiar curso", "EXP-002", "otro@test.com"
+        );
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmdDistinto));
+        assertTrue(ex.getMessage().contains("No se permite sobrescribir ni sustituir una resolución existente"));
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals(505L, det.getMoodleCourseId(), "El curso 505 debe mantenerse inalterado");
+    }
+
+    @Test
+    @DisplayName("Item 2.4: Coordinación con arrendamiento de aprovisionamiento activo -> rechaza resolución en progreso")
+    void testResolucionSimultaneaConAprovisionamiento() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        // Poner orden en estado PROCESANDO con lease vigente
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.executeWithoutResult(status -> {
+            OrdenEntity o = springDataOrderRepository.findByDetalleIdWithLock(idDetalle).orElseThrow();
+            o.setEstadoAprovisionamiento(EstadoAprovisionamiento.PROCESANDO);
+            o.setAprovisionamientoLeaseToken("worker-1");
+            o.setAprovisionamientoLeaseExpiresAt(OffsetDateTime.now().plusMinutes(5));
+            springDataOrderRepository.save(o);
+        });
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Intento durante lease", "EXP-001", "admin@test.com"
+        );
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd));
+        assertTrue(ex.getMessage().contains("arrendamiento activo de aprovisionamiento"));
+    }
+
+    @Test
+    @DisplayName("Item 2.5: Conservación del pago, destino y auditoría tras reintento de matrícula")
+    void testConservacionPagoDestinoAuditoriaDespuesDeReintento() {
+        Long idDetalle = crearOrdenConDetalleHistoricoPendiente();
+
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución Completa", "EXP-FINAL", "admin_auditor@test.com"
+        );
+        Orden res = buyCourseService.resolverDestinoMoodleDetalle(idDetalle, cmd);
+        Long idOrden = res.getIdOrden();
+
+        // Ejecutar reintento administrativo de aprovisionamiento
+        Orden ordenFinal = buyCourseService.reintentarMatricula(idOrden);
+
+        assertEquals(EstadoOrden.PAGADO, ordenFinal.getEstadoOrden(), "Estado debe continuar siendo PAGADO");
+        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenFinal.getEstadoAprovisionamiento());
+        assertTrue(ordenFinal.isMoodleMatriculaSincronizada());
+
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(idDetalle).orElseThrow();
+        DetalleOrdenEntity detFinal = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(idDetalle)).findFirst().orElseThrow();
+        assertEquals(505L, detFinal.getMoodleCourseId());
+        assertEquals("RESOLUCION_ADMINISTRATIVA", detFinal.getOrigenMoodleCourseId());
+        assertEquals("admin_auditor@test.com", detFinal.getMoodleResolucionAutorizadaPor());
+        assertEquals("Resolución Completa", detFinal.getMoodleResolucionMotivo());
+        assertEquals("EXP-FINAL", detFinal.getMoodleResolucionEvidencia());
+        assertTrue(detFinal.isMoodleMatriculado());
+    }
+
+
+    @Test
+    @DisplayName("Item 1.8: Transacción real en PostgreSQL -> Una excepción antes de confirmar revierte los cambios en BD")
+    void testTransaccionRealRevierteEnExcepcion() {
+        Programa p = crearProgramaBase("rollback", 101L);
+
+        MoodleCourseVerification verif = MoodleCourseVerification.verificado(101L, "Curso Rollback", "CRB");
+        OffsetDateTime t = OffsetDateTime.now(ZoneOffset.UTC);
+
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        assertThrows(RuntimeException.class, () -> {
+            tx.execute(status -> {
+                catalogService.aplicarResultadoVerificacionTransaccional(p.getIdPrograma(), 101L, 1L, t, verif);
+                // Provocar fallo antes del commit para verificar rollback de la transacción real
+                throw new RuntimeException("Fallo forzado antes de confirmar para verificar rollback");
+            });
+        });
+
+        // Verificar que en PostgreSQL los cambios fueron revertidos completamente
+        ProgramaEntity enBd = springDataProgramRepository.findById(p.getIdPrograma()).orElseThrow();
+        assertFalse(enBd.isMoodleVerificado(), "El rollback debe revertir la verificación en PostgreSQL");
+        assertEquals(MoodleVerificationStatus.PENDIENTE_VERIFICACION, enBd.getMoodleEstadoVerificacion());
+        assertNull(enBd.getMoodleCourseNombre());
+    }
+
+    @Test
+    @DisplayName("Item 3.1 (Orden A): Aprovisionamiento adquiere primero la reserva -> resolución real rechazada sin modificar destino")
+    void testConcurrenciaReal_AprovisionamientoPrimeroRechazaResolucion() throws Exception {
+        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
+
+        CountDownLatch reservaAdquiridaLatch = new CountDownLatch(1);
+        CountDownLatch resolucionTerminadaLatch = new CountDownLatch(1);
+        List<Throwable> resolucionErrors = Collections.synchronizedList(new ArrayList<>());
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Hilo 1: Adquiere la reserva de aprovisionamiento usando el método real del backend
+        Future<ResultadoReservaAprovisionamiento> futureReserva = executor.submit(() -> {
+            ResultadoReservaAprovisionamiento res =
+                    orderFinancialTransactionService.reservarAprovisionamiento(fix.codigoOrden);
+            reservaAdquiridaLatch.countDown();
+            return res;
+        });
+
+        // Hilo 2: Intenta resolver concurrentemente mientras el aprovisionamiento tiene la reserva activa
+        executor.submit(() -> {
+            try {
+                assertTrue(reservaAdquiridaLatch.await(5, TimeUnit.SECONDS), "La reserva debió adquirirse primero");
+                BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                        606L, "Intento durante aprovisionamiento real", "EXP-BLOQ", "admin@test.pe"
+                );
+                buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
+            } catch (Throwable t) {
+                resolucionErrors.add(t);
+            } finally {
+                resolucionTerminadaLatch.countDown();
+            }
+        });
+
+        assertTrue(resolucionTerminadaLatch.await(5, TimeUnit.SECONDS), "La resolución debió responder dentro del timeout");
+        ResultadoReservaAprovisionamiento reserva =
+                futureReserva.get(5, TimeUnit.SECONDS);
+
+        assertNotNull(reserva);
+        assertNotNull(reserva.getOwnerToken());
+        assertEquals(1, resolucionErrors.size(), "La resolución debió fallar con excepción");
+        assertTrue(resolucionErrors.get(0).getMessage().contains("arrendamiento activo de aprovisionamiento"));
+
+        // Comprobación de estado final persistido en base de datos:
+        OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenActual.getItems().stream().filter(i -> i.getIdDetalle().equals(fix.idDetalle)).findFirst().orElseThrow();
+        assertNull(det.getMoodleCourseId(), "El destino no debe ser modificado por la resolución rechazada");
+        assertEquals("PENDIENTE_RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+        assertNull(det.getMoodleResolucionAutorizadaPor(), "No deben escribirse campos de auditoría");
+        assertFalse(det.isMoodleMatriculado(), "No debe producirse matrícula a destino diferente");
+        executor.shutdownNow();
+    }
+
+    @Test
+    @DisplayName("Item 3.2 (Orden B): Resolución confirma primero -> aprovisionamiento real utiliza destino confirmado y conserva auditoría")
+    void testConcurrenciaReal_ResolucionPrimeroAprovisionamientoUtilizaDestinoConfirmado() throws Exception {
+        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
+
+        CountDownLatch resolucionConfirmadaLatch = new CountDownLatch(1);
+        CountDownLatch aprovisionamientoTerminadoLatch = new CountDownLatch(1);
+        List<Orden> ordenesAprovisionadas = Collections.synchronizedList(new ArrayList<>());
+        List<Throwable> aprovisionamientoErrors = Collections.synchronizedList(new ArrayList<>());
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Hilo 1: Resuelve primero el destino legítimo hacia curso 505L
+        Future<Orden> futureResolucion = executor.submit(() -> {
+            BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                    505L, "Resolución Legítima Previa", "EXP-LEGITIMO", "auditor_seguro@test.pe"
+            );
+            Orden res = buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
+            resolucionConfirmadaLatch.countDown();
+            return res;
+        });
+
+        // Hilo 2: Ejecuta aprovisionamiento usando el método real del backend
+        executor.submit(() -> {
+            try {
+                assertTrue(resolucionConfirmadaLatch.await(5, TimeUnit.SECONDS), "La resolución debió confirmar primero");
+                Orden ordenProcesada = buyCourseService.reintentarMatricula(fix.idOrden);
+                ordenesAprovisionadas.add(ordenProcesada);
+            } catch (Throwable t) {
+                aprovisionamientoErrors.add(t);
+            } finally {
+                aprovisionamientoTerminadoLatch.countDown();
+            }
+        });
+
+        assertTrue(aprovisionamientoTerminadoLatch.await(10, TimeUnit.SECONDS), "El aprovisionamiento debió terminar dentro del timeout");
+        Orden res1 = futureResolucion.get(5, TimeUnit.SECONDS);
+        assertNotNull(res1);
+        assertEquals(0, aprovisionamientoErrors.size(), "El aprovisionamiento no debió lanzar error");
+        assertEquals(1, ordenesAprovisionadas.size());
+
+        // Comprobación de estado final persistido:
+        OrdenEntity ordenPersistida = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
+        DetalleOrdenEntity det = ordenPersistida.getItems().stream().filter(i -> i.getIdDetalle().equals(fix.idDetalle)).findFirst().orElseThrow();
+
+        assertEquals(505L, det.getMoodleCourseId(), "El aprovisionamiento debe haber utilizado el destino confirmado (505)");
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+        assertEquals("auditor_seguro@test.pe", det.getMoodleResolucionAutorizadaPor(), "La auditoría se conserva");
+        assertEquals("Resolución Legítima Previa", det.getMoodleResolucionMotivo());
+        assertEquals("EXP-LEGITIMO", det.getMoodleResolucionEvidencia());
+        assertTrue(det.isMoodleMatriculado(), "La matrícula debe quedar completada");
+
+        // Verificación de idempotencia de reintentos: no duplicar matrícula, comprobantes ni facturación
+        Orden ordenReintento = buyCourseService.reintentarMatricula(fix.idOrden);
+        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenReintento.getEstadoAprovisionamiento());
+
+        Integer countComprobantes = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countComprobantes, "No debe duplicarse la facturación ni emitirse más de 1 comprobante");
+
+        Integer countDetalles = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM detalle_ordenes WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countDetalles, "No deben duplicarse los detalles de la orden");
+        executor.shutdownNow();
+    }
+
+    // =========================================================================
+    // ITEM 1: PRUEBAS DE CONTENCIÓN REAL ENTRE TRANSACCIONES EN POSTGRESQL
+    // =========================================================================
+
+    static class BlockingLockEvidence {
+        final int blockedPid;
+        final int blockingPid;
+        final String waitEventType;
+        final String waitEvent;
+        final String blockedQuery;
+
+        BlockingLockEvidence(int blockedPid, int blockingPid, String waitEventType, String waitEvent, String blockedQuery) {
+            this.blockedPid = blockedPid;
+            this.blockingPid = blockingPid;
+            this.waitEventType = waitEventType;
+            this.waitEvent = waitEvent;
+            this.blockedQuery = blockedQuery;
+        }
+    }
+
+    private BlockingLockEvidence esperarContencionExactaPostgres(int expectedBlockedPid, int expectedBlockingPid, long timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        String sql = """
+                SELECT
+                    blocked.pid AS blocked_pid,
+                    blocking.pid AS blocking_pid,
+                    blocked.wait_event_type,
+                    blocked.wait_event,
+                    COALESCE(blocked.query, '') AS blocked_query
+                FROM pg_stat_activity blocked
+                JOIN unnest(pg_blocking_pids(blocked.pid)) AS blocking_pid_val ON true
+                JOIN pg_stat_activity blocking ON blocking.pid = blocking_pid_val
+                WHERE blocked.pid = ? AND blocking.pid = ?
+                """;
+        while (System.currentTimeMillis() < deadline) {
+            List<BlockingLockEvidence> list = jdbcTemplate.query(sql, (rs, rowNum) -> new BlockingLockEvidence(
+                    rs.getInt("blocked_pid"),
+                    rs.getInt("blocking_pid"),
+                    rs.getString("wait_event_type"),
+                    rs.getString("wait_event"),
+                    rs.getString("blocked_query")
+            ), expectedBlockedPid, expectedBlockingPid);
+            if (!list.isEmpty()) {
+                return list.get(0);
+            }
+            Thread.sleep(50);
+        }
+        return null;
+    }
+
+    private void esperarMensajesSmtp(int esperados, long timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (mockSmtpServer.getMessageCount() >= esperados) {
+                return;
+            }
+            Thread.sleep(50);
+        }
+    }
+
+    @Test
+    @DisplayName("Item 3.1b (Contención Real - Escenario A): Aprovisionamiento mantiene bloqueo en transacción abierta -> Resolución compite, queda bloqueada en PostgreSQL, y al liberarse es rechazada")
+    void testContencionReal_AprovisionamientoMantieneBloqueoSolapado_ResolucionRechazada() throws Exception {
+        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
+
+        CountDownLatch tx1BloqueoAdquiridoLatch = new CountDownLatch(1);
+        CountDownLatch tx1LiberarLatch = new CountDownLatch(1);
+        CountDownLatch tx2PidCapturadoLatch = new CountDownLatch(1);
+        CountDownLatch tx2TerminadoLatch = new CountDownLatch(1);
+
+        AtomicInteger tx1BackendPid = new AtomicInteger(0);
+        AtomicInteger tx2BackendPid = new AtomicInteger(0);
+
+        List<Throwable> resolucionErrors = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            // Hilo 1: Adquiere la reserva de aprovisionamiento y mantiene abierta su transacción mientras retiene el bloqueo de fila
+            coordinatingOrderRepository.setOnGuardarHook((orden, saveAction) -> {
+                if (tx1BloqueoAdquiridoLatch.getCount() > 0) {
+                    tx1BackendPid.set(jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                    tx1BloqueoAdquiridoLatch.countDown();
+                    try {
+                        boolean liberado = tx1LiberarLatch.await(10, TimeUnit.SECONDS);
+                        assertTrue(liberado, "El Hilo 1 debió ser liberado dentro del timeout");
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    saveAction.run();
+                } else {
+                    saveAction.run();
+                }
+            });
+
+            // Interceptar la segunda operación (Hilo 2) antes de que quede bloqueada en PostgreSQL
+            coordinatingOrderRepository.setOnBuscarOrdenPorIdDetalleConBloqueoHook(idDetalle -> {
+                if (tx2BackendPid.get() == 0) {
+                    tx2BackendPid.set(jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                    tx2PidCapturadoLatch.countDown();
+                }
+            });
+
+            Future<ResultadoReservaAprovisionamiento> futureReserva = executor.submit(() ->
+                    orderFinancialTransactionService.reservarAprovisionamiento(fix.codigoOrden)
+            );
+
+            // Esperar que Hilo 1 haya adquirido el bloqueo y mantenga su transacción abierta
+            assertTrue(tx1BloqueoAdquiridoLatch.await(5, TimeUnit.SECONDS),
+                    "Hilo 1 debió adquirir el bloqueo pesimista en PostgreSQL");
+            int pid1 = tx1BackendPid.get();
+            assertTrue(pid1 > 0, "PID de la transacción 1 debe ser positivo");
+
+            // Hilo 2: Inicia resolución administrativa mientras Hilo 1 retiene el bloqueo
+            executor.submit(() -> {
+                try {
+                    BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                            606L, "Intento durante contención real", "EXP-CONTENCION-A", "admin@test.pe"
+                    );
+                    buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
+                } catch (Throwable t) {
+                    resolucionErrors.add(t);
+                } finally {
+                    tx2TerminadoLatch.countDown();
+                }
+            });
+
+            // Esperar que Hilo 2 haya capturado su PID dentro de su transacción antes de bloquearse
+            assertTrue(tx2PidCapturadoLatch.await(5, TimeUnit.SECONDS),
+                    "Hilo 2 debió capturar su PID dentro de su transacción antes del bloqueo");
+            int pid2 = tx2BackendPid.get();
+            assertTrue(pid2 > 0, "PID de la transacción 2 debe ser positivo");
+
+            // Comprobar que los PID de ambas transacciones de trabajo son distintos
+            assertNotEquals(pid1, pid2, "Los PID de las conexiones asociadas a cada transacción de trabajo deben ser distintos");
+
+            // Comprobar que la conexión del hilo de control (tercera conexión) es independiente
+            int controlPid = jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class);
+            assertNotEquals(controlPid, pid1, "La conexión de control debe ser distinta a la transacción 1");
+            assertNotEquals(controlPid, pid2, "La conexión de control debe ser distinta a la transacción 2");
+
+            // Comprobar evidencia observable de contención exacta en PostgreSQL desde la tercera conexión
+            BlockingLockEvidence bloqueo = esperarContencionExactaPostgres(pid2, pid1, 5000);
+            assertNotNull(bloqueo, String.format(
+                    "PostgreSQL debe evidenciar contención exacta: Hilo 2 (PID %d) bloqueado por Hilo 1 (PID %d) en pg_stat_activity/pg_blocking_pids",
+                    pid2, pid1));
+            assertEquals(pid2, bloqueo.blockedPid, "blocked_pid debe ser exactamente el PID de la segunda operación");
+            assertEquals(pid1, bloqueo.blockingPid, "pg_blocking_pids(blocked_pid) debe contener exactamente el PID de la primera operación");
+            assertEquals("Lock", bloqueo.waitEventType, "El tipo de espera en PostgreSQL debe ser Lock");
+            String q1 = bloqueo.blockedQuery.toLowerCase();
+            assertTrue(q1.contains("for update") || q1.contains("for no key update") || q1.contains("update"),
+                    "La consulta bloqueada debe ser un SELECT con bloqueo pesimista en PostgreSQL (obtenido: " + bloqueo.blockedQuery + ")");
+            assertTrue(q1.contains("orden") || q1.contains("detalle_orden"),
+                    "La consulta bloqueada debe corresponder al acceso esperado a la orden");
+
+            // Comprobar que la segunda operación no termina antes de liberar la primera
+            assertEquals(1, tx2TerminadoLatch.getCount(),
+                    "La segunda operación debe permanecer bloqueada y no terminar antes de liberar la primera");
+
+            // Liberar la primera transacción para que confirme
+            tx1LiberarLatch.countDown();
+
+            // Esperar finalización de la resolución (Hilo 2)
+            assertTrue(tx2TerminadoLatch.await(10, TimeUnit.SECONDS),
+                    "La resolución debe desbloquearse y completarse tras el commit de Hilo 1");
+
+            ResultadoReservaAprovisionamiento reserva = futureReserva.get(5, TimeUnit.SECONDS);
+            assertNotNull(reserva);
+            assertTrue(reserva.isReservado());
+
+            // La resolución debió ser rechazada por colisión con el lease de aprovisionamiento
+            assertEquals(1, resolucionErrors.size(), "La resolución debió ser rechazada con conflicto");
+            assertTrue(resolucionErrors.get(0).getMessage().contains("arrendamiento activo de aprovisionamiento"));
+
+            // Estado final persistido inalterado en base de datos
+            OrdenEntity ordenActual = springDataOrderRepository.findByDetalleId(fix.idDetalle).orElseThrow();
+            DetalleOrdenEntity det = ordenActual.getItems().get(0);
+            assertNull(det.getMoodleCourseId(), "El destino no debe ser modificado por la resolución rechazada");
+            assertEquals("PENDIENTE_RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+            assertNull(det.getMoodleResolucionAutorizadaPor(), "No deben escribirse campos de auditoría");
+            assertFalse(det.isMoodleMatriculado(), "No debe producirse matrícula a destino diferente");
+            assertEquals(EstadoOrden.PAGADO, ordenActual.getEstadoOrden(), "El estado del pago se mantiene intacto");
+
+            // Comprobar que la resolución rechazada NO disparó matrícula, facturación ni notificaciones
+            assertEquals(0, getMoodleEnrolCalls().size(), "Una resolución rechazada no debe disparar matrícula en Moodle");
+            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden),
+                    "Una resolución rechazada no debe emitir comprobantes");
+            assertEquals(0, mockSmtpServer.getMessageCount(),
+                    "Una resolución rechazada no debe enviar correos");
+
+        } finally {
+            coordinatingOrderRepository.clearHooks();
+            tx1LiberarLatch.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    @DisplayName("Item 3.2b (Contención Real - Escenario B): Resolución mantiene bloqueo en transacción abierta -> Reserva compite, queda bloqueada en PostgreSQL, y al liberarse usa el destino confirmado")
+    void testContencionReal_ResolucionMantieneBloqueoSolapado_AprovisionamientoUsaDestinoConfirmado() throws Exception {
+        OrdenHistoricaFixture fix = crearOrdenHistoricaCompleta();
+
+        CountDownLatch tx1BloqueoAdquiridoLatch = new CountDownLatch(1);
+        CountDownLatch tx1LiberarLatch = new CountDownLatch(1);
+        CountDownLatch tx2PidCapturadoLatch = new CountDownLatch(1);
+        CountDownLatch tx2TerminadoLatch = new CountDownLatch(1);
+
+        AtomicInteger tx1BackendPid = new AtomicInteger(0);
+        AtomicInteger tx2BackendPid = new AtomicInteger(0);
+
+        List<Throwable> aprovisionamientoErrors = Collections.synchronizedList(new ArrayList<>());
+        List<Orden> ordenesAprovisionadas = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        try {
+            // Hilo 1: Resuelve hacia curso 505L y mantiene la transacción abierta tras escribir en el buffer pero antes del commit
+            coordinatingOrderRepository.setOnGuardarHook((orden, saveAction) -> {
+                if (tx1BloqueoAdquiridoLatch.getCount() > 0) {
+                    tx1BackendPid.set(jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                    saveAction.run(); // Persistir en el contexto de la transacción abierta
+                    tx1BloqueoAdquiridoLatch.countDown();
+                    try {
+                        boolean liberado = tx1LiberarLatch.await(10, TimeUnit.SECONDS);
+                        assertTrue(liberado, "El Hilo 1 debió ser liberado dentro del timeout");
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    saveAction.run();
+                }
+            });
+
+            // Interceptar la segunda operación (Hilo 2) antes de que quede bloqueada en PostgreSQL
+            coordinatingOrderRepository.setOnBuscarPorCodigoConBloqueoHook(() -> {
+                if (tx2BackendPid.get() == 0) {
+                    tx2BackendPid.set(jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class));
+                    tx2PidCapturadoLatch.countDown();
+                }
+            });
+
+            Future<Orden> futureResolucion = executor.submit(() -> {
+                BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                        505L, "Resolución Legítima Solapada", "EXP-SOLAPADA-B", "auditor_solapado@test.pe"
+                );
+                return buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
+            });
+
+            assertTrue(tx1BloqueoAdquiridoLatch.await(5, TimeUnit.SECONDS),
+                    "Hilo 1 debió adquirir el bloqueo pesimista en PostgreSQL y preparar la resolución");
+            int pid1 = tx1BackendPid.get();
+            assertTrue(pid1 > 0, "PID de la transacción 1 debe ser positivo");
+
+            // Hilo 2: Intenta aprovisionar mediante reintentarMatricula mientras Hilo 1 retiene el bloqueo
+            executor.submit(() -> {
+                try {
+                    Orden ordenProc = buyCourseService.reintentarMatricula(fix.idOrden);
+                    ordenesAprovisionadas.add(ordenProc);
+                } catch (Throwable t) {
+                    aprovisionamientoErrors.add(t);
+                } finally {
+                    tx2TerminadoLatch.countDown();
+                }
+            });
+
+            // Esperar que Hilo 2 haya capturado su PID dentro de su transacción antes de bloquearse
+            assertTrue(tx2PidCapturadoLatch.await(5, TimeUnit.SECONDS),
+                    "Hilo 2 debió capturar su PID dentro de su transacción antes del bloqueo");
+            int pid2 = tx2BackendPid.get();
+            assertTrue(pid2 > 0, "PID de la transacción 2 debe ser positivo");
+
+            // Comprobar que los PID de ambas transacciones de trabajo son distintos
+            assertNotEquals(pid1, pid2, "Los PID de las conexiones asociadas a cada transacción de trabajo deben ser distintos");
+
+            // Comprobar que la conexión del hilo de control (tercera conexión) es independiente
+            int controlPid = jdbcTemplate.queryForObject("SELECT pg_backend_pid()", Integer.class);
+            assertNotEquals(controlPid, pid1, "La conexión de control debe ser distinta a la transacción 1");
+            assertNotEquals(controlPid, pid2, "La conexión de control debe ser distinta a la transacción 2");
+
+            // Comprobar evidencia observable de contención exacta en PostgreSQL (Hilo 2 bloqueado por Hilo 1)
+            BlockingLockEvidence bloqueo = esperarContencionExactaPostgres(pid2, pid1, 5000);
+            assertNotNull(bloqueo, String.format(
+                    "PostgreSQL debe evidenciar contención exacta: Hilo 2 (PID %d) bloqueado por Hilo 1 (PID %d) en pg_stat_activity/pg_blocking_pids",
+                    pid2, pid1));
+            assertEquals(pid2, bloqueo.blockedPid, "blocked_pid debe ser exactamente el PID de la segunda operación");
+            assertEquals(pid1, bloqueo.blockingPid, "pg_blocking_pids(blocked_pid) debe contener exactamente el PID de la primera operación");
+            assertEquals("Lock", bloqueo.waitEventType, "El tipo de espera en PostgreSQL debe ser Lock");
+            String q1 = bloqueo.blockedQuery.toLowerCase();
+            assertTrue(q1.contains("for update") || q1.contains("for no key update") || q1.contains("update"),
+                    "La consulta bloqueada debe ser un SELECT con bloqueo pesimista en PostgreSQL (obtenido: " + bloqueo.blockedQuery + ")");
+            assertTrue(q1.contains("orden") || q1.contains("detalle_orden"),
+                    "La consulta bloqueada debe corresponder al acceso esperado a la orden");
+
+            // Comprobar que la segunda operación no termina antes de liberar la primera
+            assertEquals(1, tx2TerminadoLatch.getCount(),
+                    "La segunda operación debe permanecer bloqueada y no terminar antes de liberar la primera");
+
+            // Liberar la primera transacción para que confirme la resolución
+            tx1LiberarLatch.countDown();
+
+            assertTrue(tx2TerminadoLatch.await(10, TimeUnit.SECONDS),
+                    "El aprovisionamiento debe desbloquearse y completarse tras el commit de la resolución");
+
+            Orden res1 = futureResolucion.get(5, TimeUnit.SECONDS);
+            assertNotNull(res1);
+            assertEquals(0, aprovisionamientoErrors.size(), "El aprovisionamiento no debió fallar una vez liberado el bloqueo");
+            assertEquals(1, ordenesAprovisionadas.size());
+
+            Orden ordenAprovisionada = ordenesAprovisionadas.get(0);
+            assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenAprovisionada.getEstadoAprovisionamiento());
+            assertTrue(ordenAprovisionada.isMoodleMatriculaSincronizada());
+
+            OrdenEntity ordenPersistida = springDataOrderRepository.findById(fix.idOrden).orElseThrow();
+            DetalleOrdenEntity det = ordenPersistida.getItems().get(0);
+            assertEquals(505L, det.getMoodleCourseId(), "El aprovisionamiento debió utilizar el destino confirmado 505L");
+            assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+            assertEquals("auditor_solapado@test.pe", det.getMoodleResolucionAutorizadaPor(), "La auditoría se preserva");
+            assertEquals("Resolución Legítima Solapada", det.getMoodleResolucionMotivo());
+            assertEquals("EXP-SOLAPADA-B", det.getMoodleResolucionEvidencia());
+            assertTrue(det.isMoodleMatriculado());
+
+        } finally {
+            coordinatingOrderRepository.clearHooks();
+            tx1LiberarLatch.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
+    // ITEM 2: COMPROBACIÓN EXHAUSTIVA DE EFECTOS EXTERNOS EN REINTENTOS
+    // =========================================================================
+
+    @Test
+    @DisplayName("Item 3.3 (Efectos Externos en Reintentos): Verificación exhaustiva de llamadas a Moodle, facturación, outbox de activación y correos SMTP sin duplicados")
+    void testEfectosExternosEnReintentos_ComprobantesMoodleYNotificacionesNoSeDuplican() throws Exception {
+        // 1. Escenario específico con usuario invitado pendiente de activación
+        OrdenHistoricaFixture fix = crearOrdenHistoricaInvitadoPendienteActivacion();
+
+        // 2. Resolver destino documentalmente hacia curso 505L
+        BuyCourseUseCase.ResolverDestinoMoodleCommand cmd = new BuyCourseUseCase.ResolverDestinoMoodleCommand(
+                505L, "Resolución de Prueba de Efectos", "EXP-EFECTOS-01", "auditor_efectos@test.pe"
+        );
+        Orden resResolucion = buyCourseService.resolverDestinoMoodleDetalle(fix.idDetalle, cmd);
+        assertNotNull(resResolucion);
+
+        // 3. Limpiar registros de llamadas antes de aprovisionar
+        clearMoodleCallHistory();
+        mockMoodleEnrolledCourses.clear();
+        mockSmtpServer.clear();
+
+        // 4. Ejecutar el flujo real que encola la activación (confirmación financiera de pago de orden de invitado)
+        Orden ordenConfirmada = orderFinancialTransactionService.confirmarPagoFinanciero(fix.codigoOrden);
+        assertEquals(EstadoOrden.PAGADO, ordenConfirmada.getEstadoOrden(), "La orden debe transicionar a PAGADO");
+
+        // 5. Exigir exactamente 1 tarea en el Outbox para la orden y clave de idempotencia esperada (sin condición >= 0)
+        Integer countOutbox1 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM outbox_notificacion_activacion WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertNotNull(countOutbox1);
+        assertEquals(1, countOutbox1, "Debe encolarse exactamente 1 tarea de activación en el Outbox");
+
+        String claveOutbox1 = jdbcTemplate.queryForObject(
+                "SELECT clave_idempotencia FROM outbox_notificacion_activacion WHERE id_orden = ?", String.class, fix.idOrden);
+        assertEquals("ACTIVACION_ORDEN_" + fix.idOrden, claveOutbox1, "La clave de idempotencia debe coincidir exactamente");
+
+        String estadoOutboxInicial = jdbcTemplate.queryForObject(
+                "SELECT estado FROM outbox_notificacion_activacion WHERE id_orden = ?", String.class, fix.idOrden);
+        assertEquals("PENDIENTE", estadoOutboxInicial, "La tarea recién encolada debe encontrarse en estado PENDIENTE");
+
+        // 6. Procesar la tarea mediante el trabajador real del Outbox (con reserva atómica, descifrado AES y entrega SMTP)
+        int tareasProcesadas = activationOutboxService.procesarTareasPendientes();
+        assertTrue(tareasProcesadas >= 1, "El trabajador real del outbox debió procesar la tarea de activación");
+
+        // Comprobar estado final persistido de la tarea en PostgreSQL
+        String estadoOutboxFinal = jdbcTemplate.queryForObject(
+                "SELECT estado FROM outbox_notificacion_activacion WHERE id_orden = ?", String.class, fix.idOrden);
+        assertEquals("ENVIADO", estadoOutboxFinal, "La tarea debe persistirse como ENVIADO tras la entrega exitosa");
+
+        // Comprobar recepción del correo de activación en el servidor SMTP mock
+        esperarMensajesSmtp(1, 5000);
+        assertEquals(1, mockSmtpServer.getMessageCount(), "El servidor SMTP debe registrar exactamente 1 correo en este paso");
+
+        List<String> correosActivacion = mockSmtpServer.getReceivedMessagesMatching(fix.email, "Activa tu cuenta");
+        assertEquals(1, correosActivacion.size(), "Debe existir exactamente 1 correo de activación para el destinatario");
+        String correoActivacion = correosActivacion.get(0);
+        assertTrue(correoActivacion.contains(fix.email), "El correo debe estar dirigido al destinatario invitado de prueba");
+        assertTrue(correoActivacion.contains("Activa tu cuenta en Lysandri Executive Education") || correoActivacion.contains("Activa_tu_cuenta"),
+                "El asunto debe corresponder a la activación de cuenta");
+        assertTrue(correoActivacion.contains("/activar-cuenta?token="),
+                "El cuerpo debe contener la ruta de activación");
+
+        // =====================================================================
+        // PRIMER INTENTO DE MATRÍCULA Y ACCESOS
+        // =====================================================================
+        Orden ordenIntento1 = buyCourseService.reintentarMatricula(fix.idOrden);
+        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenIntento1.getEstadoAprovisionamiento());
+        assertTrue(ordenIntento1.isMoodleMatriculaSincronizada());
+
+        // Comprobación Moodle (Efectos mutantes vs consultas)
+        List<MoodleCallRecord> enrolCallsIntento1 = getMoodleEnrolCalls();
+        assertEquals(1, enrolCallsIntento1.size(), "Debe existir exactamente 1 llamada mutante de matrícula a Moodle");
+        assertEquals("505", enrolCallsIntento1.get(0).getParameter("enrolments[0][courseid]"), "Curso enviado a Moodle debe ser 505");
+        assertEquals("7001", enrolCallsIntento1.get(0).getParameter("enrolments[0][userid]"), "Usuario enviado a Moodle debe ser 7001");
+
+        List<MoodleCallRecord> userCreateCalls1 = getMoodleUserCreateCalls();
+        assertTrue(userCreateCalls1.size() <= 1, "A lo sumo 1 llamada de creación de usuario en Moodle");
+
+        List<MoodleCallRecord> queriesEstado1 = getMoodleReadOnlyQueryCalls();
+        assertTrue(queriesEstado1.size() >= 1, "Las consultas de estado se realizan para verificar condiciones previas");
+
+        // Comprobación Facturación (SUNAT)
+        Integer countComprobantes1 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countComprobantes1, "Debe emitirse exactamente 1 comprobante de pago");
+
+        Integer correlativo1 = jdbcTemplate.queryForObject(
+                "SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class);
+        assertNotNull(correlativo1);
+        assertEquals(1, correlativo1, "El correlativo de comprobante debe ser exactamente 1");
+
+        // Comprobación Notificaciones
+        Integer countNotifLogs1 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM notificaciones_log WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countNotifLogs1, "Debe registrarse exactamente 1 log de notificación");
+        String claveIdemp1 = jdbcTemplate.queryForObject(
+                "SELECT clave_idempotencia FROM notificaciones_log WHERE id_orden = ?", String.class, fix.idOrden);
+        assertEquals("ACCESOS_ORDEN_" + fix.idOrden, claveIdemp1);
+
+        // Comprobar distinción de correos en SMTP: 1 activación + 1 accesos y factura = 2 correos en total
+        esperarMensajesSmtp(2, 5000);
+        assertEquals(2, mockSmtpServer.getMessageCount(),
+                "El servidor SMTP debe haber recibido exactamente 2 correos: 1 de activación y 1 de accesos y factura");
+
+        List<String> correosAccesos = mockSmtpServer.getReceivedMessagesMatching(fix.email, "Accesos");
+        assertEquals(1, correosAccesos.size(), "Debe existir exactamente 1 correo de accesos y factura");
+        String correoAccesos = correosAccesos.get(0);
+        assertTrue(correoAccesos.contains(fix.email), "El correo de accesos debe ir al destinatario");
+        assertTrue(correoAccesos.contains("Comprobante de Pago") || correoAccesos.contains("B001-"),
+                "El correo de accesos y factura debe incluir los datos del comprobante");
+
+        // =====================================================================
+        // IDEMPOTENCIA: REPETIR FLUJOS Y TRABAJADOR
+        // =====================================================================
+        // A. Repetir el flujo que podría volver a encolar la activación
+        Orden ordenReconfirmada = orderFinancialTransactionService.confirmarPagoFinanciero(fix.codigoOrden);
+        assertEquals(EstadoOrden.PAGADO, ordenReconfirmada.getEstadoOrden());
+
+        // B. Ejecutar nuevamente el trabajador del outbox
+        int tareasRepetidas = activationOutboxService.procesarTareasPendientes();
+        assertEquals(0, tareasRepetidas, "No debe procesarse ninguna tarea adicional");
+
+        // C. Comprobar que no se cree otra tarea equivalente
+        Integer countOutbox2 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM outbox_notificacion_activacion WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(countOutbox1, countOutbox2, "El reintento NO debe duplicar tareas en el outbox");
+
+        // D. Comprobar que no se entregue un segundo correo de activación
+        List<String> correosActivacionPost = mockSmtpServer.getReceivedMessagesMatching(fix.email, "Activa tu cuenta");
+        assertEquals(1, correosActivacionPost.size(), "No debe entregarse un segundo correo de activación");
+
+        // E. Reintento de matrícula (segundo intento idempotente)
+        Orden ordenIntento2 = buyCourseService.reintentarMatricula(fix.idOrden);
+        assertEquals(EstadoAprovisionamiento.COMPLETADO, ordenIntento2.getEstadoAprovisionamiento());
+        assertTrue(ordenIntento2.isMoodleMatriculaSincronizada());
+
+        // Comprobar que los efectos externos MUTANTES NO SE REPITEN:
+        List<MoodleCallRecord> enrolCallsIntento2 = getMoodleEnrolCalls();
+        assertEquals(1, enrolCallsIntento2.size(), "El reintento NO debe generar una segunda llamada de matrícula a Moodle");
+
+        List<MoodleCallRecord> userCreateCalls2 = getMoodleUserCreateCalls();
+        assertEquals(userCreateCalls1.size(), userCreateCalls2.size(), "El reintento NO debe repetir la creación de usuario");
+
+        Integer countComprobantes2 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countComprobantes2, "El reintento NO debe emitir un segundo comprobante");
+
+        Integer correlativo2 = jdbcTemplate.queryForObject(
+                "SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class);
+        assertEquals(correlativo1, correlativo2, "El reintento NO debe reservar un nuevo correlativo de factura/boleta");
+
+        Integer countNotifLogs2 = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM notificaciones_log WHERE id_orden = ?", Integer.class, fix.idOrden);
+        assertEquals(1, countNotifLogs2, "El reintento NO debe duplicar los registros de log de notificación");
+
+        List<String> correosAccesosPost = mockSmtpServer.getReceivedMessagesMatching(fix.email, "Accesos");
+        assertEquals(1, correosAccesosPost.size(), "El reintento NO debe enviar un segundo correo de accesos/factura");
+
+        assertEquals(2, mockSmtpServer.getMessageCount(),
+                "El servidor SMTP debe mantener exactamente 2 mensajes recibidos en total (1 activación + 1 accesos)");
+
+        // Auditoría, pago y destino permanecen intactos
+        OrdenEntity ordenPersistida = springDataOrderRepository.findById(fix.idOrden).orElseThrow();
+        DetalleOrdenEntity det = ordenPersistida.getItems().get(0);
+        assertEquals(505L, det.getMoodleCourseId());
+        assertEquals("RESOLUCION_ADMINISTRATIVA", det.getOrigenMoodleCourseId());
+        assertEquals("auditor_efectos@test.pe", det.getMoodleResolucionAutorizadaPor());
+        assertEquals("Resolución de Prueba de Efectos", det.getMoodleResolucionMotivo());
+        assertEquals("EXP-EFECTOS-01", det.getMoodleResolucionEvidencia());
+        assertTrue(det.isMoodleMatriculado());
+        assertEquals(EstadoOrden.PAGADO, ordenPersistida.getEstadoOrden());
+
+        // =====================================================================
+        // VERIFICACIÓN DIRECTA DEL CONTRATO DE IDEMPOTENCIA EN ADAPTADORES
+        // =====================================================================
+        // Facturación directa idempotente
+        ComprobantePago compReintentoDirecto = billingServiceAdapter.emitirComprobante(ordenIntento1);
+        assertNotNull(compReintentoDirecto);
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM comprobante_pago WHERE id_orden = ?", Integer.class, fix.idOrden));
+        assertEquals(correlativo1, jdbcTemplate.queryForObject("SELECT ultimo_correlativo FROM comprobante_correlativo WHERE serie = 'B001'", Integer.class));
+
+        // Notificación directa con clave idempotente
+        emailNotificationAdapter.enviarAccesosYFactura(
+                fix.email, "Invitado Efectos", "Programa Test", "pwd123", compReintentoDirecto
+        );
+        assertEquals(2, mockSmtpServer.getMessageCount(), "La llamada directa de notificación con clave existente omite reenvío");
+    }
+
+    // =========================================================================
+    // CLASES DE COORDINACIÓN E INSTRUMENTACIÓN EN SRC/TEST
+    // =========================================================================
+
+    static class SimpleMockSmtpServer implements AutoCloseable {
+        private final ServerSocket serverSocket;
+        private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
+        private final ExecutorService executor = Executors.newCachedThreadPool();
+        private volatile boolean running = true;
+
+        public SimpleMockSmtpServer(int port) throws IOException {
+            this.serverSocket = new ServerSocket(port);
+            executor.submit(this::listen);
+        }
+
+        public int getPort() {
+            return serverSocket.getLocalPort();
+        }
+
+        public List<String> getReceivedMessages() {
+            return Collections.unmodifiableList(receivedMessages);
+        }
+
+        public List<String> getReceivedMessagesMatching(String recipient, String subjectSubstring) {
+            List<String> matched = new ArrayList<>();
+            for (String rawMsg : receivedMessages) {
+                String msg = rawMsg.replaceAll("\r?\n[ \t]+", " ");
+                boolean matchesRecipient = recipient == null || msg.contains(recipient);
+                boolean matchesSubject = false;
+                if (subjectSubstring == null) {
+                    matchesSubject = true;
+                } else {
+                    String lower = msg.toLowerCase();
+                    String subLower = subjectSubstring.toLowerCase();
+                    if (lower.contains(subLower)) {
+                        matchesSubject = true;
+                    } else if (subLower.contains("activa") && (lower.contains("activa") || lower.contains("activaci"))) {
+                        matchesSubject = true;
+                    } else if (subLower.contains("accesos") && (lower.contains("accesos") || lower.contains("bienvenido") || lower.contains("comprobante") || lower.contains("campus virtual"))) {
+                        matchesSubject = true;
+                    }
+                }
+                if (matchesRecipient && matchesSubject) {
+                    matched.add(msg);
+                }
+            }
+            return matched;
+        }
+
+        public int getMessageCount() {
+            return receivedMessages.size();
+        }
+
+        public void clear() {
+            receivedMessages.clear();
+        }
+
+        private void listen() {
+            while (running) {
+                try {
+                    Socket socket = serverSocket.accept();
+                    executor.submit(() -> handleClient(socket));
+                } catch (IOException e) {
+                    if (!running) break;
+                }
+            }
+        }
+
+        private void handleClient(Socket socket) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
+
+                writer.write("220 localhost SimpleMockSmtpServer ready\r\n");
+                writer.flush();
+
+                StringBuilder currentData = new StringBuilder();
+                boolean readingData = false;
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (readingData) {
+                        if (".".equals(line)) {
+                            readingData = false;
+                            receivedMessages.add(currentData.toString());
+                            writer.write("250 2.0.0 OK: message queued\r\n");
+                            writer.flush();
+                        } else {
+                            currentData.append(line).append("\n");
+                        }
+                    } else {
+                        String upper = line.toUpperCase(Locale.ROOT);
+                        if (upper.startsWith("HELO") || upper.startsWith("EHLO")) {
+                            writer.write("250-localhost Hello\r\n250 OK\r\n");
+                            writer.flush();
+                        } else if (upper.startsWith("MAIL FROM:")) {
+                            writer.write("250 2.1.0 OK\r\n");
+                            writer.flush();
+                        } else if (upper.startsWith("RCPT TO:")) {
+                            writer.write("250 2.1.5 OK\r\n");
+                            writer.flush();
+                        } else if (upper.equals("DATA")) {
+                            readingData = true;
+                            currentData.setLength(0);
+                            writer.write("354 Start mail input; end with <CRLF>.<CRLF>\r\n");
+                            writer.flush();
+                        } else if (upper.equals("QUIT")) {
+                            writer.write("221 2.0.0 Bye\r\n");
+                            writer.flush();
+                            break;
+                        } else if (upper.startsWith("RSET") || upper.startsWith("NOOP")) {
+                            writer.write("250 OK\r\n");
+                            writer.flush();
+                        } else {
+                            writer.write("250 OK\r\n");
+                            writer.flush();
+                        }
+                    }
+                }
+            } catch (IOException ignored) {
+            } finally {
+                try { socket.close(); } catch (IOException ignored) {}
+            }
+        }
+
+        @Override
+        public void close() {
+            running = false;
+            try { serverSocket.close(); } catch (IOException ignored) {}
+            executor.shutdownNow();
+        }
+    }
+
+    static class CoordinatingOrderRepositoryPort implements OrderRepositoryPort {
+        private final OrderRepositoryPort delegate;
+        private volatile BiConsumer<Orden, Runnable> onGuardarHook;
+        private volatile Runnable onBuscarPorCodigoConBloqueoHook;
+        private volatile Consumer<Long> onBuscarOrdenPorIdDetalleConBloqueoHook;
+
+        public CoordinatingOrderRepositoryPort(OrderRepositoryPort delegate) {
+            this.delegate = delegate;
+        }
+
+        public void setOnGuardarHook(BiConsumer<Orden, Runnable> hook) {
+            this.onGuardarHook = hook;
+        }
+
+        public void setOnBuscarPorCodigoConBloqueoHook(Runnable hook) {
+            this.onBuscarPorCodigoConBloqueoHook = hook;
+        }
+
+        public void setOnBuscarOrdenPorIdDetalleConBloqueoHook(Consumer<Long> hook) {
+            this.onBuscarOrdenPorIdDetalleConBloqueoHook = hook;
+        }
+
+        public void clearHooks() {
+            this.onGuardarHook = null;
+            this.onBuscarPorCodigoConBloqueoHook = null;
+            this.onBuscarOrdenPorIdDetalleConBloqueoHook = null;
+        }
+
+        @Override
+        public Orden guardar(Orden orden) {
+            BiConsumer<Orden, Runnable> currentHook = this.onGuardarHook;
+            if (currentHook != null) {
+                final Orden[] saved = new Orden[1];
+                currentHook.accept(orden, () -> saved[0] = delegate.guardar(orden));
+                return saved[0] != null ? saved[0] : delegate.guardar(orden);
+            }
+            return delegate.guardar(orden);
+        }
+
+        @Override
+        public Optional<Orden> buscarPorId(Long idOrden) { return delegate.buscarPorId(idOrden); }
+        @Override
+        public Optional<Orden> buscarPorCodigo(String codigoOrden) { return delegate.buscarPorCodigo(codigoOrden); }
+
+        @Override
+        public Optional<Orden> buscarPorCodigoConBloqueo(String codigoOrden) {
+            Runnable hook = this.onBuscarPorCodigoConBloqueoHook;
+            if (hook != null) {
+                hook.run();
+            }
+            return delegate.buscarPorCodigoConBloqueo(codigoOrden);
+        }
+
+        @Override
+        public Optional<Orden> buscarPorIdConBloqueo(Long idOrden) { return delegate.buscarPorIdConBloqueo(idOrden); }
+        @Override
+        public Optional<Orden> buscarOrdenPorIdDetalle(Long idDetalle) { return delegate.buscarOrdenPorIdDetalle(idDetalle); }
+
+        @Override
+        public Optional<Orden> buscarOrdenPorIdDetalleConBloqueo(Long idDetalle) {
+            Consumer<Long> hook = this.onBuscarOrdenPorIdDetalleConBloqueoHook;
+            if (hook != null) {
+                hook.accept(idDetalle);
+            }
+            return delegate.buscarOrdenPorIdDetalleConBloqueo(idDetalle);
+        }
+        @Override
+        public Optional<Orden> buscarPorStripeSessionId(String stripeSessionId) { return delegate.buscarPorStripeSessionId(stripeSessionId); }
+        @Override
+        public Optional<Orden> buscarPorStripePaymentIntentId(String stripePaymentIntentId) { return delegate.buscarPorStripePaymentIntentId(stripePaymentIntentId); }
+        @Override
+        public Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId) { return delegate.buscarPorIzipayTransactionId(izipayTransactionId); }
+        @Override
+        public Optional<Orden> buscarPorCualquierIdentificador(String id) { return delegate.buscarPorCualquierIdentificador(id); }
+        @Override
+        public Optional<Orden> buscarPorClaveIdempotencia(String claveIdempotencia) { return delegate.buscarPorClaveIdempotencia(claveIdempotencia); }
+        @Override
+        public Optional<Orden> buscarPorAbonoBancario(String bancoDestino, String cuentaDestino, String numeroOperacion) { return delegate.buscarPorAbonoBancario(bancoDestino, cuentaDestino, numeroOperacion); }
+        @Override
+        public void bloquearAbonoBancario(String numeroOperacionNormalizado) { delegate.bloquearAbonoBancario(numeroOperacionNormalizado); }
+        @Override
+        public List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado) { return delegate.buscarAbonosHistoricosPorOperacion(numeroOperacionNormalizado); }
+        @Override
+        public List<Orden> buscarPorUsuario(Long idUsuario) { return delegate.buscarPorUsuario(idUsuario); }
+        @Override
+        public List<Orden> listarTodas() { return delegate.listarTodas(); }
+        @Override
+        public List<Orden> listarPorEstado(EstadoOrden estado) { return delegate.listarPorEstado(estado); }
+    }
+}

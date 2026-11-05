@@ -1,0 +1,4 @@
+461FA41BD5D85099C1D8D6FA1BC616088A13082466DC9FFBE802297DBEBADB25 *lysandri-backend-1.0.0-SNAPSHOT.jar
+Generado: 2026-10-26T18:11:35-05:00
+Artefacto: backend/target/lysandri-backend-1.0.0-SNAPSHOT.jar
+Estado: Validado mediante todas las suites de prueba (A, B, C, D, E)

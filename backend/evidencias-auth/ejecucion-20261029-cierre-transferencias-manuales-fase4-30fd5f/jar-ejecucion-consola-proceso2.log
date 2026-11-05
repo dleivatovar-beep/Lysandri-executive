@@ -1,0 +1,190 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-29T12:38:25.942-05:00  INFO 27088 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 27088 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-29T12:38:25.945-05:00  INFO 27088 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-29T12:38:27.092-05:00  INFO 27088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T12:38:27.280-05:00  INFO 27088 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 177 ms. Found 14 JPA repository interfaces.
+2026-10-29T12:38:28.119-05:00  INFO 27088 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-29T12:38:28.133-05:00  INFO 27088 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-29T12:38:28.133-05:00  INFO 27088 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-29T12:38:28.187-05:00  INFO 27088 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-29T12:38:28.189-05:00  INFO 27088 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2160 ms
+2026-10-29T12:38:28.676-05:00  INFO 27088 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-29T12:38:28.676-05:00  INFO 27088 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-29T12:38:28.676-05:00  INFO 27088 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-29T12:38:28.740-05:00  INFO 27088 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-29T12:38:28.752-05:00  WARN 27088 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-29T12:38:28.817-05:00  INFO 27088 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 35 migrations (execution time 00:00.049s)
+2026-10-29T12:38:28.864-05:00  INFO 27088 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 34
+2026-10-29T12:38:28.868-05:00  INFO 27088 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-29T12:38:28.980-05:00  INFO 27088 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T12:38:29.067-05:00  INFO 27088 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-29T12:38:29.112-05:00  INFO 27088 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T12:38:29.408-05:00  INFO 27088 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T12:38:29.455-05:00  INFO 27088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T12:38:29.487-05:00  INFO 27088 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1a8b22b5
+2026-10-29T12:38:29.489-05:00  INFO 27088 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T12:38:31.143-05:00  INFO 27088 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T12:38:31.211-05:00  INFO 27088 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T12:38:31.629-05:00  INFO 27088 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-29T12:38:33.076-05:00  INFO 27088 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-29T12:38:34.280-05:00  INFO 27088 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-29T12:38:34.283-05:00  INFO 27088 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-29T12:38:34.531-05:00  INFO 27088 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-29T12:38:34.838-05:00  WARN 27088 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T12:38:35.250-05:00  INFO 27088 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@3837d51a, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@5434c18d, org.springframework.security.web.context.SecurityContextHolderFilter@7c8fe8cd, org.springframework.security.web.header.HeaderWriterFilter@17d17822, org.springframework.web.filter.CorsFilter@6bf95d0, org.springframework.security.web.authentication.logout.LogoutFilter@7c461c22, com.lysandri.security.JwtAuthenticationFilter@47609e3d, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@580d7c1f, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6114a516, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@70809f39, org.springframework.security.web.session.SessionManagementFilter@62754600, org.springframework.security.web.access.ExceptionTranslationFilter@73129907, org.springframework.security.web.access.intercept.AuthorizationFilter@2cc814ed]
+2026-10-29T12:38:35.748-05:00  INFO 27088 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-29T12:38:35.763-05:00  INFO 27088 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 10.287 seconds (process running for 10.851)
+2026-10-29T12:38:35.862-05:00  WARN 27088 --- [           main] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Recuperación tras reinicio: 1 mensajes en estado EN_PROCESO_ENVIO fueron marcados conservadoramente como RESULTADO_INCIERTO
+2026-10-29T12:38:37.009-05:00  INFO 27088 --- [io-18099-exec-2] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-29T12:38:37.009-05:00  INFO 27088 --- [io-18099-exec-2] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-29T12:38:37.010-05:00  INFO 27088 --- [io-18099-exec-2] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-10-29T12:38:37.311-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:37.368-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-jvm-restart-30fd5f. Validando autorización de acceso para orden f740dbf2-25be-4a9a-a392-43edb13a0d21
+2026-10-29T12:38:37.720-05:00  INFO 27088 --- [io-18099-exec-7] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-restart-1793295504 ya finalizada o incierta (estado: RESULTADO_INCIERTO). No autoriza despacho redundante.
+2026-10-29T12:38:37.733-05:00  INFO 27088 --- [io-18099-exec-7] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-restart-1793295504 no autorizada para nuevo despacho de red (estado: RESULTADO_INCIERTO). Retornando estado actual.
+2026-10-29T12:38:37.807-05:00  INFO 27088 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Estado de mensaje WhatsApp conciliado exitosamente [id: 4, previo: RESULTADO_INCIERTO, nuevo: ENTREGADO]
+2026-10-29T12:38:37.983-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T12:38:38.025-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Orden 72c18542-0514-4974-af7e-8acecf63011d registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T12:38:38.171-05:00  INFO 27088 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T12:38:38.186-05:00  INFO 27088 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-30fd5f. Validando autorización de acceso para orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:38.334-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:38.353-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-30fd5f. Validando autorización de acceso para orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:38.353-05:00  WARN 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Conflicto de idempotencia en orden 72c18542-0514-4974-af7e-8acecf63011d: Programas difieren (existente: [102], solicitado: [101])
+2026-10-29T12:38:38.356-05:00  WARN 27088 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): Conflicto de idempotencia: La clave ya existe pero con una selección de programas diferente
+2026-10-29T12:38:38.398-05:00  INFO 27088 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T12:38:38.411-05:00  INFO 27088 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-30fd5f. Validando autorización de acceso para orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:38.411-05:00  WARN 27088 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR: El usuario 4 intentó acceder a la orden 72c18542-0514-4974-af7e-8acecf63011d creada por otro usuario
+2026-10-29T12:38:38.412-05:00  WARN 27088 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: la clave de compra pertenece a otro usuario
+2026-10-29T12:38:38.441-05:00  INFO 27088 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T12:38:38.448-05:00  WARN 27088 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Rechazo de compra: Método de pago no admitido: BITCOIN
+2026-10-29T12:38:38.449-05:00  WARN 27088 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Método de pago no admitido: BITCOIN. Los métodos admitidos son: IZIPAY, STRIPE, TRANSFERENCIA, YAPE, PLIN.
+2026-10-29T12:38:38.475-05:00  INFO 27088 --- [io-18099-exec-2] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:38.476-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-10-29T12:38:38.476-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-10-29T12:38:38.502-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 3 (código 72c18542-0514-4974-af7e-8acecf63011d) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-10-29T12:38:38.503-05:00  WARN 27088 --- [io-18099-exec-2] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:38.506-05:00  WARN 27088 --- [io-18099-exec-2] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:38.517-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:38.523-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 72c18542-0514-4974-af7e-8acecf63011d. Token: 7bc1f471-ddfc-429b-a85a-5d129455384d, Intento: 1
+2026-10-29T12:38:38.531-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 3, código: 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:38.532-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: estudiante.invitado@lysandri.invalid
+2026-10-29T12:38:38.730-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:38.730-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: estudiante.invitado@lysandri.invalid (estudiante.invitadolysandri.invalid)
+2026-10-29T12:38:38.733-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:38.733-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 72c18542-0514-4974-af7e-8acecf63011d: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:38.734-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 102 para orden 72c18542-0514-4974-af7e-8acecf63011d: usuario sin moodleUserId
+2026-10-29T12:38:38.734-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 3
+2026-10-29T12:38:38.759-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=2, Total=200.00, Detracción=0, Cliente=Cliente Invitado
+2026-10-29T12:38:38.767-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 72c18542-0514-4974-af7e-8acecf63011d (allEnrolled=false)
+2026-10-29T12:38:38.771-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 72c18542-0514-4974-af7e-8acecf63011d persistido como FALLIDO. Lease liberado.
+2026-10-29T12:38:38.779-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_3
+2026-10-29T12:38:38.882-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_3
+2026-10-29T12:38:38.885-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Orden 72c18542-0514-4974-af7e-8acecf63011d procesada con éxito. Comprobante B001-2 emitido. Sincronización Moodle: false
+2026-10-29T12:38:39.040-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T12:38:39.060-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Orden 5e216a7d-5281-4bcb-a9df-b6fcd2a9936f registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T12:38:39.223-05:00  INFO 27088 --- [io-18099-exec-7] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.223-05:00  INFO 27088 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:39.223-05:00  INFO 27088 --- [io-18099-exec-7] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:39.235-05:00  WARN 27088 --- [io-18099-exec-7] c.l.a.s.OrderFinancialTransactionService : Rechazo por abono duplicado: El abono canónico [banco: BCP, cuenta: 19398218491028, op: OP0012345] ya fue aplicado a la orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:39.238-05:00  WARN 27088 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El abono bancario [banco: BCP, cuenta: 19398218491028, operación: OP0012345] ya fue utilizado para pagar la orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:39.267-05:00  INFO 27088 --- [io-18099-exec-3] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.267-05:00  INFO 27088 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:39.267-05:00  INFO 27088 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:39.275-05:00  WARN 27088 --- [io-18099-exec-3] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La cuenta o CCI ingresado (999-9999999-9-99) no coincide con la cuenta oficial activa del banco BCP
+2026-10-29T12:38:39.299-05:00  INFO 27088 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:39.318-05:00  INFO 27088 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Orden 046036a2-14b3-4402-ab52-7b3fba58722c registrada con método manual YAPE. Esperando validación administrativa.
+2026-10-29T12:38:39.460-05:00  INFO 27088 --- [io-18099-exec-9] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 5 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.460-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 5
+2026-10-29T12:38:39.461-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 5
+2026-10-29T12:38:39.475-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Orden manual ID 5 (código 046036a2-14b3-4402-ab52-7b3fba58722c) aprobada y marcada exitosamente como PAGADA. Bloqueo pesimista liberado.
+2026-10-29T12:38:39.476-05:00  WARN 27088 --- [io-18099-exec-9] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:39.479-05:00  WARN 27088 --- [io-18099-exec-9] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:39.487-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 046036a2-14b3-4402-ab52-7b3fba58722c
+2026-10-29T12:38:39.490-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 046036a2-14b3-4402-ab52-7b3fba58722c. Token: b0a327d7-981c-483f-bca5-34e02f5ec974, Intento: 1
+2026-10-29T12:38:39.498-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 5, código: 046036a2-14b3-4402-ab52-7b3fba58722c
+2026-10-29T12:38:39.498-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: estudiante.invitado@lysandri.invalid
+2026-10-29T12:38:39.500-05:00 ERROR 27088 --- [io-18099-exec-9] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.500-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: estudiante.invitado@lysandri.invalid (estudiante.invitadolysandri.invalid)
+2026-10-29T12:38:39.502-05:00 ERROR 27088 --- [io-18099-exec-9] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.502-05:00 ERROR 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 046036a2-14b3-4402-ab52-7b3fba58722c: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.503-05:00 ERROR 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 101 para orden 046036a2-14b3-4402-ab52-7b3fba58722c: usuario sin moodleUserId
+2026-10-29T12:38:39.503-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 5
+2026-10-29T12:38:39.515-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.out.billing.BillingServiceAdapter  : Comprobante emitido con éxito: Serie=B001, Correlativo=3, Total=150.00, Detracción=0, Cliente=Cliente Invitado
+2026-10-29T12:38:39.521-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 046036a2-14b3-4402-ab52-7b3fba58722c (allEnrolled=false)
+2026-10-29T12:38:39.524-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 046036a2-14b3-4402-ab52-7b3fba58722c persistido como FALLIDO. Lease liberado.
+2026-10-29T12:38:39.531-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_5
+2026-10-29T12:38:39.556-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.o.n.EmailNotificationAdapter       : Correo de accesos y comprobante enviado exitosamente para clave: ACCESOS_ORDEN_5
+2026-10-29T12:38:39.558-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Orden 046036a2-14b3-4402-ab52-7b3fba58722c procesada con éxito. Comprobante B001-3 emitido. Sincronización Moodle: false
+2026-10-29T12:38:39.700-05:00  INFO 27088 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:39.727-05:00  INFO 27088 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Orden b329e1c4-4867-4c12-a3fb-4e3875f5af64 creada con éxito en pasarela Izipay. Sesión/Tx: izisess_mock_fd20e65d27984ffe81166f136132e0de
+2026-10-29T12:38:39.870-05:00  INFO 27088 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 6 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.871-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 6
+2026-10-29T12:38:39.871-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 6
+2026-10-29T12:38:39.877-05:00  WARN 27088 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Rechazo de confirmación manual: La orden b329e1c4-4867-4c12-a3fb-4e3875f5af64 fue creada bajo pasarela online (IZIPAY)
+2026-10-29T12:38:39.879-05:00  WARN 27088 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se puede aprobar manualmente una orden configurada para pasarela online (IZIPAY). La orden debe confirmarse mediante la pasarela de pago.
+2026-10-29T12:38:39.906-05:00  INFO 27088 --- [io-18099-exec-5] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.907-05:00  INFO 27088 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:39.907-05:00  INFO 27088 --- [io-18099-exec-5] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:39.913-05:00  WARN 27088 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La moneda verificada (PEN) no coincide con la moneda de la orden (USD)
+2026-10-29T12:38:39.922-05:00  INFO 27088 --- [io-18099-exec-6] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.922-05:00  INFO 27088 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:39.923-05:00  INFO 27088 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:39.929-05:00  WARN 27088 --- [io-18099-exec-6] c.l.a.s.OrderFinancialTransactionService : Intento de alterar método de pago en orden 5e216a7d-5281-4bcb-a9df-b6fcd2a9936f: TRANSFERENCIA -> YAPE
+2026-10-29T12:38:39.930-05:00  WARN 27088 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): No se permite alterar el método de pago original registrado en la orden (TRANSFERENCIA -> YAPE)
+2026-10-29T12:38:39.952-05:00  INFO 27088 --- [io-18099-exec-2] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 3 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:39.952-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 3
+2026-10-29T12:38:39.952-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 3
+2026-10-29T12:38:39.959-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : La orden 72c18542-0514-4974-af7e-8acecf63011d ya fue aprobada previamente con los mismos datos del abono. Retornando estado actual (idempotente).
+2026-10-29T12:38:39.968-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista para reservar aprovisionamiento de orden: 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:39.971-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Lease de aprovisionamiento reservado exitosamente para orden 72c18542-0514-4974-af7e-8acecf63011d. Token: bd6b1ca7-ad96-43bc-85e7-1fd1e0154311, Intento: 2
+2026-10-29T12:38:39.971-05:00  WARN 27088 --- [io-18099-exec-2] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [usuario] property of the [com.lysandri.adapters.out.database.entity.OrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:39.975-05:00  WARN 27088 --- [io-18099-exec-2] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [programa] property of the [com.lysandri.adapters.out.database.entity.DetalleOrdenEntity] entity was modified, but it won't be updated because the property is immutable.
+2026-10-29T12:38:39.983-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando aprovisionamiento y facturación para orden ID: 3, código: 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:39.983-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Consultando existencia de usuario en Moodle por email: estudiante.invitado@lysandri.invalid
+2026-10-29T12:38:39.986-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Fallo al verificar usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.986-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Aprovisionando nuevo usuario en Moodle: estudiante.invitado@lysandri.invalid (estudiante.invitadolysandri.invalid)
+2026-10-29T12:38:39.988-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.out.moodle.MoodleServiceAdapter    : Error creando usuario en Moodle: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.989-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Fallo al crear usuario en Moodle para orden 72c18542-0514-4974-af7e-8acecf63011d: Error al crear usuario en Moodle LMS: Connection refused: getsockopt: localhost/127.0.0.1:8080
+2026-10-29T12:38:39.990-05:00 ERROR 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : No se pudo matricular en curso 102 para orden 72c18542-0514-4974-af7e-8acecf63011d: usuario sin moodleUserId
+2026-10-29T12:38:39.990-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.billing.BillingServiceAdapter  : Iniciando emisión de comprobante tributario para orden ID: 3
+2026-10-29T12:38:39.993-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.out.billing.BillingServiceAdapter  : Comprobante ya emitido previamente para orden ID: 3 (B001-2)
+2026-10-29T12:38:39.994-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Completando aprovisionamiento para orden 72c18542-0514-4974-af7e-8acecf63011d (allEnrolled=false)
+2026-10-29T12:38:39.999-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.s.OrderFinancialTransactionService : Aprovisionamiento de orden 72c18542-0514-4974-af7e-8acecf63011d persistido como FALLIDO. Lease liberado.
+2026-10-29T12:38:40.006-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.o.n.EmailNotificationAdapter       : Verificando idempotencia de notificación para clave: ACCESOS_ORDEN_3
+2026-10-29T12:38:40.009-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.o.n.EmailNotificationAdapter       : Notificación de accesos y factura ya enviada previamente (Clave: ACCESOS_ORDEN_3). Omitiendo reenvío innecesario.
+2026-10-29T12:38:40.012-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Orden 72c18542-0514-4974-af7e-8acecf63011d procesada con éxito. Comprobante B001-2 emitido. Sincronización Moodle: false
+2026-10-29T12:38:40.022-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.041-05:00  INFO 27088 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.046-05:00  INFO 27088 --- [io-18099-exec-1] c.l.a.service.BuyCourseService           : Orden e87ed087-59d8-4308-8c2f-d0f84ec7b1ab registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T12:38:40.054-05:00  INFO 27088 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-concurrent-30fd5f. Validando autorización de acceso para orden e87ed087-59d8-4308-8c2f-d0f84ec7b1ab
+2026-10-29T12:38:40.243-05:00  INFO 27088 --- [io-18099-exec-3] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:40.243-05:00  INFO 27088 --- [io-18099-exec-3] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:40.244-05:00  INFO 27088 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:40.257-05:00  WARN 27088 --- [io-18099-exec-3] c.l.a.s.OrderFinancialTransactionService : Rechazo por abono duplicado: El abono canónico [banco: BCP, cuenta: 19398218491028, op: OP0012345] ya fue aplicado a la orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:40.259-05:00  WARN 27088 --- [io-18099-exec-3] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): El abono bancario [banco: BCP, cuenta: 19398218491028, operación: OP0012345] ya fue utilizado para pagar la orden 72c18542-0514-4974-af7e-8acecf63011d
+2026-10-29T12:38:40.286-05:00  INFO 27088 --- [io-18099-exec-4] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:40.286-05:00  INFO 27088 --- [io-18099-exec-4] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:40.286-05:00  INFO 27088 --- [io-18099-exec-4] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:40.295-05:00  WARN 27088 --- [io-18099-exec-4] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Método de pago incompatible: La orden requiere método 'TRANSFERENCIA' pero se especificó la entidad Yape.
+2026-10-29T12:38:40.303-05:00  INFO 27088 --- [io-18099-exec-9] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 4 por usuario: danny@lysandri.invalid
+2026-10-29T12:38:40.304-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 4
+2026-10-29T12:38:40.304-05:00  INFO 27088 --- [io-18099-exec-9] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 4
+2026-10-29T12:38:40.314-05:00  WARN 27088 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Banco de destino no reconocido o no autorizado: SCOTIABANK. Solo se admiten cuentas oficiales BCP e Interbank para transferencias.
+2026-10-29T12:38:40.360-05:00  INFO 27088 --- [io-18099-exec-8] c.l.adapters.in.web.OrderController      : Sesión de invitado emitida de forma segura para email: invitado.recuperacion.30fd5f@empresa.pe
+2026-10-29T12:38:40.366-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.454-05:00  INFO 27088 --- [o-18099-exec-10] .a.o.d.a.UserActivationRepositoryAdapter : Token de activación generado de forma segura para usuario ID: 7 (almacenado como hash SHA-256)
+2026-10-29T12:38:40.478-05:00  INFO 27088 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Orden 8ac4a668-dcd0-44f5-9bc4-2a0f4daf8dd8 registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T12:38:40.497-05:00  INFO 27088 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.500-05:00  WARN 27088 --- [io-18099-exec-5] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Ya existe una cuenta registrada con el correo ingresado. Inicie sesión antes de realizar la compra.
+2026-10-29T12:38:40.504-05:00  INFO 27088 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.507-05:00  WARN 27088 --- [io-18099-exec-6] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Ya existe una cuenta registrada con el correo ingresado. Inicie sesión antes de realizar la compra.
+2026-10-29T12:38:40.527-05:00  INFO 27088 --- [io-18099-exec-2] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T12:38:40.531-05:00  WARN 27088 --- [io-18099-exec-2] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Ya existe una cuenta registrada con el correo ingresado. Inicie sesión antes de realizar la compra.

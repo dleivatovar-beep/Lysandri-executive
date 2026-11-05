@@ -1,0 +1,36 @@
+================================================================================
+EVIDENCIA DE EJECUCIÓN FRONTEND: test-checkout-listeners-lifecycle
+================================================================================
+Comando exacto:        node.exe test-checkout-listeners-lifecycle.js
+Directorio:            F:\Lysandri-executive\frontend
+Fecha y hora inicio:   2026-11-03T06:32:16.985Z
+Fecha y hora fin:      2026-11-03T06:32:23.461Z
+Código de salida real: 0
+Descripción:           Pruebas de ciclo de vida de listeners y aislamiento de errores tardíos de izipay Krypton SDK
+================================================================================
+SALIDA COMPLETA (STDOUT):
+--------------------------------------------------------------------------------
+--- TEST CICLO DE VIDA DE LISTENERS IZIPAY Y COORDINADOR (CONTRATO SDK OFICIAL) ---
+PASS 1: Registro correcto de listeners y coordinador global con código ORD-IZI-LIFE-001.
+PASS 2: Desmonte invalida coordinador y llama KR.removeForms(), descartando eventos.
+PASS 3: Compras consecutivas actualizan activeOrderCode a ORD-IZI-CONSEC-002 sin fugas.
+PASS 4: Aislamiento estricto: error tardío de A sin ID descartado; error legítimo de B sin ID mostrado en DOM.
+PASS 5: Error con ID ajeno de A descartado; error con ID válido de B presentado.
+PASS 6: Resolución y rechazo de inicialización pendiente de A descartados sin afectar a B.
+PASS 7: Limpieza tardía de A no elimina el formulario B ni desvincula sus listeners.
+PASS 8: Eventos recibidos sin compra activa se descartan sin efectos colaterales.
+PASS 9: Descarte estricto de submits vacíos, sin ID o con ID ajeno sin provocar redirección.
+PASS 10: Evento de pago válido de la orden activa redirige correctamente.
+PASS 11: Cierre de modal desvincula listeners y descarta respuestas lentas.
+PASS 12: Dos compras consecutivas y desmontaje seguido de nuevo montaje ejecutados limpiamente.
+
+RESULTADO CICLO DE VIDA IZIPAY: 12/12 escenarios aprobados.
+
+--------------------------------------------------------------------------------
+SALIDA COMPLETA (STDERR):
+--------------------------------------------------------------------------------
+Evento de pago descartado: no contiene identificador de orden.
+Evento de pago descartado: no contiene identificador de orden.
+Evento de pago descartado: no coincide con la orden activa actual. { esperado: 'ORD-IZI-SUBMIT-TEST', recibido: 'ORD-IZI-AJENA-999' }
+
+================================================================================

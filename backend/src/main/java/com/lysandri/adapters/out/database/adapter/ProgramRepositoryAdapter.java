@@ -4,17 +4,37 @@ import com.lysandri.adapters.out.database.entity.ProgramaEntity;
 import com.lysandri.adapters.out.database.repository.SpringDataProgramRepository;
 import com.lysandri.domain.model.Programa;
 import com.lysandri.domain.ports.out.ProgramRepositoryPort;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
 
     private final SpringDataProgramRepository repository;
+    private final Clock clock;
+    private final long ttlHours;
+
+    public ProgramRepositoryAdapter(SpringDataProgramRepository repository) {
+        this(repository, Clock.systemUTC(), 168L);
+    }
+
+    @Autowired
+    public ProgramRepositoryAdapter(
+            SpringDataProgramRepository repository,
+            @Autowired(required = false) Clock clock,
+            @Value("${moodle.verification.ttl-hours:168}") long ttlHours
+    ) {
+        this.repository = repository;
+        this.clock = clock != null ? clock : Clock.systemUTC();
+        this.ttlHours = ttlHours;
+    }
 
     @Override
     public Programa guardar(Programa programa) {
@@ -28,8 +48,26 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
     }
 
     @Override
+    @Transactional
+    public Optional<Programa> buscarPorIdConBloqueo(Long idPrograma) {
+        return repository.findByIdWithLock(idPrograma).map(this::toDomain);
+    }
+
+    @Override
     public Optional<Programa> buscarPorSlug(String slug) {
         return repository.findBySlug(slug).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Programa> buscarActivoYAprobadoPorId(Long idPrograma) {
+        OffsetDateTime cutoff = OffsetDateTime.now(clock).minusHours(ttlHours);
+        return repository.findComercialmenteDisponiblePorId(idPrograma, cutoff).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Programa> buscarActivoYAprobadoPorSlug(String slug) {
+        OffsetDateTime cutoff = OffsetDateTime.now(clock).minusHours(ttlHours);
+        return repository.findComercialmenteDisponiblePorSlug(slug, cutoff).map(this::toDomain);
     }
 
     @Override
@@ -39,7 +77,13 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
 
     @Override
     public List<Programa> listarActivos() {
-        return repository.findByActivoTrue().stream().map(this::toDomain).toList();
+        OffsetDateTime cutoff = OffsetDateTime.now(clock).minusHours(ttlHours);
+        return repository.findComercialmenteDisponibles(cutoff).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<Programa> listarTodos() {
+        return repository.findAll().stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -50,14 +94,13 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
     public ProgramaEntity toEntity(Programa d) {
         return ProgramaEntity.builder()
                 .idPrograma(d.getIdPrograma())
-                .moodleCourseId(d.getMoodleCourseId())
                 .titulo(d.getTitulo())
                 .slug(d.getSlug())
                 .subtitulo(d.getSubtitulo())
                 .descripcionCorta(d.getDescripcionCorta())
                 .descripcionDetallada(d.getDescripcionDetallada())
                 .precio(d.getPrecio())
-                .moneda(d.getMoneda() != null ? d.getMoneda() : "USD")
+                .moneda(d.getMoneda())
                 .imagenPortadaUrl(d.getImagenPortadaUrl())
                 .syllabusUrl(d.getSyllabusUrl())
                 .instructorNombre(d.getInstructorNombre())
@@ -65,14 +108,21 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
                 .nivel(d.getNivel())
                 .duracionHoras(d.getDuracionHoras())
                 .activo(d.isActivo())
-                .fechaCreacion(d.getFechaCreacion())
+                .precioAprobado(d.isPrecioAprobado())
+                .esGratuito(d.isEsGratuito())
+                .moodleCourseId(d.getMoodleCourseId())
+                .moodleCourseNombre(d.getMoodleCourseNombre())
+                .moodleVerificado(d.isMoodleVerificado())
+                .moodleVerificadoEn(d.getMoodleVerificadoEn())
+                .moodleUltimoIntentoEn(d.getMoodleUltimoIntentoEn())
+                .moodleVinculacionRevision(d.getMoodleVinculacionRevision() != null ? d.getMoodleVinculacionRevision() : 1L)
+                .moodleEstadoVerificacion(d.getMoodleEstadoVerificacion())
                 .build();
     }
 
     public Programa toDomain(ProgramaEntity e) {
         return Programa.builder()
                 .idPrograma(e.getIdPrograma())
-                .moodleCourseId(e.getMoodleCourseId())
                 .titulo(e.getTitulo())
                 .slug(e.getSlug())
                 .subtitulo(e.getSubtitulo())
@@ -87,7 +137,15 @@ public class ProgramRepositoryAdapter implements ProgramRepositoryPort {
                 .nivel(e.getNivel())
                 .duracionHoras(e.getDuracionHoras())
                 .activo(e.isActivo())
-                .fechaCreacion(e.getFechaCreacion())
+                .precioAprobado(e.isPrecioAprobado())
+                .esGratuito(e.isEsGratuito())
+                .moodleCourseId(e.getMoodleCourseId())
+                .moodleCourseNombre(e.getMoodleCourseNombre())
+                .moodleVerificado(e.isMoodleVerificado())
+                .moodleVerificadoEn(e.getMoodleVerificadoEn())
+                .moodleUltimoIntentoEn(e.getMoodleUltimoIntentoEn())
+                .moodleVinculacionRevision(e.getMoodleVinculacionRevision() != null ? e.getMoodleVinculacionRevision() : 1L)
+                .moodleEstadoVerificacion(e.getMoodleEstadoVerificacion())
                 .build();
     }
 }

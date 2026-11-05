@@ -19,7 +19,9 @@ import {
   Search,
   ShieldAlert,
   Trash2,
+  Building2,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { getApiErrorMessage } from '../../services/authService';
 
@@ -529,6 +531,16 @@ export const AdminInformationRequests:
                         <option value="CERRADA">Cerrada</option>
                       </select>
                       {updatingId === request.idSolicitud ? <LoaderCircle className="lx-request-saving" aria-label="Guardando estado" /> : <ChevronDown className="lx-request-chevron" aria-hidden="true" />}
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        to="/admin/in-company"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-500/10 dark:text-indigo-400"
+                      >
+                        <Building2 className="h-3.5 w-3.5" />
+                        <span>Matricular Nómina In-Company</span>
+                      </Link>
                     </div>
                   </div>
 

@@ -10,6 +10,7 @@ import {
   Bot,
   Star,
   ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { ProgramaEjecutivo, Playbook, TierLevel } from '../../types';
 
@@ -170,9 +171,15 @@ export const ProgramaCard: React.FC<ProgramaCardProps> = ({
             {playbook.instructor && (
               <p className="flex items-center gap-2">
                 <GraduationCap className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                <span className="truncate">Profesor: <strong className="text-slate-700 dark:text-slate-300 font-medium">{playbook.instructor}</strong></span>
+                <span className="truncate">Mentor: <strong className="text-slate-700 dark:text-slate-300 font-medium">{playbook.instructor}</strong></span>
               </p>
             )}
+            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 font-mono">
+              <span className="text-emerald-500 font-semibold flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Garantía 7 días
+              </span>
+              <span className="text-cyan-400 font-medium">Campus Moodle 24/7</span>
+            </div>
           </div>
 
           {/* Action buttons */}

@@ -1,0 +1,694 @@
+{
+  "fecha": "2026-11-04T17:44:17.865Z",
+  "directorio": "F:\\Lysandri-executive",
+  "duracionSegundos": 40.8,
+  "total": 76,
+  "pasadas": 66,
+  "falladas": 10,
+  "casos": [
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.1",
+      "nombre": "Mapeo correcto en ejecución (5432/tcp -> 127.0.0.1:5434)",
+      "aprobado": true,
+      "detalles": "Aceptado",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.069Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.2",
+      "nombre": "HostPort 15434 que contiene \"5434\"",
+      "aprobado": true,
+      "detalles": "HostPort no coincide: Se exige '5434', se encontró '15434'.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.3",
+      "nombre": "HostIp 0.0.0.0 (no exclusivo a 127.0.0.1)",
+      "aprobado": true,
+      "detalles": "HostIp no coincide: Se exige enlace exclusivo a '127.0.0.1', se encontró '0.0.0.0'.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.4",
+      "nombre": "HostIp vacío",
+      "aprobado": true,
+      "detalles": "HostIp no coincide: Se exige enlace exclusivo a '127.0.0.1', se encontró '0.0.0.0 (todas las interfaces)'.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.5",
+      "nombre": "Puerto interno incorrecto (5433/tcp en vez de 5432/tcp)",
+      "aprobado": true,
+      "detalles": "Puerto interno no autorizado o ausente: Se requiere mapear '5432/tcp', pero se encontró [5433/tcp].",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.6",
+      "nombre": "Publicación en puerto 5432 del host (violación de seguridad)",
+      "aprobado": true,
+      "detalles": "Violación de seguridad: El contenedor intenta publicar en el puerto 5432 del host (reservado para la base original).",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.7",
+      "nombre": "Mapeo múltiple o ambiguo",
+      "aprobado": true,
+      "detalles": "Mapeo ambiguo o ausente: Se requiere exactamente 1 asignación para '5432/tcp', se encontraron 2.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.8",
+      "nombre": "Publicación adicional no autorizada",
+      "aprobado": true,
+      "detalles": "Mapeo adicional no autorizado: Se detectó publicación en puerto interno '8080/tcp'. Solo se autoriza 5432/tcp.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Mapeo Docker",
+      "id": "1.9",
+      "nombre": "Contenedor detenido con configuración válida en HostConfig",
+      "aprobado": true,
+      "detalles": "Aceptado sin exigir NetworkSettings en stopped",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.070Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.1",
+      "nombre": "Recuperación de estados transitorios (TCP cerrado -> starting up -> listo)",
+      "aprobado": true,
+      "detalles": "Listo tras 415ms",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:37.486Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.2",
+      "nombre": "Timeout global cuando nunca queda disponible",
+      "aprobado": true,
+      "detalles": "Detecta timeout sin bloquear indefinidamente",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:38.710Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.3",
+      "nombre": "Credenciales incorrectas: falla rápido sin reintentar indefinidamente",
+      "aprobado": true,
+      "detalles": "Invocaciones: 1 (abortó al primer fallo permanente)",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:38.710Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.4",
+      "nombre": "Destino no autorizado: fail-fast inmediato",
+      "aprobado": true,
+      "detalles": "Rechazo inmediato",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:38.710Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.5",
+      "nombre": "Acotación de duración de cada comando",
+      "aprobado": true,
+      "detalles": "Comandos limitados por timeoutMs individual",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.776Z"
+    },
+    {
+      "seccion": "Postgres Availability",
+      "id": "2.6",
+      "nombre": "Seguridad de persistencia: lysandri-postgres-clone no fue detenido ni modificado",
+      "aprobado": true,
+      "detalles": "Pruebas realizadas mediante inyección de dependencias y mocks sin tocar el clon activo",
+      "tipo": "VERIFICACIÓN SEGURIDAD",
+      "timestamp": "2026-11-04T17:43:40.776Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.1",
+      "nombre": "Configuración válida (127.0.0.1:5434/lysandri_clone_db, clone, JAR local)",
+      "aprobado": true,
+      "detalles": "Reconocido como legítimo y seguro",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.778Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.2",
+      "nombre": "URL únicamente en propiedad irrelevante (-Dnota=...) rechazada",
+      "aprobado": true,
+      "detalles": "Argumentos insuficientes: no se especificó la propiedad spring.datasource.url en la línea de comandos para verificar el destino.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.778Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.3",
+      "nombre": "spring.datasource.url ausente rechazada estrictamente",
+      "aprobado": true,
+      "detalles": "Argumentos insuficientes: no se especificó la propiedad spring.datasource.url en la línea de comandos para verificar el destino.",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.778Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.4",
+      "nombre": "URL en nota combinada con destino no autorizado a 5432 rechazada",
+      "aprobado": true,
+      "detalles": "Violación de seguridad: El proceso hace referencia al puerto 5432 (reservado para la base original).",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.778Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.5",
+      "nombre": "Configuración contradictoria entre datasource y flyway rechazada",
+      "aprobado": true,
+      "detalles": "Configuración contradictoria: spring.flyway.url no apunta al clon autorizado (127.0.0.1:5434/lysandri_clone_db).",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.778Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.6",
+      "nombre": "Argumentos entrecomillados y rutas con espacios aceptados correctamente",
+      "aprobado": true,
+      "detalles": "Tokenizado y validado con comillas y espacios en rutas",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.779Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.7",
+      "nombre": "Host, puerto, base o JAR incorrectos rechazados individualmente",
+      "aprobado": true,
+      "detalles": "Rechazos precisos: host ajeno, puerto no 5434, base no clon, JAR externo",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.779Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.8",
+      "nombre": "Múltiples definiciones dispares de perfil o datasource rechazadas por contradictorias",
+      "aprobado": true,
+      "detalles": "Detección estricta de contradicciones en argumentos del proceso",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.779Z"
+    },
+    {
+      "seccion": "Identidad Backend",
+      "id": "3.9",
+      "nombre": "Destino al puerto 5432 rechazado inmediatamente (violación de seguridad)",
+      "aprobado": true,
+      "detalles": "Violación de seguridad: El proceso hace referencia al puerto 5432 (reservado para la base original).",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.779Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.10",
+      "nombre": "Identidad correcta tras arranque de Vite (app, role, workspaceSignature)",
+      "aprobado": false,
+      "detalles": "Reconocido y confirmado",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.796Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.11",
+      "nombre": "HTTP 200 con HTML genérico (no JSON de identificación)",
+      "aprobado": false,
+      "detalles": "Rechazado estrictamente",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:40.901Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.12",
+      "nombre": "JSON inválido en endpoint /__lysandri_dev_id",
+      "aprobado": false,
+      "detalles": "Detectado como corrupto o no compatible",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.009Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.13",
+      "nombre": "Aplicación, rol o firma incorrectos",
+      "aprobado": false,
+      "detalles": "Rechazado por discordancia de atributos",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.118Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.14",
+      "nombre": "Servidor web ajeno que incluye la palabra \"Lysandri\"",
+      "aprobado": true,
+      "detalles": "Rechazado estrictamente sin engaño por texto",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.225Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.15",
+      "nombre": "Salida prematura real detectada de inmediato sin agotar timeout",
+      "aprobado": true,
+      "detalles": "Detectado en 61ms (código de salida 5, sin esperar 25s)",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.392Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.16",
+      "nombre": "Conflicto de puerto durante inicio: Proceso ajeno conservado",
+      "aprobado": false,
+      "detalles": "Detectado conflicto sin matar el proceso ajeno",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.395Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.17",
+      "nombre": "Proceso propio inicializándose: Estado transitorio protegido sin rotularlo falsamente como ajeno",
+      "aprobado": true,
+      "detalles": "Clasificado como inicializando (transitorio: true), el coordinador continuará esperando",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.506Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.18",
+      "nombre": "Vite tarda en responder en 127.0.0.1 y luego queda disponible (recuperación de estado transitorio)",
+      "aprobado": false,
+      "detalles": "Transitorio inicial tolerado, seguido de validación de identidad oficial exitosa",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:41.615Z"
+    },
+    {
+      "seccion": "Identidad Frontend",
+      "id": "3.19",
+      "nombre": "Puerto ocupado por proceso ajeno que no pertenece al árbol iniciado (PID ajeno)",
+      "aprobado": true,
+      "detalles": "Clasificado como proceso_ajeno para protegerlo y abortar sin matarlo",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:42.530Z"
+    },
+    {
+      "seccion": "Solo Verificar",
+      "id": "4.1",
+      "nombre": "Docker no activo -> salida no-cero y explica faltante",
+      "aprobado": true,
+      "detalles": "Retorna fallo sin intentar iniciar Docker Desktop",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:46.417Z"
+    },
+    {
+      "seccion": "Solo Verificar",
+      "id": "4.2",
+      "nombre": "Contenedor detenido -> salida no-cero y explica faltante",
+      "aprobado": true,
+      "detalles": "Retorna fallo sin ejecutar docker start",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:49.913Z"
+    },
+    {
+      "seccion": "Solo Verificar",
+      "id": "4.3",
+      "nombre": "PostgreSQL cerrado -> salida no-cero y explica faltante",
+      "aprobado": true,
+      "detalles": "Retorna fallo sin alterar estado",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:53.403Z"
+    },
+    {
+      "seccion": "Solo Verificar",
+      "id": "4.4",
+      "nombre": "Backend ausente -> salida no-cero y explica faltante",
+      "aprobado": true,
+      "detalles": "Retorna fallo sin spawn Java",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:56.829Z"
+    },
+    {
+      "seccion": "Solo Verificar",
+      "id": "4.5",
+      "nombre": "Todos los servicios activos y válidos -> Código 0",
+      "aprobado": false,
+      "detalles": "Éxito total sin crear procesos ni abrir navegador",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:43:56.923Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.1",
+      "nombre": "Limpieza completa: Todos los procesos propios terminan -> Bloqueo liberado y registros borrados",
+      "aprobado": true,
+      "detalles": "Procesos terminados exitosamente, bloqueo eliminado y sesión limpiada",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.933Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.2",
+      "nombre": "Limpieza incompleta: Proceso vivo -> Bloqueo retenido, ownerToken retenido y PIDs pendientes registrados",
+      "aprobado": true,
+      "detalles": "Fallo reportado (exito: false), bloqueo no liberado, registro preservado con PID 8003",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.940Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.3",
+      "nombre": "Error de consulta / EPERM: Proceso desconocido no declara éxito y retiene bloqueo",
+      "aprobado": true,
+      "detalles": "Proceso categorizado en desconocidos; bloqueo y sesión retenidos preventivamente",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.948Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.4",
+      "nombre": "Reintento de limpieza: Termina procesos pendientes restantes y libera el bloqueo",
+      "aprobado": true,
+      "detalles": "Segundo ciclo de limpieza exitoso; bloqueo liberado y registros eliminados",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.951Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.5",
+      "nombre": "Fallo de liberación de bloqueo: No declara éxito (exito: false) y retiene activeOwnerToken",
+      "aprobado": true,
+      "detalles": "Cierre incompleto reportado; el token no se borra prematuramente para permitir reintento",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.954Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.5b",
+      "nombre": "Reintento de liberación: Se completa exitosamente y limpia activeOwnerToken",
+      "aprobado": true,
+      "detalles": "Token conservado en 5.5 permitió completar la liberación en el reintento",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.954Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.5c",
+      "nombre": "Bloqueo ya ausente: Reportado como ya_ausente con éxito sin error de bloqueo ajeno",
+      "aprobado": true,
+      "detalles": "Identifica correctamente que el bloqueo ya no existe y no bloquea al usuario",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.954Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.5d",
+      "nombre": "Sesión sin bloqueo previo: Cierre exitoso y reporte limpio (estado: no_requerido)",
+      "aprobado": true,
+      "detalles": "Comportamiento correcto para ejecuciones que nunca adquirieron bloqueo",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.954Z"
+    },
+    {
+      "seccion": "Limpieza y Retención",
+      "id": "5.6",
+      "nombre": "PIDs dependientes activos en lock impiden recuperación aunque el coordinador haya muerto",
+      "aprobado": true,
+      "detalles": "Nueva instancia rechaza adquirir bloqueo por existir proceso dependiente huérfano vivo",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:56.958Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.7",
+      "nombre": "Mutex activo con antigüedad > 10s preservado (proceso propietario vivo en SO)",
+      "aprobado": true,
+      "detalles": "No se elimina ni roba el mutex por tiempo si el proceso creador sigue vivo",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.267Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.8",
+      "nombre": "Mutex con dueño muerto (ESRCH) recuperado atómicamente y liberado al terminar",
+      "aprobado": true,
+      "detalles": "Recuperación atómica completada; mutex limpio tras ejecutar la función",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.300Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.9",
+      "nombre": "Error al consultar dueño del mutex (EPERM): No asume muerto y preserva mutex",
+      "aprobado": true,
+      "detalles": "Protección estricta ante falta de permisos sin robar mutex ajeno",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.557Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.10",
+      "nombre": "Mutex incompleto en creación: Respeta periodo de gracia sin robarlo prematuramente",
+      "aprobado": true,
+      "detalles": "Periodo de gracia respetado; mutex en creación no es destruido",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.858Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.11",
+      "nombre": "Sesión ajena no puede liberar bloqueo de otra sesión (rechazo estricto de token ajeno)",
+      "aprobado": true,
+      "detalles": "Token ajeno rechazado (archivo retenido); token legítimo libera bloqueo",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.868Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.12",
+      "nombre": "Unificación de adquisición, inspección y liberación bajo protocolo de mutex",
+      "aprobado": true,
+      "detalles": "Todas las operaciones de bloqueo coordinadas estrictamente mediante el mutex",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:57.873Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.13",
+      "nombre": "Procesos propios validados terminados individualmente y confirmados muertos",
+      "aprobado": true,
+      "detalles": "Envoltorio e hijo coinciden con patrones y son terminados individualmente sin /T",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:58.626Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.14",
+      "nombre": "PID reciclado con CommandLine no coincidente clasificado en rechazados (no terminado)",
+      "aprobado": true,
+      "detalles": "Proceso ajeno protegido; no se envía señal de terminación",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:43:59.385Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.15",
+      "nombre": "CommandLine vacío clasificado en desconocidos (no terminado por precaución)",
+      "aprobado": true,
+      "detalles": "No se termina proceso si CommandLine está vacío; exito: false",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:00.154Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.16",
+      "nombre": "Fallo en consulta Win32_Process clasificado en desconocidos (no terminado por seguridad)",
+      "aprobado": true,
+      "detalles": "Error de consulta no asume propiedad; proceso preservado en desconocidos",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:00.916Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.17",
+      "nombre": "Descendiente no autorizado (notepad.exe) clasificado en rechazados y no terminado",
+      "aprobado": true,
+      "detalles": "Hijo ajeno protegido; solo se termina el wrapper validado",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:01.685Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.18",
+      "nombre": "Fallo al terminar proceso: Permanece en vivos y reporta exito: false",
+      "aprobado": true,
+      "detalles": "Proceso inmune a taskkill reportado como vivo; no se declara falsamente terminado",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:02.532Z"
+    },
+    {
+      "seccion": "Terminación de Procesos",
+      "id": "5.19",
+      "nombre": "Terminación individual sin flag recursivo /T: Descendientes ajenos no autorizados no se matan",
+      "aprobado": true,
+      "detalles": "Señal de muerte enviada exclusivamente a PIDs validados uno por uno",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:03.282Z"
+    },
+    {
+      "seccion": "Concurrencia Multi-Proceso",
+      "id": "5.20",
+      "nombre": "Competencia por adquisición inicial entre 2 subprocesos independientes reales (barrera al ms)",
+      "aprobado": true,
+      "detalles": "Ganador PID 11684 (cff0e132...), perdedor PID 1924 rechazado limpiamente",
+      "tipo": "PROCESOS REALES",
+      "timestamp": "2026-11-04T17:44:03.563Z"
+    },
+    {
+      "seccion": "Concurrencia Multi-Proceso",
+      "id": "5.21",
+      "nombre": "Competencia por recuperación de bloqueo abandonado entre 2 procesos reales independientes",
+      "aprobado": true,
+      "detalles": "Recuperador único PID 3972 (15294c55...); sin colisión ni daño en el lock",
+      "tipo": "PROCESOS REALES",
+      "timestamp": "2026-11-04T17:44:03.828Z"
+    },
+    {
+      "seccion": "Concurrencia Multi-Proceso",
+      "id": "5.22",
+      "nombre": "Mutex activo preservado tras superar 10 segundos sin ser tomado (Worker activo protegido)",
+      "aprobado": true,
+      "detalles": "Worker B no robó mutex tras 10.3s (PID 3032 activo); Worker A liberó normalmente",
+      "tipo": "PROCESOS REALES",
+      "timestamp": "2026-11-04T17:44:15.749Z"
+    },
+    {
+      "seccion": "Concurrencia Multi-Proceso",
+      "id": "5.23",
+      "nombre": "Limpieza incompleta impide el inicio de una segunda instancia (procesos dependientes vivos)",
+      "aprobado": true,
+      "detalles": "Worker B rechazado porque el PID dependiente 15100 seguía vivo en el SO",
+      "tipo": "PROCESOS REALES",
+      "timestamp": "2026-11-04T17:44:16.180Z"
+    },
+    {
+      "seccion": "Concurrencia Multi-Proceso",
+      "id": "5.24",
+      "nombre": "Preservación de servicios preexistentes en puerto 3388 durante concurrencia",
+      "aprobado": false,
+      "detalles": "Servicio HTTP preexistente no interferido; respondió 200 OK durante y después",
+      "tipo": "PROCESOS REALES",
+      "timestamp": "2026-11-04T17:44:16.309Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.26",
+      "nombre": "Recuperación atómica de mutex abandonado: Dos instancias recuperan y ejecutan secuencialmente sin colisión",
+      "aprobado": true,
+      "detalles": "Reclamo atómico del ancla impidió doble retiro; ambas llamadas completadas",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:16.447Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.27",
+      "nombre": "Propietario nuevo activo permanece protegido ante instancia con datos de dueño anterior",
+      "aprobado": true,
+      "detalles": "Reclamo de ancla obsoleta falló con ENOENT; el mutex del nuevo dueño no fue tocado ni movido",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:16.450Z"
+    },
+    {
+      "seccion": "Propiedad y Mutex",
+      "id": "5.28",
+      "nombre": "Liberación de sesión antigua no afecta al nuevo dueño activo (ancla no coincidente ignorada)",
+      "aprobado": true,
+      "detalles": "Sesión antigua no destruye el mutex ni los archivos del nuevo propietario legítimo",
+      "tipo": "UNITARIA",
+      "timestamp": "2026-11-04T17:44:16.452Z"
+    },
+    {
+      "seccion": "Ciclo de Vida y Limpieza",
+      "id": "5.25",
+      "nombre": "Documentación técnica: Señales y Ctrl+C en consola Windows",
+      "aprobado": true,
+      "detalles": "Windows emite CTRL_C_EVENT en consola interactiva (capturado por process.on); en pruebas automatizadas se verifica ejecutarLimpieza directamente",
+      "tipo": "DOCUMENTACIÓN Y ARQUITECTURA",
+      "timestamp": "2026-11-04T17:44:16.452Z"
+    },
+    {
+      "seccion": "Política JAR",
+      "id": "6.1",
+      "nombre": "JAR ausente detectado con error e instrucción de compilación",
+      "aprobado": true,
+      "detalles": "Rechazado con instrucción cd backend && ./mvnw package",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:44:16.458Z"
+    },
+    {
+      "seccion": "Política JAR",
+      "id": "6.2",
+      "nombre": "JAR desactualizado detectado respecto al código modificado",
+      "aprobado": true,
+      "detalles": "Detectó archivo más reciente: OrderController.java",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:44:16.503Z"
+    },
+    {
+      "seccion": "Política JAR",
+      "id": "6.3",
+      "nombre": "JAR al día aceptado limpiamente",
+      "aprobado": true,
+      "detalles": "Aceptado sin advertencias",
+      "tipo": "SIMULADO",
+      "timestamp": "2026-11-04T17:44:16.549Z"
+    },
+    {
+      "seccion": "Comprobación Real",
+      "id": "7.1",
+      "nombre": "npm run dev:frontend invoca Vite directamente sin coordinador",
+      "aprobado": true,
+      "detalles": "Comando configurado: \"vite\"",
+      "tipo": "REAL ENTORNO",
+      "timestamp": "2026-11-04T17:44:16.550Z"
+    },
+    {
+      "seccion": "Comprobación Real",
+      "id": "7.2",
+      "nombre": "PostgreSQL clone (127.0.0.1:5434) autenticado y activo en vivo",
+      "aprobado": false,
+      "detalles": "Verificación exitosa con psql e identidades lysandri_app / lysandri_admin",
+      "tipo": "REAL ENTORNO",
+      "timestamp": "2026-11-04T17:44:17.861Z"
+    },
+    {
+      "seccion": "Comprobación Real",
+      "id": "7.3",
+      "nombre": "Backend local activo en puerto 8080 respondiendo API Lysandri",
+      "aprobado": false,
+      "detalles": "Responde HTTP 200 en /api/v1/orders/cuentas-bancarias",
+      "tipo": "REAL ENTORNO",
+      "timestamp": "2026-11-04T17:44:17.865Z"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+﻿
+Algorithm       Hash                                                                   Path                            
+---------       ----                                                                   ----                            
+SHA256          ECAB22FC735F66BF26BA18F843E3EA6251F0B13C5B719D5FAAE6F302AFE94686       F:\Lysandri-executive\backend...
+
+

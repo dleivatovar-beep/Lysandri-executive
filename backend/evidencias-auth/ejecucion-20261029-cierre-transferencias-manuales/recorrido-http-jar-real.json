@@ -1,0 +1,122 @@
+[
+  {
+    "num": 1,
+    "name": "Consulta pública de cuentas bancarias autorizadas (BCP e Interbank)",
+    "status": "APROBADO",
+    "details": "HTTP 200, Bancos retornados: ['BCP', 'INTERBANK']"
+  },
+  {
+    "num": 2,
+    "name": "Login exitoso de Administrador autorizado (danny@lysandri.com)",
+    "status": "APROBADO",
+    "details": "HTTP 200, Rol: ADMIN"
+  },
+  {
+    "num": 3,
+    "name": "Registro y autenticación de cliente comprador",
+    "status": "APROBADO",
+    "details": "HTTP 201, UserID: 4"
+  },
+  {
+    "num": 4,
+    "name": "Registro exitoso de orden con método manual TRANSFERENCIA",
+    "status": "APROBADO",
+    "details": "HTTP 200, Orden: 3f2248b5-5bae-4318-8a46-59d2fe9caa99, ID: 1"
+  },
+  {
+    "num": 5,
+    "name": "Cliente común bloqueado de confirmar pagos manuales (403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  },
+  {
+    "num": 6,
+    "name": "Rechazo de confirmación manual con número de operación vacío (400 Bad Request)",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 7,
+    "name": "Rechazo de confirmación manual por discrepancia de importe (400)",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 8,
+    "name": "Rechazo de confirmación manual por discrepancia de moneda (400)",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 9,
+    "name": "Rechazo de confirmación manual por fecha de abono en el futuro (400)",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 10,
+    "name": "Aprobación manual exitosa de orden por Administrador con auditoría completa",
+    "status": "APROBADO",
+    "details": "HTTP 200, Estado: PAGADO, AprobadoPor: danny@lysandri.com, Operación: OP-BCP-778899"
+  },
+  {
+    "num": 11,
+    "name": "Repetición idéntica de confirmación manual retorna éxito de forma idempotente",
+    "status": "APROBADO",
+    "details": "HTTP 200, Estado: PAGADO"
+  },
+  {
+    "num": 12,
+    "name": "Rechazo de confirmación con datos contradictorios sobre orden ya PAGADA",
+    "status": "APROBADO",
+    "details": "HTTP 409"
+  },
+  {
+    "num": 13,
+    "name": "Registro de segunda orden manual (Orden 2)",
+    "status": "APROBADO",
+    "details": "HTTP 200, Orden 2: 353af538-a8fb-4aa0-8e56-d58fd8abc2af, ID: 2"
+  },
+  {
+    "num": 14,
+    "name": "Bloqueo estricto de abono bancario duplicado en otra orden (Doble Gasto)",
+    "status": "APROBADO",
+    "details": "HTTP 409"
+  },
+  {
+    "num": 15,
+    "name": "Aprobación manual exitosa de Orden 2 con abono Interbank legítimo",
+    "status": "APROBADO",
+    "details": "HTTP 200, Estado: PAGADO, Banco: INTERBANK"
+  },
+  {
+    "num": 16,
+    "name": "Rechazo de confirmación manual para orden generada con pasarela online Izipay",
+    "status": "APROBADO",
+    "details": "HTTP 400"
+  },
+  {
+    "num": 17,
+    "name": "Cliente puede consultar su propia orden pagada",
+    "status": "APROBADO",
+    "details": "HTTP 200, Código: 3f2248b5-5bae-4318-8a46-59d2fe9caa99"
+  },
+  {
+    "num": 18,
+    "name": "Tercero no autorizado bloqueado de consultar orden ajena (403 Forbidden)",
+    "status": "APROBADO",
+    "details": "HTTP 403"
+  },
+  {
+    "num": 19,
+    "name": "Administrador autorizado para consultar orden de cualquier usuario",
+    "status": "APROBADO",
+    "details": "HTTP 200, Código: 3f2248b5-5bae-4318-8a46-59d2fe9caa99"
+  },
+  {
+    "num": 20,
+    "name": "Rechazo uniforme de login ante contraseña incorrecta",
+    "status": "APROBADO",
+    "details": "HTTP 401, Mensaje: 'No se pudo iniciar sesión con los datos proporcionados'"
+  }
+]

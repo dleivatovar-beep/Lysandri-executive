@@ -42,7 +42,7 @@ export const EditorialSyllabusModal: React.FC<EditorialSyllabusModalProps> = ({
         <button type="button" className="lx-syllabus-close" onClick={onClose} data-dialog-close aria-label="Cerrar sílabo"><X aria-hidden="true" /></button>
 
         <div className="lx-syllabus-intro">
-          <span className="lx-syllabus-category">{playbook.category}{playbook.isDemo && ' · Curso simulado'}</span>
+          <span className="lx-syllabus-category">{playbook.category}</span>
           <h2 id={titleId}>{playbook.title}</h2>
           <p id={descriptionId}>{playbook.description}</p>
           <span className="lx-syllabus-level">Nivel {levelName[playbook.tier]}</span>
@@ -66,9 +66,10 @@ export const EditorialSyllabusModal: React.FC<EditorialSyllabusModalProps> = ({
 
           <section className="lx-syllabus-section lx-syllabus-pending">
             <h3>Temario detallado</h3>
-            <p>{playbook.isDemo ? 'Este curso es una muestra visual y no está disponible para compra o inscripción.' : 'La malla de módulos todavía no está publicada en el catálogo. Esta vista muestra únicamente la información disponible del programa.'}</p>
+            <p>La malla de módulos todavía no está publicada en el catálogo. Esta vista muestra únicamente la información disponible del programa.</p>
           </section>
 
+<<<<<<< HEAD
           {!playbook.isDemo && (
             <div className="lx-syllabus-actions">
               {onEnroll && (
@@ -100,6 +101,37 @@ export const EditorialSyllabusModal: React.FC<EditorialSyllabusModalProps> = ({
               </button>
             </div>
           )}
+=======
+          <div className="lx-syllabus-actions">
+            {onEnroll && (
+              <button
+                type="button"
+                className="lx-syllabus-primary"
+                onClick={() => {
+                  onEnroll(playbook);
+                  onClose();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  background: '#009fd0',
+                  color: '#071827',
+                  fontWeight: 800,
+                }}
+              >
+                <CreditCard aria-hidden="true" style={{ width: '1.05rem', height: '1.05rem' }} /> Inscribirme / Matrícula Directa <ArrowUpRight aria-hidden="true" />
+              </button>
+            )}
+            <button type="button" className="lx-syllabus-secondary" onClick={() => { onAddToCart(playbook); onClose(); }}>
+              <ShoppingBag aria-hidden="true" /> Añadir al carrito <ArrowUpRight aria-hidden="true" />
+            </button>
+            <button type="button" className="lx-syllabus-secondary" onClick={() => { onAskAi(playbook); onClose(); }}>
+              <Bot aria-hidden="true" /> Consultar sobre este programa
+            </button>
+          </div>
+>>>>>>> origin/feature/danny-desarrollo
         </div>
       </div>
     </div>

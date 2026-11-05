@@ -8,6 +8,7 @@ import com.lysandri.domain.model.Orden;
 import com.lysandri.domain.ports.out.OrderRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +22,11 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     private final ProgramRepositoryAdapter programAdapter;
 
     @Override
+    @Transactional
     public Orden guardar(Orden orden) {
         OrdenEntity entity = toEntity(orden);
-        OrdenEntity saved = repository.save(entity);
-        return toDomain(saved);
+        OrdenEntity guardado = repository.save(entity);
+        return toDomain(guardado);
     }
 
     @Override
@@ -38,8 +40,98 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
     }
 
     @Override
+    @Transactional
+    public Optional<Orden> buscarPorCodigoConBloqueo(String codigoOrden) {
+        return repository.findByCodigoOrdenWithLock(codigoOrden).map(this::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Orden> buscarPorIdConBloqueo(Long idOrden) {
+        return repository.findByIdWithLock(idOrden).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarOrdenPorIdDetalle(Long idDetalle) {
+        if (idDetalle == null) return Optional.empty();
+        return repository.findByDetalleId(idDetalle).map(this::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Orden> buscarOrdenPorIdDetalleConBloqueo(Long idDetalle) {
+        if (idDetalle == null) return Optional.empty();
+        return repository.findByDetalleIdWithLock(idDetalle).map(this::toDomain);
+    }
+
+    @Override
     public Optional<Orden> buscarPorStripeSessionId(String stripeSessionId) {
         return repository.findByStripeSessionId(stripeSessionId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorStripePaymentIntentId(String stripePaymentIntentId) {
+        return repository.findByStripePaymentIntentId(stripePaymentIntentId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorIzipayTransactionId(String izipayTransactionId) {
+        return repository.findByIzipayTransactionId(izipayTransactionId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorClaveIdempotencia(String claveIdempotencia) {
+        if (claveIdempotencia == null || claveIdempotencia.isBlank()) return Optional.empty();
+        return repository.findByClaveIdempotencia(claveIdempotencia.trim()).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorCualquierIdentificador(String id) {
+        if (id == null || id.isBlank()) return Optional.empty();
+        // 1. Buscar por izipayTransactionId
+        Optional<Orden> orden = repository.findByIzipayTransactionId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 2. Buscar por izipayOrderId
+        orden = repository.findByIzipayOrderId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 3. Buscar por codigoOrden
+        orden = repository.findByCodigoOrden(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 4. Buscar por stripeSessionId
+        orden = repository.findByStripeSessionId(id).map(this::toDomain);
+        if (orden.isPresent()) return orden;
+
+        // 5. Buscar por stripePaymentIntentId
+        return repository.findByStripePaymentIntentId(id).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Orden> buscarPorAbonoBancario(String bancoDestino, String cuentaDestino, String numeroOperacion) {
+        if (bancoDestino == null || cuentaDestino == null || numeroOperacion == null) return Optional.empty();
+        List<OrdenEntity> matches = repository.findAbonosBancariosPagados(
+                bancoDestino.trim(),
+                cuentaDestino.trim(),
+                numeroOperacion.trim()
+        );
+        return matches.isEmpty() ? Optional.empty() : Optional.of(toDomain(matches.get(0)));
+    }
+
+    @Override
+    @Transactional
+    public void bloquearAbonoBancario(String numeroOperacionNormalizado) {
+        repository.lockManualPaymentOperation(numeroOperacionNormalizado);
+    }
+
+    @Override
+    public List<Orden> buscarAbonosHistoricosPorOperacion(String numeroOperacionNormalizado) {
+        if (numeroOperacionNormalizado == null || numeroOperacionNormalizado.isBlank()) {
+            return List.of();
+        }
+        return repository.findAbonosHistoricosCandidatos(numeroOperacionNormalizado.trim().toUpperCase())
+                .stream().map(this::toDomain).toList();
     }
 
     @Override
@@ -52,6 +144,11 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
         return repository.findAllByOrderByFechaOrdenDesc().stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public List<Orden> listarPorEstado(com.lysandri.domain.model.EstadoOrden estado) {
+        return repository.findByEstadoOrdenOrderByFechaOrdenDesc(estado).stream().map(this::toDomain).toList();
+    }
+
     private OrdenEntity toEntity(Orden d) {
         OrdenEntity entity = OrdenEntity.builder()
                 .idOrden(d.getIdOrden())
@@ -60,15 +157,35 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .fechaOrden(d.getFechaOrden())
                 .estadoOrden(d.getEstadoOrden())
                 .total(d.getTotal())
-                .moneda(d.getMoneda() != null ? d.getMoneda() : "USD")
-                .metodoPago(d.getMetodoPago() != null ? d.getMetodoPago() : "STRIPE")
+                .moneda(d.getMoneda())
+                .metodoPago(d.getMetodoPago())
                 .stripeSessionId(d.getStripeSessionId())
                 .stripePaymentIntentId(d.getStripePaymentIntentId())
+                .izipayTransactionId(d.getIzipayTransactionId())
+                .izipayOrderId(d.getIzipayOrderId())
+                .izipayUuid(d.getIzipayUuid())
                 .moodleMatriculaSincronizada(d.isMoodleMatriculaSincronizada())
                 .fechaPago(d.getFechaPago())
                 .tipoComprobanteSolicitado(d.getTipoComprobanteSolicitado())
                 .numeroDocumentoCliente(d.getNumeroDocumentoCliente())
                 .nombreFacturacion(d.getNombreFacturacion())
+                .numeroOperacion(d.getNumeroOperacion())
+                .notasAdmin(d.getNotasAdmin())
+                .claveIdempotencia(d.getClaveIdempotencia())
+                .guestSessionHash(d.getGuestSessionHash())
+                .bancoDestino(d.getBancoDestino())
+                .cuentaDestino(d.getCuentaDestino())
+                .montoVerificado(d.getMontoVerificado())
+                .monedaVerificada(d.getMonedaVerificada())
+                .fechaAbono(d.getFechaAbono())
+                .aprobadoPor(d.getAprobadoPor())
+                .fechaAprobacion(d.getFechaAprobacion())
+                .observacionVerificacion(d.getObservacionVerificacion())
+                .estadoAprovisionamiento(d.getEstadoAprovisionamiento())
+                .aprovisionamientoLeaseToken(d.getAprovisionamientoLeaseToken())
+                .aprovisionamientoLeaseExpiresAt(d.getAprovisionamientoLeaseExpiresAt())
+                .aprovisionamientoIntentos(d.getAprovisionamientoIntentos())
+                .aprovisionamientoUltimoError(d.getAprovisionamientoUltimoError())
                 .build();
 
         if (d.getItems() != null) {
@@ -76,9 +193,15 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
             for (DetalleOrden item : d.getItems()) {
                 itemEntities.add(DetalleOrdenEntity.builder()
                         .idDetalle(item.getIdDetalle())
-                        .idOrden(d.getIdOrden())
                         .orden(entity)
                         .idPrograma(item.getIdPrograma())
+                        .moodleCourseId(item.getMoodleCourseId())
+                        .origenMoodleCourseId(item.getOrigenMoodleCourseId())
+                        .moodleResolucionAutorizadaPor(item.getMoodleResolucionAutorizadaPor())
+                        .moodleResolucionFecha(item.getMoodleResolucionFecha())
+                        .moodleResolucionMotivo(item.getMoodleResolucionMotivo())
+                        .moodleResolucionEvidencia(item.getMoodleResolucionEvidencia())
+                        .moodleResolucionCursoAnterior(item.getMoodleResolucionCursoAnterior())
                         .precioUnitario(item.getPrecioUnitario())
                         .cantidad(item.getCantidad())
                         .subtotal(item.getSubtotal())
@@ -99,7 +222,14 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                         .idDetalle(item.getIdDetalle())
                         .idOrden(e.getIdOrden())
                         .idPrograma(item.getIdPrograma())
-                        .programa(item.getPrograma() != null ? programAdapter.toDomain(item.getPrograma()) : null)
+                        .moodleCourseId(item.getMoodleCourseId())
+                        .origenMoodleCourseId(item.getOrigenMoodleCourseId())
+                        .moodleResolucionAutorizadaPor(item.getMoodleResolucionAutorizadaPor())
+                        .moodleResolucionFecha(item.getMoodleResolucionFecha())
+                        .moodleResolucionMotivo(item.getMoodleResolucionMotivo())
+                        .moodleResolucionEvidencia(item.getMoodleResolucionEvidencia())
+                        .moodleResolucionCursoAnterior(item.getMoodleResolucionCursoAnterior())
+                        .programa(item.getPrograma() != null && org.hibernate.Hibernate.isInitialized(item.getPrograma()) ? programAdapter.toDomain(item.getPrograma()) : null)
                         .precioUnitario(item.getPrecioUnitario())
                         .cantidad(item.getCantidad())
                         .subtotal(item.getSubtotal())
@@ -119,11 +249,31 @@ public class OrderRepositoryAdapter implements OrderRepositoryPort {
                 .metodoPago(e.getMetodoPago())
                 .stripeSessionId(e.getStripeSessionId())
                 .stripePaymentIntentId(e.getStripePaymentIntentId())
+                .izipayTransactionId(e.getIzipayTransactionId())
+                .izipayOrderId(e.getIzipayOrderId())
+                .izipayUuid(e.getIzipayUuid())
                 .moodleMatriculaSincronizada(e.isMoodleMatriculaSincronizada())
                 .fechaPago(e.getFechaPago())
                 .tipoComprobanteSolicitado(e.getTipoComprobanteSolicitado())
                 .numeroDocumentoCliente(e.getNumeroDocumentoCliente())
                 .nombreFacturacion(e.getNombreFacturacion())
+                .numeroOperacion(e.getNumeroOperacion())
+                .notasAdmin(e.getNotasAdmin())
+                .claveIdempotencia(e.getClaveIdempotencia())
+                .guestSessionHash(e.getGuestSessionHash())
+                .bancoDestino(e.getBancoDestino())
+                .cuentaDestino(e.getCuentaDestino())
+                .montoVerificado(e.getMontoVerificado())
+                .monedaVerificada(e.getMonedaVerificada())
+                .fechaAbono(e.getFechaAbono())
+                .aprobadoPor(e.getAprobadoPor())
+                .fechaAprobacion(e.getFechaAprobacion())
+                .observacionVerificacion(e.getObservacionVerificacion())
+                .estadoAprovisionamiento(e.getEstadoAprovisionamiento())
+                .aprovisionamientoLeaseToken(e.getAprovisionamientoLeaseToken())
+                .aprovisionamientoLeaseExpiresAt(e.getAprovisionamientoLeaseExpiresAt())
+                .aprovisionamientoIntentos(e.getAprovisionamientoIntentos())
+                .aprovisionamientoUltimoError(e.getAprovisionamientoUltimoError())
                 .items(items)
                 .build();
     }

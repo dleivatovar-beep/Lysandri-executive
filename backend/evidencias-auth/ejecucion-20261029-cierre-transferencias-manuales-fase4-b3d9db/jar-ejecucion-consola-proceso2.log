@@ -1,0 +1,70 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-10-29T02:21:03.628-05:00  INFO 11768 --- [           main] com.lysandri.LysandriApplication         : Starting LysandriApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 11768 (F:\Lysandri-executive\backend\target\lysandri-backend-1.0.0-SNAPSHOT.jar started by danny in F:\Lysandri-executive\backend)
+2026-10-29T02:21:03.631-05:00  INFO 11768 --- [           main] com.lysandri.LysandriApplication         : The following 1 profile is active: "test"
+2026-10-29T02:21:04.946-05:00  INFO 11768 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-10-29T02:21:05.162-05:00  INFO 11768 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 204 ms. Found 14 JPA repository interfaces.
+2026-10-29T02:21:06.104-05:00  INFO 11768 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 18099 (http)
+2026-10-29T02:21:06.124-05:00  INFO 11768 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-29T02:21:06.124-05:00  INFO 11768 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.19]
+2026-10-29T02:21:06.186-05:00  INFO 11768 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-29T02:21:06.187-05:00  INFO 11768 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2445 ms
+2026-10-29T02:21:06.717-05:00  INFO 11768 --- [           main] o.f.c.internal.license.VersionPrinter    : Flyway Community Edition 9.22.3 by Redgate
+2026-10-29T02:21:06.718-05:00  INFO 11768 --- [           main] o.f.c.internal.license.VersionPrinter    : See release notes here: https://rd.gt/416ObMi
+2026-10-29T02:21:06.718-05:00  INFO 11768 --- [           main] o.f.c.internal.license.VersionPrinter    : 
+2026-10-29T02:21:06.782-05:00  INFO 11768 --- [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://127.0.0.1:15445/lysandri_disposable_jar_db (PostgreSQL 16.15)
+2026-10-29T02:21:06.798-05:00  WARN 11768 --- [           main] o.f.c.internal.database.base.Database    : Flyway upgrade recommended: PostgreSQL 16.15 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2026-10-29T02:21:06.883-05:00  INFO 11768 --- [           main] o.f.core.internal.command.DbValidate     : Successfully validated 34 migrations (execution time 00:00.067s)
+2026-10-29T02:21:06.936-05:00  INFO 11768 --- [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 33
+2026-10-29T02:21:06.942-05:00  INFO 11768 --- [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-10-29T02:21:07.074-05:00  INFO 11768 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-10-29T02:21:07.160-05:00  INFO 11768 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-10-29T02:21:07.212-05:00  INFO 11768 --- [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-10-29T02:21:07.589-05:00  INFO 11768 --- [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-10-29T02:21:07.653-05:00  INFO 11768 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-10-29T02:21:07.714-05:00  INFO 11768 --- [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@52d9f36b
+2026-10-29T02:21:07.718-05:00  INFO 11768 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-10-29T02:21:10.352-05:00  INFO 11768 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-10-29T02:21:10.459-05:00  INFO 11768 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-10-29T02:21:11.003-05:00  INFO 11768 --- [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-10-29T02:21:12.156-05:00  INFO 11768 --- [           main] c.l.security.ActivationCryptoService     : Servicio criptográfico de activaciones inicializado correctamente con AES-256-GCM y clave persistente exclusiva.
+2026-10-29T02:21:13.133-05:00  INFO 11768 --- [           main] c.l.a.o.p.MockIzipayPaymentAdapter       : MockIzipayPaymentAdapter inicializado de forma segura bajo perfil autorizado.
+2026-10-29T02:21:13.136-05:00  INFO 11768 --- [           main] c.l.a.o.p.MockStripePaymentAdapter       : MockStripePaymentAdapter inicializado de forma segura bajo perfil 'test'.
+2026-10-29T02:21:13.328-05:00  INFO 11768 --- [           main] c.l.a.o.w.WhatsAppCloudApiAdapter        : Integración de WhatsApp Business Cloud API habilitada para Phone Number ID: 10****10
+2026-10-29T02:21:13.574-05:00  WARN 11768 --- [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-10-29T02:21:13.879-05:00  INFO 11768 --- [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6114a516, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@625ee079, org.springframework.security.web.context.SecurityContextHolderFilter@5e646bfb, org.springframework.security.web.header.HeaderWriterFilter@1c79d400, org.springframework.web.filter.CorsFilter@41df7a0c, org.springframework.security.web.authentication.logout.LogoutFilter@3a54a40f, com.lysandri.security.JwtAuthenticationFilter@553c74cc, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@58048676, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@6b67805a, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@72810bac, org.springframework.security.web.session.SessionManagementFilter@7b1ca32d, org.springframework.security.web.access.ExceptionTranslationFilter@47ca28c1, org.springframework.security.web.access.intercept.AuthorizationFilter@7c8fe8cd]
+2026-10-29T02:21:14.262-05:00  INFO 11768 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 18099 (http) with context path ''
+2026-10-29T02:21:14.278-05:00  INFO 11768 --- [           main] com.lysandri.LysandriApplication         : Started LysandriApplication in 11.163 seconds (process running for 11.746)
+2026-10-29T02:21:14.354-05:00  WARN 11768 --- [           main] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Recuperación tras reinicio: 1 mensajes en estado EN_PROCESO_ENVIO fueron marcados conservadoramente como RESULTADO_INCIERTO
+2026-10-29T02:21:14.624-05:00  INFO 11768 --- [io-18099-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-10-29T02:21:14.624-05:00  INFO 11768 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-10-29T02:21:14.627-05:00  INFO 11768 --- [io-18099-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
+2026-10-29T02:21:15.095-05:00  INFO 11768 --- [io-18099-exec-2] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Solicitud WhatsApp req-restart-1793258462 ya finalizada o incierta (estado: RESULTADO_INCIERTO). No autoriza despacho redundante.
+2026-10-29T02:21:15.109-05:00  INFO 11768 --- [io-18099-exec-2] c.l.application.service.WhatsAppService  : Solicitud WhatsApp req-restart-1793258462 no autorizada para nuevo despacho de red (estado: RESULTADO_INCIERTO). Retornando estado actual.
+2026-10-29T02:21:15.212-05:00  INFO 11768 --- [io-18099-exec-3] c.l.a.o.d.a.WhatsAppRepositoryAdapter    : Estado de mensaje WhatsApp conciliado exitosamente [id: 4, previo: RESULTADO_INCIERTO, nuevo: ENTREGADO]
+2026-10-29T02:21:15.398-05:00  INFO 11768 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:21:15.505-05:00  INFO 11768 --- [io-18099-exec-5] c.l.a.service.BuyCourseService           : Orden 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0 registrada con método manual TRANSFERENCIA. Esperando validación administrativa.
+2026-10-29T02:21:15.690-05:00  INFO 11768 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:21:15.709-05:00  INFO 11768 --- [io-18099-exec-6] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-b3d9db. Recuperando orden existente 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0
+2026-10-29T02:21:15.886-05:00  INFO 11768 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [101]
+2026-10-29T02:21:15.909-05:00  INFO 11768 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-b3d9db. Recuperando orden existente 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0
+2026-10-29T02:21:15.909-05:00  WARN 11768 --- [io-18099-exec-7] c.l.a.service.BuyCourseService           : Conflicto de idempotencia en orden 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0: Programas difieren (existente: [102], solicitado: [101])
+2026-10-29T02:21:15.913-05:00  WARN 11768 --- [io-18099-exec-7] c.l.exception.GlobalExceptionHandler     : Conflicto de estado (IllegalStateException): Conflicto de idempotencia: La clave ya existe pero con una selección de programas diferente
+2026-10-29T02:21:15.932-05:00  INFO 11768 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:21:15.947-05:00  INFO 11768 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Clave de idempotencia detectada: idemp-usd-transfer-b3d9db. Recuperando orden existente 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0
+2026-10-29T02:21:15.947-05:00  WARN 11768 --- [io-18099-exec-8] c.l.a.service.BuyCourseService           : Violación de aislamiento IDOR: El usuario 4 intentó acceder a la orden 712ce1b9-1b9d-41a4-ad8e-d0e92ffd43c0 creada por otro usuario
+2026-10-29T02:21:15.948-05:00  WARN 11768 --- [io-18099-exec-8] c.l.exception.GlobalExceptionHandler     : Acceso denegado: Acceso no autorizado: la clave de compra pertenece a otro usuario
+2026-10-29T02:21:15.960-05:00  INFO 11768 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Iniciando checkout con programas: [102]
+2026-10-29T02:21:15.968-05:00  WARN 11768 --- [io-18099-exec-9] c.l.a.service.BuyCourseService           : Rechazo de compra: Método de pago no admitido: BITCOIN
+2026-10-29T02:21:15.969-05:00  WARN 11768 --- [io-18099-exec-9] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): Método de pago no admitido: BITCOIN. Los métodos admitidos son: IZIPAY, STRIPE, TRANSFERENCIA, YAPE, PLIN.
+2026-10-29T02:21:15.995-05:00  INFO 11768 --- [o-18099-exec-10] c.l.adapters.in.web.OrderController      : Llamada administrativa de aprobación para orden ID: 2 por usuario: danny@lysandri.invalid
+2026-10-29T02:21:15.996-05:00  INFO 11768 --- [o-18099-exec-10] c.l.a.service.BuyCourseService           : Iniciando confirmación de pago manual para orden ID: 2
+2026-10-29T02:21:15.996-05:00  INFO 11768 --- [o-18099-exec-10] c.l.a.s.OrderFinancialTransactionService : Adquiriendo bloqueo pesimista exclusivo para confirmación manual de orden ID: 2
+2026-10-29T02:21:16.014-05:00  WARN 11768 --- [o-18099-exec-10] c.l.exception.GlobalExceptionHandler     : Solicitud inválida (IllegalArgumentException): La fecha del abono no puede ser futura
