@@ -13,6 +13,8 @@ import {
   Store,
   Users,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Calculator,
   type LucideIcon,
 } from 'lucide-react';
@@ -29,6 +31,8 @@ interface SidebarProps {
     view: ActiveView,
   ) => void;
   onLogout?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface NavigationItem {
@@ -136,15 +140,18 @@ export const Sidebar:
     role,
     onViewChange,
     onLogout,
+    collapsed = false,
+    onToggleCollapse,
   }) => {
     const navigationItems =
       ROLE_NAVIGATION[role];
 
     return (
-      <aside className={`fixed bottom-0 left-0 top-16 z-30 hidden w-64 border-r border-cyan-500/10 bg-white/95 px-4 py-6 backdrop-blur-xl dark:border-slate-800 dark:bg-[#080b12]/95 lg:block${role === 'ADMIN' ? ' lx-admin-sidebar' : ''}`}>
+      <aside className={`fixed bottom-0 left-0 top-16 z-30 hidden border-r border-cyan-500/10 bg-white/95 px-4 py-6 backdrop-blur-xl transition-[width,padding] duration-300 dark:border-slate-800 dark:bg-[#080b12]/95 lg:block ${collapsed ? 'w-[4.5rem] px-2' : 'w-64 px-4'}${role === 'ADMIN' ? ' lx-admin-sidebar' : ''}${collapsed ? ' lx-admin-sidebar-collapsed' : ''}`}>
         <div className="flex h-full flex-col justify-between">
           <div>
-            <div className="mb-6 px-3">
+            <div className={`mb-6 flex items-center ${collapsed ? 'justify-center px-0' : 'justify-between px-3'}`}>
+              {!collapsed && <div>
               <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-slate-400 dark:text-slate-600">
                 Navegación
               </p>
@@ -152,6 +159,10 @@ export const Sidebar:
               <h2 className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
                 {ROLE_LABELS[role]}
               </h2>
+              </div>}
+              {onToggleCollapse && <button type="button" onClick={onToggleCollapse} aria-label={collapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'} aria-expanded={!collapsed} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-cyan-500/10 hover:text-cyan-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-slate-400 dark:hover:text-cyan-300">
+                {collapsed ? <PanelLeftOpen className="h-5 w-5" aria-hidden="true" /> : <PanelLeftClose className="h-5 w-5" aria-hidden="true" />}
+              </button>}
             </div>
 
             <nav aria-label={role === 'ADMIN' ? 'Navegación de administración' : 'Navegación de usuario'} className="space-y-1.5">
@@ -174,6 +185,9 @@ export const Sidebar:
                         )
                       }
                       aria-current={isActive ? 'page' : undefined}
+                      title={collapsed ? item.label : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                      data-collapsed={collapsed || undefined}
                       className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-3 text-left text-sm font-semibold transition-all duration-300 ${
                         isActive
                           ? 'border border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-cyan-700 shadow-[0_8px_24px_rgba(6,182,212,0.08)] dark:text-cyan-300'
@@ -222,7 +236,7 @@ export const Sidebar:
                     <LogOut className="h-4 w-4" />
                   </span>
                 )}
-                <span>Cerrar sesión</span>
+                {!collapsed && <span>Cerrar sesión</span>}
               </button>
             </div>
           )}

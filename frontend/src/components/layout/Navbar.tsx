@@ -10,7 +10,7 @@ import { UserProfile } from '../../types';
 export interface NavbarProps {
   user?: UserProfile | null;
   theme: 'light' | 'dark';
-  onThemeToggle: () => void;
+  onThemeToggle: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   onLoginClick?: () => void;
   onLogoutClick?: () => void;
   onOpenAiChat?: () => void;

@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { ArrowUpRight, Bot, ShoppingBag, X } from 'lucide-react';
+import { ArrowUpRight, Bot, CreditCard, ShoppingBag, X } from 'lucide-react';
 import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 import { Playbook } from '../../types';
 import './editorial-syllabus.css';
@@ -10,6 +10,7 @@ interface EditorialSyllabusModalProps {
   playbook: Playbook | null;
   onAddToCart: (playbook: Playbook) => void;
   onAskAi: (playbook: Playbook) => void;
+  onEnroll?: (playbook: Playbook) => void;
 }
 
 const levelName: Record<Playbook['tier'], string> = {
@@ -24,6 +25,7 @@ export const EditorialSyllabusModal: React.FC<EditorialSyllabusModalProps> = ({
   playbook,
   onAddToCart,
   onAskAi,
+  onEnroll,
 }) => {
   const titleId = useId();
   const descriptionId = useId();
@@ -67,14 +69,37 @@ export const EditorialSyllabusModal: React.FC<EditorialSyllabusModalProps> = ({
             <p>{playbook.isDemo ? 'Este curso es una muestra visual y no está disponible para compra o inscripción.' : 'La malla de módulos todavía no está publicada en el catálogo. Esta vista muestra únicamente la información disponible del programa.'}</p>
           </section>
 
-          {!playbook.isDemo && <div className="lx-syllabus-actions">
-            <button type="button" className="lx-syllabus-primary" onClick={() => { onAddToCart(playbook); onClose(); }}>
-              <ShoppingBag aria-hidden="true" /> Añadir al carrito <ArrowUpRight aria-hidden="true" />
-            </button>
-            <button type="button" className="lx-syllabus-secondary" onClick={() => { onAskAi(playbook); onClose(); }}>
-              <Bot aria-hidden="true" /> Consultar sobre este programa
-            </button>
-          </div>}
+          {!playbook.isDemo && (
+            <div className="lx-syllabus-actions">
+              {onEnroll && (
+                <button
+                  type="button"
+                  className="lx-syllabus-primary"
+                  onClick={() => {
+                    onEnroll(playbook);
+                    onClose();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    background: '#009fd0',
+                    color: '#071827',
+                    fontWeight: 800,
+                  }}
+                >
+                  <CreditCard aria-hidden="true" style={{ width: '1.05rem', height: '1.05rem' }} /> Inscribirme / Matrícula Directa <ArrowUpRight aria-hidden="true" />
+                </button>
+              )}
+              <button type="button" className="lx-syllabus-secondary" onClick={() => { onAddToCart(playbook); onClose(); }}>
+                <ShoppingBag aria-hidden="true" /> Añadir al carrito <ArrowUpRight aria-hidden="true" />
+              </button>
+              <button type="button" className="lx-syllabus-secondary" onClick={() => { onAskAi(playbook); onClose(); }}>
+                <Bot aria-hidden="true" /> Consultar sobre este programa
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

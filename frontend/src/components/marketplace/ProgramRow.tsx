@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUpRight, BookOpen, Bot, Check, Clock3, ShoppingCart } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Bot, Check, Clock3, CreditCard, ShoppingCart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { getCourseCover } from '../../services/courseCatalog';
 import { Playbook } from '../../types';
@@ -9,6 +9,7 @@ interface ProgramRowProps {
   onPreviewSyllabus: (playbook: Playbook) => void;
   onAddToCart: (playbook: Playbook) => void;
   onAskAi: (playbook: Playbook) => void;
+  onEnroll?: (playbook: Playbook) => void;
 }
 
 export const ProgramRow: React.FC<ProgramRowProps> = ({
@@ -16,6 +17,7 @@ export const ProgramRow: React.FC<ProgramRowProps> = ({
   onPreviewSyllabus,
   onAddToCart,
   onAskAi,
+  onEnroll,
 }) => {
   const { cartItems } = useCart();
   const isInCart = cartItems.some((item) => item.programId === playbook.programId);
@@ -49,6 +51,30 @@ export const ProgramRow: React.FC<ProgramRowProps> = ({
         <button type="button" className="lx-program-primary" onClick={() => onPreviewSyllabus(playbook)}>
           <BookOpen aria-hidden="true" /> Ver sílabo <ArrowUpRight aria-hidden="true" />
         </button>
+        {onEnroll && !playbook.isDemo && (
+          <button
+            type="button"
+            className="lx-program-enroll-btn"
+            onClick={() => onEnroll(playbook)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              width: '100%',
+              minHeight: '2.5rem',
+              background: '#091d30',
+              color: '#ffffff',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              transition: 'all 150ms ease',
+            }}
+          >
+            <CreditCard aria-hidden="true" style={{ width: '0.9rem', height: '0.9rem', color: '#49c9e8' }} /> Inscribirme
+          </button>
+        )}
         <div className="lx-program-secondary">
           <button type="button" onClick={() => onAskAi(playbook)} disabled={playbook.isDemo}>
             <Bot aria-hidden="true" /> Consultar IA

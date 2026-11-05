@@ -639,3 +639,310 @@ html:not(.dark) .lx-admin-workspace {
   .lx-admin-request-details, .lx-admin-request-state { padding-left: 3.1rem; }
   .lx-user-row-actions .lx-user-edit { width: 2.5rem; min-width: 2.5rem; }
 }
+
+/* Editorial operating system: clear hierarchy, generous rhythm, restrained surfaces. */
+.lx-admin-page { gap: 1.75rem; }
+.lx-admin-pagehead { align-items: start; padding: 0 0 1.15rem; }
+.lx-admin-pagehead h1 { font-size: 2.8rem; letter-spacing: -0.035em; }
+.lx-admin-pagehead-copy > div > p { max-width: 70ch; margin-top: 0.65rem; font-size: 0.88rem; }
+.lx-admin-primary { min-height: 2.9rem; padding-inline: 1rem; }
+
+/* A 2×2 index gives the headline numbers room and avoids a compressed KPI ribbon. */
+.lx-admin-page .lx-admin-metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 0.7rem; background: var(--admin-line); }
+.lx-admin-page .lx-admin-metric-strip > *,
+.lx-admin-page .lx-admin-metric-strip > *:nth-child(n) { min-height: 6.15rem; border: 0 !important; border-radius: 0 !important; background: var(--admin-surface) !important; padding: 1rem 1.2rem !important; }
+.lx-admin-page .lx-admin-metric-strip > *:nth-child(2n) { border-left: 1px solid var(--admin-line) !important; }
+.lx-admin-page .lx-admin-metric-strip > *:nth-child(n + 3) { border-top: 1px solid var(--admin-line) !important; }
+.lx-admin-page .lx-admin-metric-strip > *:hover { background: var(--admin-surface-raised) !important; }
+.lx-admin-page .lx-admin-metric-copy > p:first-child { font-size: 0.76rem !important; }
+.lx-admin-page .lx-admin-metric-copy > p:last-child { font-size: 2.15rem !important; }
+
+/* Courses become a readable catalogue of large records instead of a tight tile wall. */
+.lx-admin-programs .lx-program-grid { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 0.65rem; }
+.lx-admin-programs .lx-program-card { min-height: 14.5rem; grid-template-columns: minmax(12rem, 0.62fr) minmax(0, 1.38fr); border-bottom: 1px solid var(--admin-line); }
+.lx-admin-programs .lx-program-artwork { min-height: 14.5rem; }
+.lx-admin-programs .lx-program-card-content { gap: 0.8rem; padding: 1.1rem 1.35rem; }
+.lx-admin-programs .lx-program-card h3 { min-height: 0; font-size: 1.8rem; line-height: 1.06; }
+.lx-admin-programs .lx-program-facts { max-width: 42rem; padding-block: 0.8rem; }
+.lx-admin-programs .lx-program-actions { padding-top: 0.1rem; }
+
+/* People and enrollment records share a quiet register, with more breathing room. */
+.lx-admin-users .lx-user-directory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; padding-top: 0.65rem; }
+.lx-admin-users .lx-user-directory-heading { grid-column: 1 / -1; padding-inline: 0.35rem; }
+.lx-admin-users .lx-user-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "identity actions" "email phone"; align-items: center; gap: 0.9rem 1rem; min-height: 8.4rem; border: 1px solid var(--admin-line); border-radius: 0.65rem; background: var(--admin-surface); padding: 1rem !important; transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease; }
+.lx-admin-users .lx-user-row:hover { border-color: color-mix(in srgb, var(--admin-cyan) 48%, var(--admin-line)); background: var(--admin-surface-raised); transform: translateY(-1px); }
+.lx-admin-users .lx-user-record { grid-area: identity; }
+.lx-admin-users .lx-user-contact:not(.lx-user-phone) { grid-area: email; }
+.lx-admin-users .lx-user-phone { grid-area: phone; }
+.lx-admin-users .lx-user-row-actions { grid-area: actions; }
+.lx-admin-users .lx-user-contact { display: grid; min-width: 0; gap: 0.25rem; border-top: 1px solid var(--admin-line); padding-top: 0.65rem; }
+.lx-admin-users .lx-user-contact > span { display: block; }
+.lx-admin-enrollment-flow { gap: 1.3rem; border: 0; }
+.lx-admin-flow-step { position: relative; border: 1px solid var(--admin-line) !important; border-radius: 0.65rem !important; background: var(--admin-surface) !important; padding: 1.4rem !important; box-shadow: inset 0 2px 0 color-mix(in srgb, var(--workflow-tone, var(--admin-cyan)) 70%, transparent); }
+.lx-admin-flow-step:first-child { border-right: 1px solid var(--admin-line) !important; }
+.lx-admin-assignment-register { border: 1px solid var(--admin-line); border-radius: 0.65rem; background: var(--admin-surface); padding: 1.25rem; }
+
+/* Request queue: separate each person as a case file and keep status/action aligned. */
+.lx-admin-queue-toolbar { border-radius: 0.65rem; }
+.lx-admin-request-list { display: grid; gap: 0.55rem; }
+.lx-admin-request-row { min-height: 6.7rem; border: 1px solid var(--admin-line) !important; border-radius: 0.65rem; background: var(--admin-surface); padding: 1rem !important; transition: border-color 160ms ease, background-color 160ms ease; }
+.lx-admin-request-row:hover { border-color: color-mix(in srgb, var(--admin-cyan) 45%, var(--admin-line)) !important; background: var(--admin-surface-raised) !important; }
+.lx-admin-request-person { gap: 1rem; }
+.lx-request-avatar { width: 3rem; height: 3rem; }
+.lx-request-person-copy h2 { font-size: 0.9rem !important; }
+.lx-admin-request-details { gap: 0.65rem; }
+
+@media (max-width: 760px) {
+  .lx-admin-pagehead h1 { font-size: 2.35rem; }
+  .lx-admin-programs .lx-program-card { grid-template-columns: minmax(7rem, 0.48fr) minmax(0, 1fr); }
+  .lx-admin-programs .lx-program-artwork { min-height: 12rem; }
+  .lx-admin-programs .lx-program-card-content { padding: 0.9rem; }
+  .lx-admin-programs .lx-program-card h3 { font-size: 1.45rem; }
+  .lx-admin-enrollment-flow { gap: 0.75rem; }
+  .lx-admin-flow-step:first-child { border-bottom: 1px solid var(--admin-line) !important; }
+  .lx-admin-users .lx-user-directory { grid-template-columns: 1fr; }
+  .lx-admin-users .lx-user-directory-heading { display: none; }
+  .lx-admin-users .lx-user-row { min-height: 7.8rem; }
+}
+
+@media (max-width: 480px) {
+  .lx-admin-page .lx-admin-metric-strip > *,
+  .lx-admin-page .lx-admin-metric-strip > *:nth-child(n) { min-height: 5.4rem; padding: 0.75rem !important; }
+  .lx-admin-programs .lx-program-card { grid-template-columns: 1fr; }
+  .lx-admin-programs .lx-program-artwork { min-height: 10rem; max-height: 12rem; }
+  .lx-admin-programs .lx-program-card-content { padding: 0.9rem 0; }
+  .lx-admin-users .lx-user-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "identity actions" "email email" "phone phone"; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.lx-admin-page, .lx-admin-accounting-content) *,
+  :is(.lx-admin-page, .lx-admin-accounting-content) *::before,
+  :is(.lx-admin-page, .lx-admin-accounting-content) *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* Accounting editorial view: the primary cash figure anchors the dashboard. */
+.lx-accounting-editorial {
+  --admin-canvas: #0a1320;
+  --admin-rail: #07101b;
+  --admin-surface: #101f30;
+  --admin-surface-raised: #16283a;
+  --admin-line: #26394b;
+  --admin-ink: #f3f6f8;
+  --admin-muted: #a7b6c3;
+  --admin-cyan: #42c6df;
+  --admin-orange: #e96d24;
+  max-width: 1920px;
+  margin-inline: auto;
+  padding: clamp(1rem, 2.8vw, 2.5rem) !important;
+  color: var(--admin-ink) !important;
+  background: var(--admin-canvas) !important;
+  font-family: Inter, system-ui, sans-serif;
+}
+html:not(.dark) .lx-accounting-editorial {
+  --admin-canvas: #f5f8fa;
+  --admin-rail: #ffffff;
+  --admin-surface: #ffffff;
+  --admin-surface-raised: #edf2f5;
+  --admin-line: #d9e2e8;
+  --admin-ink: #0b1d2d;
+  --admin-muted: #536779;
+  --admin-cyan: #007f9f;
+  --admin-orange: #b64c12;
+}
+.lx-accounting-editorial .lx-accounting-masthead {
+  position: relative;
+  overflow: hidden;
+  border: 0 !important;
+  border-left: 2px solid var(--admin-cyan) !important;
+  border-radius: 0 0.75rem 0.75rem 0 !important;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--admin-cyan) 10%, var(--admin-surface)) 0%, var(--admin-surface) 48%) !important;
+  padding: clamp(1.25rem, 2.2vw, 2rem) !important;
+  box-shadow: none !important;
+}
+.lx-accounting-editorial .lx-accounting-masthead h1 {
+  color: var(--admin-ink) !important;
+  font-family: "Barlow Condensed", "Arial Narrow", Inter, sans-serif !important;
+  font-size: 2.35rem !important;
+  font-weight: 750 !important;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+.lx-accounting-editorial .lx-accounting-masthead p { max-width: 62ch; color: var(--admin-muted) !important; font-size: 0.78rem !important; line-height: 1.5; }
+.lx-accounting-editorial .lx-accounting-identity { padding-left: 3.25rem; }
+.lx-accounting-editorial .lx-accounting-identity > span { border-radius: 0.3rem !important; font-size: 0.64rem !important; }
+.lx-accounting-editorial .lx-accounting-toolbar { max-width: 40rem; justify-content: flex-end; }
+.lx-accounting-editorial .lx-accounting-toolbar button {
+  min-height: 2.55rem;
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 0.4rem !important;
+  background: transparent !important;
+  color: var(--admin-ink) !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.lx-accounting-editorial .lx-accounting-toolbar button:hover { border-color: var(--admin-cyan) !important; background: color-mix(in srgb, var(--admin-cyan) 8%, var(--admin-surface)) !important; color: var(--admin-cyan) !important; transform: translateY(-1px); }
+.lx-accounting-editorial .lx-accounting-toolbar button:nth-child(3) { border-color: color-mix(in srgb, var(--admin-cyan) 52%, var(--admin-line)) !important; background: color-mix(in srgb, var(--admin-cyan) 12%, var(--admin-surface)) !important; color: var(--admin-cyan) !important; }
+.lx-accounting-editorial .lx-admin-accounting-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(7.4rem, auto));
+  gap: 1px !important;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: 0.75rem;
+  background: var(--admin-line);
+}
+.lx-accounting-editorial .lx-admin-accounting-metrics > div {
+  position: relative;
+  min-height: 7.4rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--admin-surface) !important;
+  padding: 1rem 1.1rem !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease;
+}
+.lx-accounting-editorial .lx-admin-accounting-metrics > div:hover { background: var(--admin-surface-raised) !important; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div::before { top: 0; left: 1.1rem; width: 2rem; height: 2px; background: var(--admin-cyan); }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 14.8rem;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--admin-cyan) 12%, var(--admin-surface)), var(--admin-surface) 64%) !important;
+  padding: 1.5rem !important;
+}
+.lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child::before { left: 1.5rem; width: 3.25rem; height: 3px; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child > div:last-child > div { color: var(--admin-cyan) !important; font-size: clamp(2.1rem, 3.6vw, 3.35rem) !important; line-height: 1; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:first-child { align-items: flex-start; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:first-child > div:first-child { gap: 0.25rem; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:first-child span:first-child { color: var(--admin-ink) !important; font-size: 0.76rem !important; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:first-child span:last-child { color: var(--admin-muted) !important; font-size: 0.65rem !important; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:last-child { margin-top: 0.8rem !important; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div > div:last-child > div { font-size: 1.45rem !important; letter-spacing: -0.03em; }
+.lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child > div:last-child { margin-top: 2rem !important; }
+.lx-accounting-editorial .lx-admin-accounting-tabs { gap: 0.35rem !important; border-bottom: 1px solid var(--admin-line) !important; padding-bottom: 0 !important; }
+.lx-accounting-editorial .lx-admin-accounting-tabs button { min-height: 3.2rem; border: 0 !important; border-radius: 0 !important; background: transparent !important; padding-inline: 0.95rem !important; color: var(--admin-muted) !important; }
+.lx-accounting-editorial .lx-admin-accounting-tabs button[aria-pressed="true"] { background: color-mix(in srgb, var(--admin-cyan) 8%, var(--admin-surface)) !important; color: var(--admin-cyan) !important; }
+.lx-accounting-editorial .lx-accounting-report-head { border-top: 1px solid var(--admin-line) !important; border-radius: 0 !important; background: transparent !important; padding: 1rem 0 !important; }
+.lx-accounting-editorial .lx-accounting-report-head h2 { color: var(--admin-ink) !important; font-family: "Barlow Condensed", "Arial Narrow", Inter, sans-serif !important; font-size: 1.55rem !important; }
+.lx-accounting-editorial :is(.lx-accounting-analytics-view, section.space-y-4, section.space-y-6) > div.rounded-2xl.border {
+  border-color: var(--admin-line) !important;
+  border-radius: 0.65rem !important;
+  background: var(--admin-surface) !important;
+  box-shadow: none !important;
+}
+.lx-accounting-editorial .lx-accounting-ratio-grid { gap: 1px !important; overflow: hidden; border: 1px solid var(--admin-line); border-radius: 0.6rem; background: var(--admin-line); }
+.lx-accounting-editorial .lx-accounting-ratio-grid > div { min-height: 7rem; border: 0 !important; border-radius: 0 !important; background: var(--admin-surface) !important; padding: 1rem !important; }
+.lx-accounting-editorial :is(.lx-accounting-analytics-view, section.space-y-4, section.space-y-6) table thead { background: var(--admin-surface-raised) !important; }
+.lx-accounting-editorial :is(.lx-accounting-analytics-view, section.space-y-4, section.space-y-6) table :is(th, td) { border-color: var(--admin-line) !important; }
+.lx-accounting-editorial :is(.lx-accounting-analytics-view, section.space-y-4, section.space-y-6) table tbody tr { transition: background-color 140ms ease; }
+.lx-accounting-editorial :is(.lx-accounting-analytics-view, section.space-y-4, section.space-y-6) table tbody tr:hover { background: color-mix(in srgb, var(--admin-cyan) 6%, transparent) !important; }
+.lx-accounting-editorial :is(input, select, textarea) { border-color: var(--admin-line) !important; border-radius: 0.4rem !important; background-color: var(--admin-rail) !important; color: var(--admin-ink) !important; }
+.lx-accounting-editorial :is(button, a, input, select):focus-visible { outline: 2px solid var(--admin-cyan); outline-offset: 2px; }
+
+@media (max-width: 1080px) {
+  .lx-accounting-editorial .lx-admin-accounting-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; grid-template-rows: auto; }
+  .lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child { grid-column: 1 / -1; grid-row: auto; min-height: 11rem; }
+}
+@media (max-width: 640px) {
+  .lx-accounting-editorial { padding: 1rem !important; }
+  .lx-accounting-editorial .lx-accounting-masthead { padding: 1.15rem !important; }
+  .lx-accounting-editorial .lx-accounting-masthead h1 { font-size: 1.85rem !important; }
+  .lx-accounting-editorial .lx-accounting-identity { padding-left: 0; }
+  .lx-accounting-editorial .lx-accounting-toolbar { justify-content: flex-start; }
+  .lx-accounting-editorial .lx-admin-accounting-metrics { grid-template-columns: 1fr !important; }
+  .lx-accounting-editorial .lx-admin-accounting-metrics > div:first-child { grid-column: auto; min-height: 9rem; }
+  .lx-accounting-editorial .lx-admin-accounting-metrics > div { min-height: 6rem; }
+  .lx-accounting-editorial .lx-accounting-ratio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Accounting option A: a concise overview, with detail views behind the tabs. */
+.lx-accounting-summary-shell {
+  --overview-bg: #0b1420;
+  --overview-surface: #101e2c;
+  --overview-raised: #152638;
+  --overview-line: #293b4a;
+  --overview-ink: #eef4f7;
+  --overview-muted: #9aabba;
+  --overview-accent: #43c6df;
+  color: var(--overview-ink) !important;
+  font-family: Inter, system-ui, sans-serif;
+}
+html:not(.dark) .lx-accounting-summary-shell {
+  --overview-bg: #f3f6f8;
+  --overview-surface: #ffffff;
+  --overview-raised: #f5f8fa;
+  --overview-line: #dbe3e8;
+  --overview-ink: #172938;
+  --overview-muted: #667988;
+  --overview-accent: #087f9b;
+  color: var(--overview-ink) !important;
+}
+.lx-accounting-summary-shell .lx-admin-accounting-content > header { margin-bottom: 1.35rem; }
+.lx-accounting-overview { display: grid; gap: 1.25rem; }
+.lx-accounting-overview-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding: 0.15rem 0 0.25rem; }
+.lx-accounting-overview-heading h2 { margin: 0.1rem 0 0; color: var(--overview-ink); font-family: "Barlow Condensed", "Arial Narrow", Inter, sans-serif; font-size: clamp(1.8rem, 2.8vw, 2.45rem); font-weight: 750; line-height: 1.05; letter-spacing: -0.02em; }
+.lx-accounting-eyebrow { margin: 0; color: var(--overview-accent); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.13em; }
+.lx-accounting-subtitle { margin: 0.35rem 0 0; color: var(--overview-muted); font-size: 0.8rem; }
+.lx-accounting-period { display: grid; gap: 0.3rem; min-width: 11.5rem; color: var(--overview-muted); font-size: 0.65rem; font-weight: 700; }
+.lx-accounting-period select { min-height: 2.55rem; border: 1px solid var(--overview-line); border-radius: 0.45rem; background: var(--overview-surface); padding: 0 0.75rem; color: var(--overview-ink); font: inherit; }
+.lx-accounting-overview-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(17rem, 0.9fr); align-items: start; gap: 1rem; }
+.lx-accounting-overview-main, .lx-accounting-overview-side { display: grid; min-width: 0; gap: 1rem; }
+.lx-accounting-total-card, .lx-accounting-overview-card { min-width: 0; border: 1px solid var(--overview-line); border-radius: 0.6rem; background: var(--overview-surface); }
+.lx-accounting-total-card { display: grid; gap: 1.25rem; padding: clamp(1.1rem, 2vw, 1.65rem); }
+.lx-accounting-label { display: block; color: var(--overview-muted); font-size: 0.78rem; font-weight: 650; }
+.lx-accounting-total-card > div:first-child > strong { display: block; margin-top: 0.55rem; color: var(--overview-accent); font-size: clamp(2.2rem, 4vw, 3.35rem); font-weight: 750; letter-spacing: -0.055em; line-height: 1; font-variant-numeric: tabular-nums; }
+.lx-accounting-caption { display: block; margin-top: 0.55rem; color: var(--overview-muted); font-size: 0.7rem; }
+.lx-accounting-tax-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--overview-line); padding-top: 1rem; }
+.lx-accounting-tax-strip > div { display: grid; gap: 0.35rem; min-width: 0; padding: 0 0.85rem; border-right: 1px solid var(--overview-line); }
+.lx-accounting-tax-strip > div:first-child { padding-left: 0; }
+.lx-accounting-tax-strip > div:last-child { padding-right: 0; border-right: 0; }
+.lx-accounting-tax-strip span, .lx-accounting-obligation span { color: var(--overview-muted); font-size: 0.66rem; }
+.lx-accounting-tax-strip strong { overflow: hidden; color: var(--overview-ink); font-size: clamp(0.83rem, 1.2vw, 1rem); font-weight: 700; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lx-accounting-overview-card { padding: 1rem 1.1rem; }
+.lx-accounting-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; }
+.lx-accounting-card-heading h3 { margin: 0; color: var(--overview-ink); font-size: 0.9rem; font-weight: 750; }
+.lx-accounting-card-heading p { margin: 0.2rem 0 0; color: var(--overview-muted); font-size: 0.67rem; }
+.lx-accounting-card-heading > svg { width: 1rem; height: 1rem; flex: 0 0 auto; color: var(--overview-accent); }
+.lx-accounting-card-heading button, .lx-accounting-obligations-card > button { display: inline-flex; align-items: center; gap: 0.35rem; border: 0; background: none; padding: 0.15rem 0; color: var(--overview-accent); font-size: 0.68rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.lx-accounting-card-heading button svg, .lx-accounting-obligations-card > button svg { width: 0.85rem; height: 0.85rem; }
+.lx-accounting-movements { display: grid; }
+.lx-accounting-movement { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; align-items: center; gap: 0.7rem; min-height: 3.75rem; border-top: 1px solid var(--overview-line); }
+.lx-accounting-movement-mark { display: grid; width: 1.8rem; height: 1.8rem; place-items: center; border-radius: 0.4rem; background: color-mix(in srgb, var(--overview-accent) 11%, transparent); color: var(--overview-accent); }
+.lx-accounting-movement-mark svg { width: 0.95rem; height: 0.95rem; }
+.lx-accounting-movement-name { display: grid; min-width: 0; gap: 0.18rem; }
+.lx-accounting-movement-name strong { overflow: hidden; color: var(--overview-ink); font-size: 0.72rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.lx-accounting-movement-name small { overflow: hidden; color: var(--overview-muted); font-size: 0.61rem; text-overflow: ellipsis; white-space: nowrap; }
+.lx-accounting-movement-amount { color: var(--overview-ink); font-size: 0.73rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lx-accounting-empty { margin: 1rem 0 0; border-top: 1px solid var(--overview-line); padding-top: 1rem; color: var(--overview-muted); font-size: 0.75rem; }
+.lx-accounting-obligation { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.55rem 0; border-top: 1px solid var(--overview-line); }
+.lx-accounting-obligation strong { color: var(--overview-ink); font-size: 0.76rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lx-accounting-obligation-total { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.25rem; border-top: 1px solid var(--overview-line); padding: 0.75rem 0 0.5rem; color: var(--overview-ink); font-size: 0.72rem; font-weight: 700; }
+.lx-accounting-obligation-total strong { font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.lx-accounting-obligations-card > button { margin-top: 0.55rem; }
+.lx-accounting-channel { display: grid; grid-template-columns: 0.45rem minmax(0, 1fr) auto; align-items: center; gap: 0.6rem; min-height: 3rem; border-top: 1px solid var(--overview-line); }
+.lx-accounting-channel-dot { width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--overview-accent); }
+.lx-accounting-channel-dot.blue { background: #5794e5; }
+.lx-accounting-channel-dot.green { background: #39b98a; }
+.lx-accounting-channel > span:nth-child(2) { display: grid; gap: 0.15rem; color: var(--overview-ink); font-size: 0.7rem; font-weight: 650; }
+.lx-accounting-channel small { color: var(--overview-muted); font-size: 0.6rem; font-weight: 450; }
+.lx-accounting-channel strong { color: var(--overview-ink); font-size: 0.68rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lx-accounting-summary-shell .lx-admin-accounting-tabs { margin-top: 0.2rem; border-bottom-color: var(--overview-line) !important; }
+.lx-accounting-summary-shell .lx-admin-accounting-tabs button { min-height: 2.8rem; font-size: 0.73rem; }
+.lx-accounting-summary-shell .lx-admin-accounting-tabs button[aria-pressed="true"] { color: var(--overview-accent) !important; }
+.lx-accounting-summary-shell .lx-accounting-report-head { border-radius: 0.55rem !important; }
+@media (max-width: 900px) {
+  .lx-accounting-overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .lx-accounting-overview-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .lx-accounting-overview-heading { align-items: stretch; flex-direction: column; }
+  .lx-accounting-period { min-width: 0; }
+  .lx-accounting-overview-side { grid-template-columns: minmax(0, 1fr); }
+  .lx-accounting-total-card { padding: 1rem; }
+  .lx-accounting-tax-strip > div { padding-inline: 0.55rem; }
+  .lx-accounting-tax-strip span { font-size: 0.59rem; }
+  .lx-accounting-tax-strip strong { font-size: 0.75rem; }
+}

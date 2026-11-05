@@ -205,17 +205,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <section className="lx-checkout-section" aria-labelledby="checkout-data-heading">
             <div className="lx-section-heading"><div><h3 id="checkout-data-heading">Tus datos</h3><p>Para emitir tu comprobante y habilitar el acceso.</p></div></div>
             <div className="lx-fields-grid">
-              <label className="lx-field lx-field-wide"><span>Nombre completo</span><input autoComplete="name" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} placeholder="Como aparecerá en tu certificado" /></label>
-              <label className="lx-field"><span>Correo electrónico</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" /></label>
-              <label className="lx-field"><span>Celular <small>Opcional</small></span><input type="tel" autoComplete="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="+51 999 999 999" /></label>
+              <label className="lx-field lx-field-wide"><span>Nombre completo</span><input autoComplete="name" value={nombreCompleto} onChange={(e) => setNombreCompleto(e.target.value)} placeholder="Ingresa tu nombre completo" /></label>
+              <label className="lx-field"><span>Correo electrónico</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Ingresa tu correo electrónico" /></label>
+              <label className="lx-field"><span>Celular <small>Opcional</small></span><input type="tel" autoComplete="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ingresa tu número de celular" /></label>
             </div>
             <fieldset className="lx-invoice-picker"><legend>Comprobante</legend><div className="lx-invoice-options">
               <button type="button" aria-pressed={tipoComprobante === 'BOLETA'} className={tipoComprobante === 'BOLETA' ? 'is-selected' : ''} onClick={() => { setTipoComprobante('BOLETA'); setNumeroDocumento(''); }}><span>Boleta</span><small>DNI</small></button>
               <button type="button" aria-pressed={tipoComprobante === 'FACTURA'} className={tipoComprobante === 'FACTURA' ? 'is-selected' : ''} onClick={() => { setTipoComprobante('FACTURA'); setNumeroDocumento(''); }}><span>Factura</span><small>RUC</small></button>
             </div></fieldset>
             <div className="lx-fields-grid lx-document-fields">
-              <label className="lx-field"><span>{tipoComprobante === 'BOLETA' ? 'DNI' : 'RUC'}</span><input inputMode="numeric" value={numeroDocumento} onChange={handleDocumentoChange} placeholder={tipoComprobante === 'BOLETA' ? '8 dígitos' : '11 dígitos'} /></label>
-              {tipoComprobante === 'FACTURA' && <label className="lx-field"><span>Razón social</span><input value={razonSocial} onChange={(e) => setRazonSocial(e.target.value)} placeholder="Nombre de la empresa" /></label>}
+              <label className="lx-field"><span>{tipoComprobante === 'BOLETA' ? 'DNI' : 'RUC'}</span><input inputMode="numeric" value={numeroDocumento} onChange={handleDocumentoChange} placeholder={`Ingresa tu ${tipoComprobante === 'BOLETA' ? 'DNI' : 'RUC'}`} /></label>
+              {tipoComprobante === 'FACTURA' && <label className="lx-field"><span>Razón social</span><input value={razonSocial} onChange={(e) => setRazonSocial(e.target.value)} placeholder="Ingresa la razón social" /></label>}
             </div>
           </section>
           <section className="lx-checkout-section lx-payment-section" aria-labelledby="checkout-payment-heading">

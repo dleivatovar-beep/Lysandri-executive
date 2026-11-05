@@ -154,7 +154,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     autoComplete="name"
                     value={nombreCompleto}
                     onChange={(e) => setNombreCompleto(e.target.value)}
-                    placeholder="Ej. Ing. Carlos Mendoza"
+                    placeholder="Ingresa tu nombre completo"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -167,7 +167,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="carlos@empresa.com"
+                    placeholder="Ingresa tu correo electrónico"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -182,7 +182,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     autoComplete="tel"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="+51 999 888 777"
+                    placeholder="Ingresa tu número de celular"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -195,7 +195,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     autoComplete="organization"
                     value={empresa}
                     onChange={(e) => setEmpresa(e.target.value)}
-                    placeholder="Ej. Banco / Telco"
+                    placeholder="Ingresa el nombre de tu empresa"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -207,7 +207,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                     autoComplete="organization-title"
                     value={cargo}
                     onChange={(e) => setCargo(e.target.value)}
-                    placeholder="CTO / Lead Arch."
+                    placeholder="Ingresa tu cargo"
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                   />
                 </div>
@@ -220,7 +220,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                   rows={3}
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
-                  placeholder="Número estimado de participantes, objetivos estratégicos o fechas tentativas..."
+                  placeholder="Cuéntanos qué necesita tu equipo"
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
                 />
               </div>

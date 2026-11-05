@@ -297,8 +297,8 @@ export const LoginView:
               <h2 className="lx-login-heading mb-2">
                 {activeTab ===
                 'login'
-                  ? 'Accede a tu cuenta.'
-                  : 'Hablemos de formación.'}
+                  ? 'Accede a tu cuenta'
+                  : 'Hablemos de formación'}
               </h2>
 
               <p>
@@ -373,7 +373,7 @@ export const LoginView:
                     label="Correo electrónico"
                     type="email"
                     value={email}
-                    placeholder="ejemplo@empresa.com"
+                    placeholder="Ingresa tu correo electrónico"
                     autoComplete="email"
                     onChange={
                       setEmail
@@ -427,7 +427,7 @@ export const LoginView:
                     value={
                       fullName
                     }
-                    placeholder="Ej. Juan Pérez"
+                    placeholder="Ingresa tu nombre completo"
                     autoComplete="name"
                     onChange={
                       setFullName
@@ -441,7 +441,7 @@ export const LoginView:
                     value={
                       requestEmail
                     }
-                    placeholder="correo@empresa.com"
+                    placeholder="Ingresa tu correo electrónico"
                     autoComplete="email"
                     onChange={
                       setRequestEmail
@@ -453,7 +453,7 @@ export const LoginView:
                     label="Teléfono"
                     type="tel"
                     value={phone}
-                    placeholder="+51 999 999 999"
+                    placeholder="Ingresa tu número de teléfono"
                     autoComplete="tel"
                     onChange={
                       setPhone

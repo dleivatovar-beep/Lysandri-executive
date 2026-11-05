@@ -3,6 +3,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 
 import {
   Bot,
@@ -67,7 +68,7 @@ type Theme = 'light' | 'dark';
 
 interface AppLayoutProps {
   theme: Theme;
-  onThemeToggle: () => void;
+  onThemeToggle: (event?: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 interface EmptySectionContent {
@@ -666,6 +667,7 @@ const ProtectedLayout:
       user,
       logout,
     } = useAuth();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     useEffect(() => {
       if (user?.rol === 'ADMIN') {
@@ -743,9 +745,11 @@ const ProtectedLayout:
           onLogout={
             handleLogout
           }
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
         />
 
-        <div className={`transition-[padding] duration-300 lg:pl-64${user.rol === 'ADMIN' ? ' lx-admin-main' : ''}`}>
+        <div className={`transition-[padding] duration-300 ${sidebarCollapsed ? 'lg:pl-[4.5rem]' : 'lg:pl-64'}${user.rol === 'ADMIN' ? ' lx-admin-main' : ''}${sidebarCollapsed ? ' lx-admin-main-collapsed' : ''}`}>
           <main className="min-h-[calc(100vh-4rem)]">
             <div className="mx-auto w-full max-w-[1920px] px-4 py-7 sm:px-6 lg:px-7">
               <Outlet />
@@ -856,16 +860,42 @@ const App: React.FC =
       AppLayoutProps = {
         theme,
 
-        onThemeToggle: () => {
-          setTheme(
-            (
-              currentTheme,
-            ) =>
-              currentTheme ===
-              'dark'
-                ? 'light'
-                : 'dark',
-          );
+        onThemeToggle: (event) => {
+          const nextTheme = theme === 'dark' ? 'light' : 'dark';
+          const applyTheme = () => {
+            document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+            flushSync(() => setTheme(nextTheme));
+          };
+          const transitionDocument = document as Document & {
+            startViewTransition?: (update: () => void) => { ready: Promise<void> };
+          };
+
+          if (!transitionDocument.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            applyTheme();
+            return;
+          }
+
+          const trigger = event?.currentTarget.getBoundingClientRect();
+          const hasPointerPosition = Boolean(event && event.detail > 0);
+          const x = hasPointerPosition ? event!.clientX : trigger ? trigger.left + trigger.width / 2 : window.innerWidth - 28;
+          const y = hasPointerPosition ? event!.clientY : trigger ? trigger.top + trigger.height / 2 : 28;
+          const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+          try {
+            const transition = transitionDocument.startViewTransition(applyTheme);
+            void transition.ready.then(() => {
+              document.documentElement.animate(
+                { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+                {
+                  duration: 520,
+                  easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                  pseudoElement: '::view-transition-new(root)',
+                },
+              );
+            }).catch(() => undefined);
+          } catch {
+            applyTheme();
+          }
         },
       };
 

@@ -17,6 +17,7 @@ export interface DirectCheckoutPayload {
   tipoComprobante: 'BOLETA' | 'FACTURA';
   numeroDocumento: string;
   nombreFacturacion?: string;
+  metodoPago?: 'IZIPAY' | 'TARJETA' | 'STRIPE' | 'YAPE' | 'PLIN' | 'TRANSFERENCIA' | string;
 }
 
 export interface RagCitation {

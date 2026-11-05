@@ -31,8 +31,8 @@ import {
   PieChart,
   Percent,
   Activity,
+  ArrowRight,
   ArrowUpRight,
-  Briefcase,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -89,7 +89,7 @@ export const AccountingView: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [dataError, setDataError] = useState<string>('');
 
-  const [activeTab, setActiveTab] = useState<'graficos' | 'comprobantes' | 'liquidacion' | 'medios_pago'>('graficos');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'comprobantes' | 'liquidacion' | 'medios_pago'>('resumen');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTipo, setSelectedTipo] = useState<'TODOS' | 'BOLETA' | 'FACTURA'>('TODOS');
   const [selectedEstado, setSelectedEstado] = useState<'TODOS' | 'EMITIDO' | 'ANULADO'>('TODOS');
@@ -698,66 +698,55 @@ export const AccountingView: React.FC = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="lx-admin-account-gate flex min-h-[calc(100vh-4rem)] w-full overflow-y-auto bg-white dark:bg-[#0a0d14]">
+      <div className="lx-login-page lx-admin-account-gate flex min-h-[calc(100vh-4.5rem)] w-full overflow-y-auto">
         {/* Sección izquierda visual con el Logo animado de Lysandri */}
-        <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden border-r border-slate-200 bg-slate-900 dark:border-slate-800 dark:bg-[#07090e] lg:flex">
-          <div className="pointer-events-none absolute left-1/4 top-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl" />
-
-          <div className="relative z-10 flex w-full flex-col items-center justify-center px-12 transition-transform duration-700 hover:scale-105">
+        <div className="lx-login-visual relative hidden w-1/2 flex-col items-center justify-center overflow-hidden lg:flex">
+          <div className="lx-login-visual-content relative z-10 flex w-full flex-col items-center justify-center px-12">
             <img
               src={animatedLogo}
               alt="Lysandri Executive"
-              className="mb-6 h-auto w-full max-h-[35vh] max-w-[22rem] object-contain drop-shadow-[0_0_35px_rgba(34,211,238,0.15)] xl:max-w-[28rem]"
+              className="lx-login-animated-logo"
             />
 
-            <div className="flex h-12 items-center justify-center">
-              <h1 className="text-center text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
+            <div className="lx-login-motto-wrap flex items-center justify-center">
+              <h1 className="lx-login-motto text-center">
                 {typedText}
               </h1>
 
               {isTyping && (
-                <span className="ml-2 inline-block h-8 w-1.5 animate-pulse rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)] xl:h-10" />
+                <span className="lx-login-caret ml-2 inline-block" />
               )}
             </div>
           </div>
 
-          <div className="absolute bottom-6 left-12 z-10 font-mono text-[10px] uppercase tracking-widest text-slate-500">
-            © 2026 Lysandri Global Tech · Plataforma Ejecutiva & Contable
-          </div>
         </div>
 
         {/* Sección derecha - Formulario interactivo de Inicio de Sesión */}
-        <div className="flex w-full items-center justify-center overflow-y-auto bg-white px-6 py-8 dark:bg-[#0a0d14] sm:px-8 md:px-12 lg:w-1/2">
-          <div className="w-full max-w-md my-auto">
+        <div className="lx-login-panel flex w-full items-center justify-center overflow-y-auto px-6 py-8 sm:px-8 md:px-12 lg:w-1/2">
+          <div className="lx-login-form-wrap w-full my-auto">
             {/* Logo visible en pantallas pequeñas o medianas si el panel izquierdo está oculto */}
-            <div className="mb-6 flex justify-center lg:hidden">
+            <div className="lx-login-mobile-brand lg:hidden">
               <img
                 src={companyLogo}
                 alt="Lysandri Executive"
-                className="h-9 w-auto object-contain"
               />
+              <span>Lysandri<small>Executive</small></span>
             </div>
 
             {/* Encabezado contextual */}
-            <div className="mb-6">
-              <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-                <Briefcase className="h-3 w-3" />
-                Acceso Corporativo
-              </span>
-
-              <h2 className="mb-2 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            <div className="lx-login-intro">
+              <h2 className="lx-login-heading">
                 Bienvenido de nuevo
               </h2>
 
-              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 sm:text-sm">
-                Ingresa tus credenciales autorizadas para acceder al portal de gestión contable y facturación.
+              <p>
+                Ingresa tus credenciales para acceder al portal de gestión contable y facturación.
               </p>
             </div>
 
             {/* Mensajes de Alerta */}
             {authError && (
-              <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs text-rose-600 dark:text-rose-300 animate-fadeIn">
+              <div role="alert" className="lx-login-alert is-error mb-5 flex items-start gap-3 px-4 py-3 text-xs animate-fadeIn">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
                 <span>{authError}</span>
               </div>
@@ -766,11 +755,10 @@ export const AccountingView: React.FC = () => {
 
 
             {/* Formulario de Inicio de Sesión */}
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
+            <form onSubmit={handleLoginSubmit} className="lx-login-form space-y-4">
+              <div className="lx-login-field">
                 <label
                   htmlFor="loginUsername"
-                  className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
                   Usuario
                 </label>
@@ -784,15 +772,14 @@ export const AccountingView: React.FC = () => {
                     autoComplete="username"
                     required
                     onChange={(e) => setUsername(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-xs font-mono text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-cyan-500/60 focus:bg-white focus:ring-2 focus:ring-cyan-500/15 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100"
+                    className="h-12 w-full pl-10 pr-4 text-sm outline-none"
                   />
                 </div>
               </div>
 
-              <div>
+              <div className="lx-login-field">
                 <label
                   htmlFor="loginPassword"
-                  className="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300"
                 >
                   Contraseña
                 </label>
@@ -806,12 +793,12 @@ export const AccountingView: React.FC = () => {
                     autoComplete="current-password"
                     required
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-11 text-xs text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-cyan-500/60 focus:bg-white focus:ring-2 focus:ring-cyan-500/15 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-100"
+                    className="h-12 w-full pl-10 pr-11 text-sm outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-cyan-500"
                     title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -819,18 +806,18 @@ export const AccountingView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="lx-login-subtle flex items-center justify-between pt-1">
                 <div className="flex items-center">
                   <input
                     id="remember"
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 bg-transparent text-cyan-500 focus:ring-cyan-500/20 dark:border-slate-700"
+                    className="lx-login-remember h-4 w-4 bg-transparent focus:ring-cyan-500/20"
                   />
                   <label
                     htmlFor="remember"
-                    className="ml-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400"
+                    className="ml-2 cursor-pointer text-xs"
                   >
                     Mantener sesión iniciada
                   </label>
@@ -839,7 +826,7 @@ export const AccountingView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => alert('Por favor contacte al administrador de sistemas para restablecer sus credenciales.')}
-                  className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-500 hover:underline dark:text-cyan-400"
+                  className="lx-login-link text-[11px] font-medium"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -848,7 +835,7 @@ export const AccountingView: React.FC = () => {
               <button
                 type="submit"
                 disabled={isVerifying}
-                className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-sm font-bold text-white shadow-[0_8px_28px_rgba(6,182,212,0.20)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_36px_rgba(79,70,229,0.28)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+                className="lx-login-submit mt-6 flex h-12 w-full items-center justify-center gap-2 text-sm font-bold disabled:cursor-not-allowed"
               >
                 {isVerifying && (
                   <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -865,7 +852,7 @@ export const AccountingView: React.FC = () => {
   }
 
   return (
-    <div className="lx-admin-accounting-content min-h-screen bg-slate-50 text-slate-800 dark:bg-[#070b14] dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors duration-300">
+    <div className="lx-admin-accounting-content lx-accounting-summary-shell min-h-screen bg-slate-50 text-slate-800 dark:bg-[#070b14] dark:text-slate-100 p-4 sm:p-6 lg:p-8 space-y-6 transition-colors duration-300">
       {/* Executive Header Toolbar */}
       <header className="lx-accounting-masthead rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl relative overflow-hidden transition-colors">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -991,143 +978,99 @@ export const AccountingView: React.FC = () => {
         </div>
       )}
 
-      {/* 5 Financial & Fiscal KPIs */}
-      <section className="lx-admin-accounting-metrics grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5" aria-label="Resumen financiero">
-        {/* KPI 1 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
-          <div className="flex items-center justify-between">
+      {activeTab === 'resumen' && (
+        <section className="lx-accounting-overview" aria-label="Resumen financiero">
+          <div className="lx-accounting-overview-heading">
             <div>
-              <span className="text-xs font-bold text-slate-800 dark:text-white block">
-                Total Facturado en Caja
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Ventas Brutas (Base + IGV)</span>
+              <p className="lx-accounting-eyebrow">CENTRO FINANCIERO</p>
+              <h2>Resumen financiero</h2>
+              <p className="lx-accounting-subtitle">Consulta tus ingresos, obligaciones y últimos movimientos en un solo lugar.</p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <DollarSign className="h-4 w-4" />
-            </div>
+            <label className="lx-accounting-period">
+              <span>Periodo</span>
+              <select value={selectedPeriodo} onChange={(e) => setSelectedPeriodo(e.target.value)} aria-label="Filtrar por periodo">
+                <option value="TODOS">Todos los periodos</option>
+                {periodosDisponibles.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
           </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.total)}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <span>{metricasCalculadas.totalFacturas} Facturas</span>
-              <span>•</span>
-              <span>{metricasCalculadas.totalBoletas} Boletas</span>
-            </p>
-          </div>
-        </div>
 
-        {/* KPI 2 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-slate-800 dark:text-white block">
-                Ingreso Real Empresa
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Base Imponible (Casilla 100)</span>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-cyan-700 dark:text-cyan-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.baseImponible)}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-              Monto libre de impuestos de SUNAT
-            </p>
-          </div>
-        </div>
+          <div className="lx-accounting-overview-grid">
+            <div className="lx-accounting-overview-main">
+              <article className="lx-accounting-total-card">
+                <div>
+                  <span className="lx-accounting-label">Total facturado</span>
+                  <strong>{formatSoles(metricasCalculadas.total)}</strong>
+                  <span className="lx-accounting-caption">{ventasFiltradas.length} comprobantes en el periodo seleccionado</span>
+                </div>
+                <div className="lx-accounting-tax-strip">
+                  <div><span>Base imponible</span><strong>{formatSoles(metricasCalculadas.baseImponible)}</strong></div>
+                  <div><span>IGV recaudado</span><strong>{formatSoles(metricasCalculadas.igv)}</strong></div>
+                  <div><span>Detracciones</span><strong>{formatSoles(metricasCalculadas.detracciones)}</strong></div>
+                </div>
+              </article>
 
-        {/* KPI 3 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-slate-800 dark:text-white block">
-                IGV a Pagar a SUNAT
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Débito Fiscal 18% (Casilla 101)</span>
+              <article className="lx-accounting-overview-card lx-accounting-recent-card">
+                <div className="lx-accounting-card-heading">
+                  <div><h3>Movimientos recientes</h3><p>Últimos comprobantes emitidos</p></div>
+                  <button type="button" onClick={() => setActiveTab('comprobantes')}>Ver comprobantes <ArrowRight aria-hidden="true" /></button>
+                </div>
+                {ventasFiltradas.length ? (
+                  <div className="lx-accounting-movements">
+                    {[...ventasFiltradas].sort((a, b) => new Date(b.fechaEmision || b.fechaOrden).getTime() - new Date(a.fechaEmision || a.fechaOrden).getTime()).slice(0, 4).map((venta) => (
+                      <div className="lx-accounting-movement" key={`${venta.idOrden}-${venta.serieNumero}`}>
+                        <span className="lx-accounting-movement-mark"><Receipt aria-hidden="true" /></span>
+                        <span className="lx-accounting-movement-name"><strong>{venta.cliente || 'Cliente'}</strong><small>{venta.serieNumero || venta.codigoOrden} · {formatFecha(venta.fechaEmision || venta.fechaOrden)}</small></span>
+                        <span className="lx-accounting-movement-amount">{formatSoles(venta.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="lx-accounting-empty">No hay comprobantes para el periodo seleccionado.</p>}
+              </article>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Receipt className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.igv)}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-              18% recaudado en cada venta
-            </p>
-          </div>
-        </div>
 
-        {/* KPI 4 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 block">
-                Fondo en Banco Nación
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Detracciones SPOT (12%)</span>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Landmark className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.detracciones)}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-              Cta. Cte. BN N° 00-068-192837
-            </p>
-          </div>
-        </div>
+            <aside className="lx-accounting-overview-side">
+              <article className="lx-accounting-overview-card lx-accounting-obligations-card">
+                <div className="lx-accounting-card-heading"><div><h3>Obligaciones estimadas</h3><p>Según ventas del periodo</p></div><Calculator aria-hidden="true" /></div>
+                <div className="lx-accounting-obligation"><span>IGV</span><strong>{formatSoles(metricasCalculadas.igv)}</strong></div>
+                <div className="lx-accounting-obligation"><span>Renta MYPE</span><strong>{formatSoles(metricasCalculadas.rentaMype)}</strong></div>
+                <div className="lx-accounting-obligation-total"><span>Total estimado</span><strong>{formatSoles(metricasCalculadas.igv + metricasCalculadas.rentaMype)}</strong></div>
+                <button type="button" onClick={() => setActiveTab('liquidacion')}>Abrir liquidación <ArrowRight aria-hidden="true" /></button>
+              </article>
 
-        {/* KPI 5 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-lg relative overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 block">
-                Pago a Cuenta Renta
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Renta MYPE 1.0% (Casilla 302)</span>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Calculator className="h-4 w-4" />
-            </div>
+              <article className="lx-accounting-overview-card lx-accounting-channels-card">
+                <div className="lx-accounting-card-heading"><div><h3>Ingresos por canal</h3><p>Recaudación registrada</p></div><Landmark aria-hidden="true" /></div>
+                {[
+                  { name: 'Tarjeta · Stripe', total: metricasCalculadas.stripeGross, count: metricasCalculadas.countStripe, color: 'cyan' },
+                  { name: 'BCP', total: metricasCalculadas.bcpGross, count: metricasCalculadas.countBcp, color: 'blue' },
+                  { name: 'Interbank', total: metricasCalculadas.interbankGross, count: metricasCalculadas.countInterbank, color: 'green' },
+                ].map((canal) => (
+                  <div className="lx-accounting-channel" key={canal.name}>
+                    <span className={`lx-accounting-channel-dot ${canal.color}`} />
+                    <span>{canal.name}<small>{canal.count} operaciones</small></span>
+                    <strong>{formatSoles(canal.total)}</strong>
+                  </div>
+                ))}
+              </article>
+            </aside>
           </div>
-          <div className="mt-3">
-            <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-300 tracking-tight font-mono">
-              {formatSoles(metricasCalculadas.rentaMype)}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-              Tasa reducida bajo D.L. 1269
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Tabs Navigation */}
       <div className="lx-admin-accounting-tabs lx-accounting-tabs flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2" role="group" aria-label="Vistas contables">
         <button
           type="button"
-          aria-pressed={activeTab === 'graficos'}
-          onClick={() => setActiveTab('graficos')}
+          aria-pressed={activeTab === 'resumen'}
+          onClick={() => setActiveTab('resumen')}
           className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all ${
-            activeTab === 'graficos'
+            activeTab === 'resumen'
               ? 'bg-slate-100 text-slate-900 border border-slate-300 shadow-sm dark:bg-gradient-to-r dark:from-cyan-950 dark:via-slate-800 dark:to-indigo-950 dark:text-white dark:border-cyan-500/40 dark:shadow-lg dark:shadow-cyan-500/10'
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-900'
           }`}
         >
           <AccountingGlyph name="flow" className="h-[1.1rem] w-[1.1rem] text-cyan-600 dark:text-cyan-400" />
-          <span>Flujo financiero</span>
-          <span className="rounded-md bg-cyan-100 px-2 py-0.5 text-[10px] font-mono text-cyan-800 border border-cyan-200 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-500/30">
-            En Vivo
-          </span>
+          <span>Resumen</span>
         </button>
 
         <button
@@ -1182,8 +1125,8 @@ export const AccountingView: React.FC = () => {
         </button>
       </div>
 
-      {/* TAB: GRÁFICOS Y ANÁLISIS VISUAL */}
-      {activeTab === 'graficos' && (
+      {/* TAB: RESUMEN FINANCIERO Y ANÁLISIS */}
+      {activeTab === 'resumen' && (
         <section className="lx-accounting-analytics-view space-y-6">
           {/* Header de Análisis Gráfico */}
           <div className="lx-accounting-report-head rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0d1322] dark:shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors">
@@ -1191,36 +1134,14 @@ export const AccountingView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                 <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Panel de Métricas Visuales y Flujo Financiero
+                  Análisis del periodo
                 </h2>
-                <span className="rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-mono text-emerald-800 dark:bg-emerald-950/80 dark:border-emerald-500/30 dark:text-emerald-300 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Actualizado en Tiempo Real
-                </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Visualización ejecutiva de facturación acumulada, recaudación multi-canal y compensación tributaria SUNAT
+                Evolución de ingresos y distribución de comprobantes del periodo seleccionado.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-mono">
-                <Calendar className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" />
-                <span>Periodo:</span>
-              </span>
-              <select
-                value={selectedPeriodo}
-                onChange={(e) => setSelectedPeriodo(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-mono text-slate-800 focus:border-cyan-400 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
-              >
-                <option value="TODOS">Todos los periodos</option>
-                {periodosDisponibles.map((p) => (
-                  <option key={p} value={p}>
-                    {p} (Oct 2026)
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Fila de Ratios Financieros Ejecutivos */}

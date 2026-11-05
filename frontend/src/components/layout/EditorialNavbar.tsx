@@ -9,7 +9,7 @@ import './editorial-navbar.css';
 interface EditorialNavbarProps {
   user: UserProfile | null;
   theme: 'light' | 'dark';
-  onThemeToggle: () => void;
+  onThemeToggle: (event?: React.MouseEvent<HTMLButtonElement>) => void;
   onLogoutClick: () => void;
 }
 

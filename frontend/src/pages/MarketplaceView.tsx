@@ -14,13 +14,13 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import architectureImage from '../assets/hero-arquitectura-editorial.png';
-import { CategoryFilter } from '../components/marketplace/CategoryFilter';
 import { ProgramRow } from '../components/marketplace/ProgramRow';
 import { SearchBar } from '../components/marketplace/SearchBar';
 import { CartDrawer } from '../components/marketplace/CartDrawer';
 import { EditorialSyllabusModal } from '../components/marketplace/EditorialSyllabusModal';
 import { ExecutiveChatDrawer } from '../components/chat/ExecutiveChatDrawer';
 import { CorporateInCompanyModal } from '../components/marketplace/CorporateInCompanyModal';
+import { CheckoutModal } from '../components/marketplace/CheckoutModal';
 import { Category, Playbook } from '../types';
 import { useCart } from '../context/CartContext';
 import './marketplace-editorial.css';
@@ -36,7 +36,7 @@ interface MarketplaceViewProps {
 }
 
 const TIERS = [
-  { id: 'ALL', label: 'Todos los niveles' },
+  { id: 'ALL', label: 'Todos' },
   { id: 'ENTERPRISE', label: 'Enterprise' },
   { id: 'ADVANCED', label: 'Advanced' },
   { id: 'ESSENTIAL', label: 'Essential' },
@@ -44,13 +44,12 @@ const TIERS = [
 
 export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   playbooks,
-  categories,
   isLoading = false,
   errorMessage = '',
   onRetry,
+  onSelectPlaybook,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [featuredDirection, setFeaturedDirection] = useState<'next' | 'previous'>('next');
@@ -58,6 +57,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [isCorporateOpen, setIsCorporateOpen] = useState(false);
   const [selectedForSyllabus, setSelectedForSyllabus] = useState<Playbook | null>(null);
   const [selectedForAi, setSelectedForAi] = useState<Playbook | null>(null);
+  const [selectedForCheckout, setSelectedForCheckout] = useState<Playbook | null>(null);
 
   const { cartItems, addToCart, removeFromCart, clearCart, isCartOpen, setIsCartOpen } = useCart();
   const featured = playbooks.length > 0 ? playbooks[featuredIndex % playbooks.length] : null;
@@ -65,20 +65,24 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const filteredPlaybooks = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return playbooks.filter((playbook) => {
-      const matchesCategory = selectedCategory === 'ALL' || playbook.category === selectedCategory;
       const matchesTier = selectedTier === 'ALL' || playbook.tier === selectedTier;
       const matchesSearch = !query ||
         playbook.title.toLowerCase().includes(query) ||
         playbook.description.toLowerCase().includes(query) ||
         playbook.tags.some((tag) => tag.toLowerCase().includes(query)) ||
         Boolean(playbook.instructor?.toLowerCase().includes(query));
-      return matchesCategory && matchesTier && matchesSearch;
+      return matchesTier && matchesSearch;
     });
-  }, [playbooks, searchQuery, selectedCategory, selectedTier]);
+  }, [playbooks, searchQuery, selectedTier]);
 
   const askAi = (playbook: Playbook) => {
     setSelectedForAi(playbook);
     setIsAiOpen(true);
+  };
+
+  const handleEnroll = (playbook: Playbook) => {
+    if (onSelectPlaybook) void onSelectPlaybook(playbook);
+    setSelectedForCheckout(playbook);
   };
 
   const scrollToCatalog = () => document.getElementById('catalogo-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -95,7 +99,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <img src={architectureImage} alt="" />
         </div>
         <div className="lx-hero-copy">
-          <h1 id="lx-hero-title">Programas para <span>avanzar con propósito.</span></h1>
+          <h1 id="lx-hero-title">Programas para <span>avanzar con propósito</span></h1>
           <p>Explora la oferta académica, compara contenidos y encuentra el programa que mejor se adapta a tus objetivos profesionales.</p>
           <button type="button" className="lx-hero-cta" onClick={scrollToCatalog}>
             Explorar programas <ArrowRight aria-hidden="true" />
@@ -138,12 +142,11 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         <div className="lx-catalog-heading">
           <div>
             <h2 id="lx-catalog-title">Explora los programas</h2>
-            <p>Busca por tema, especialidad o nivel y revisa el sílabo antes de decidir.</p>
+            <p>Encuentra un programa por nombre o nivel y revisa su sílabo antes de decidir.</p>
           </div>
-          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} resultsCount={filteredPlaybooks.length} />
+          <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
         <div className="lx-catalog-filters">
-          <CategoryFilter categories={categories} selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
           <div className="lx-tier-filter" aria-label="Filtrar por nivel">
             {TIERS.map((tier) => (
               <button key={tier.id} type="button" aria-pressed={selectedTier === tier.id} onClick={() => setSelectedTier(tier.id)}>
@@ -165,12 +168,12 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <div className="lx-catalog-state">
             <BookOpen aria-hidden="true" />
             <div><strong>No hay programas con esos filtros</strong><p>Prueba otra búsqueda o vuelve a ver toda la oferta.</p></div>
-            <button type="button" onClick={() => { setSearchQuery(''); setSelectedCategory('ALL'); setSelectedTier('ALL'); }}>Restablecer filtros</button>
+            <button type="button" onClick={() => { setSearchQuery(''); setSelectedTier('ALL'); }}>Restablecer filtros</button>
           </div>
         ) : (
           <div className="lx-program-list">
             {filteredPlaybooks.map((playbook) => (
-              <ProgramRow key={playbook.id} playbook={playbook} onPreviewSyllabus={setSelectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} />
+              <ProgramRow key={playbook.id} playbook={playbook} onPreviewSyllabus={setSelectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} onEnroll={handleEnroll} />
             ))}
           </div>
         )}
@@ -178,7 +181,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
       <section id="metodologia-section" className="lx-method" aria-labelledby="lx-method-title">
         <div className="lx-method-heading">
-          <h2 id="lx-method-title">Formación pensada para aplicar.</h2>
+          <h2 id="lx-method-title">Formación pensada para aplicar</h2>
           <p>Una experiencia que conecta contenido, acompañamiento y verificación de lo aprendido.</p>
         </div>
         <div className="lx-method-grid">
@@ -205,7 +208,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
       <section id="in-company-section" className="lx-corporate" aria-labelledby="lx-corporate-title">
         <div>
-          <h2 id="lx-corporate-title">Capacitación para equipos de tecnología.</h2>
+          <h2 id="lx-corporate-title">Capacitación para equipos de tecnología</h2>
           <p>Diseñamos mallas a medida para organizaciones, con cohortes cerradas, seguimiento del progreso y consultoría aplicada.</p>
           <div className="lx-corporate-points">
             <span>Facturación para empresas</span><span>Cohortes cerradas</span><span>Seguimiento del aprendizaje</span>
@@ -219,9 +222,10 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       </button>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cartItems={cartItems} onRemoveItem={removeFromCart} onClearCart={clearCart} />
-      <EditorialSyllabusModal isOpen={Boolean(selectedForSyllabus)} onClose={() => setSelectedForSyllabus(null)} playbook={selectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} />
+      <EditorialSyllabusModal isOpen={Boolean(selectedForSyllabus)} onClose={() => setSelectedForSyllabus(null)} playbook={selectedForSyllabus} onAddToCart={addToCart} onAskAi={askAi} onEnroll={handleEnroll} />
       <ExecutiveChatDrawer isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} activePlaybook={selectedForAi} onClearContext={() => setSelectedForAi(null)} />
       <CorporateInCompanyModal isOpen={isCorporateOpen} onClose={() => setIsCorporateOpen(false)} />
+      <CheckoutModal isOpen={Boolean(selectedForCheckout)} onClose={() => setSelectedForCheckout(null)} playbook={selectedForCheckout} />
     </div>
   );
 };

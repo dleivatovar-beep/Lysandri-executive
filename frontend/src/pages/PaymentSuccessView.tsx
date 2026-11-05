@@ -90,7 +90,7 @@ Correo registrado: ${emailDestino}`;
           <div className="space-y-5 py-16 text-center">
             <LoaderCircle className="h-16 w-16 animate-spin text-cyan-400 mx-auto" />
             <h2 className="text-2xl font-black text-white">
-              Creando tu cuenta en Moodle & confirmando matrícula...
+              Estamos creando tu cuenta en Moodle y confirmando la matrícula
             </h2>
             <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
               Estamos validando la transacción con Stripe, generando tu usuario en el Aula Virtual Moodle y habilitando tus clases.
