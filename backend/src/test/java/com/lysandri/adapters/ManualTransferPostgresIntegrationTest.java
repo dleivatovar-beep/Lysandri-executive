@@ -107,6 +107,11 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
             VALUES (101, 'DNI88888888', 'Programa Prueba Ejecutivo', 899.00, 'USD', true, 101, 'programa-prueba-ejecutivo', '40 horas', 'CURSO', 'INTERMEDIO', true, true, NOW(), 'VERIFICADO')
             ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, precio = 899.00, moneda = 'USD', moodle_verificado = true, moodle_estado_verificacion = 'VERIFICADO'
         """);
+        jdbcTemplate.execute("""
+            INSERT INTO programa (id_programa, id_instructor_dni, titulo, precio, moneda, activo, moodle_course_id, slug, duracion_programa, tipo_programa, nivel, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion)
+            VALUES (102, 'DNI88888888', 'Programa Prueba Ejecutivo Dos', 1299.00, 'USD', true, 102, 'programa-prueba-ejecutivo-dos', '40 horas', 'CURSO', 'INTERMEDIO', true, true, NOW(), 'VERIFICADO')
+            ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, activo = true, precio = 1299.00, moneda = 'USD', moodle_verificado = true, moodle_verificado_en = NOW(), moodle_estado_verificacion = 'VERIFICADO'
+        """);
 
         if (lmsClientPort != null) reset(lmsClientPort);
         if (notificationPort != null) reset(notificationPort);
@@ -735,6 +740,70 @@ public class ManualTransferPostgresIntegrationTest extends PostgresTestDatabase 
                 "SELECT COUNT(*) FROM ordenes WHERE clave_idempotencia = ?",
                 Integer.class, clave);
         assertEquals(1, conteoEnBd, "Solo debe existir 1 fila en ordenes para la clave de idempotencia");
+    }
+
+    @Test
+    @DisplayName("Idempotencia PostgreSQL: reintento tras perder respuesta recupera la misma orden multi-programa")
+    void testReintentoTrasPerderRespuestaRecuperaUnaOrdenConTodosLosProgramas() {
+        String clave = "IDEMP-REINTENTO-" + UUID.randomUUID();
+        List<Long> idsSeleccionados = List.of(102L, 101L);
+        BuyCourseUseCase.CreateOrderCommand command = new BuyCourseUseCase.CreateOrderCommand(
+                testUserId,
+                idsSeleccionados,
+                null,
+                null,
+                "BOLETA",
+                "72283339",
+                "Cliente Test Reintento",
+                "TRANSFERENCIA",
+                null,
+                clave
+        );
+
+        buyCourseUseCase.iniciarCompra(command); // El cliente pierde esta respuesta.
+        BuyCourseUseCase.CreateOrderCommand reorderedRetry = new BuyCourseUseCase.CreateOrderCommand(
+                testUserId,
+                List.of(101L, 102L),
+                null,
+                null,
+                "BOLETA",
+                "72283339",
+                "Cliente Test Reintento",
+                "TRANSFERENCIA",
+                null,
+                clave
+        );
+        BuyCourseUseCase.CheckoutSessionResponse retry = buyCourseUseCase.iniciarCompra(reorderedRetry);
+
+        Integer orders = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM ordenes WHERE clave_idempotencia = ?", Integer.class, clave);
+        Long orderId = jdbcTemplate.queryForObject(
+                "SELECT id_orden FROM ordenes WHERE clave_idempotencia = ?", Long.class, clave);
+        List<Long> orderedProgramIds = jdbcTemplate.queryForList(
+                "SELECT id_programa FROM detalle_ordenes WHERE id_orden = ? ORDER BY id_programa",
+                Long.class,
+                orderId);
+
+        assertEquals(1, orders, "Un reintento con la misma clave debe conservar una sola orden PostgreSQL");
+        assertEquals(List.of(101L, 102L), orderedProgramIds, "La orden debe contener cada programa seleccionado, sin omisiones ni duplicados");
+        assertEquals(retry.codigoOrden(), orderRepository.buscarPorId(orderId).orElseThrow().getCodigoOrden());
+        assertEquals(new BigDecimal("2198.00"), orderRepository.buscarPorId(orderId).orElseThrow().getTotal());
+
+        BuyCourseUseCase.CreateOrderCommand differentSelection = new BuyCourseUseCase.CreateOrderCommand(
+                testUserId,
+                List.of(101L),
+                null,
+                null,
+                "BOLETA",
+                "72283339",
+                "Cliente Test Reintento",
+                "TRANSFERENCIA",
+                null,
+                clave
+        );
+        assertThrows(IllegalStateException.class, () -> buyCourseUseCase.iniciarCompra(differentSelection));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM ordenes WHERE clave_idempotencia = ?", Integer.class, clave));
     }
 
     @Test

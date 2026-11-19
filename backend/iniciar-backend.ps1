@@ -1,13 +1,12 @@
-<#
+﻿<#
 .SYNOPSIS
     Script reproducible y estricto de arranque seguro del backend Lysandri Executive.
 .DESCRIPTION
     Verifica los requisitos previos de Java, JAR, variables de entorno y secretos,
     resuelve y valida MOODLE_URL, comprueba disponibilidad e identidad autenticada
-    de DataSource y Flyway en la base autorizada en 127.0.0.1:5434, y detecta
-    conflictos en el puerto HTTP antes de arrancar.
-    RESTRICCIÓN: Nunca conecta a la base original (puerto 5432), no sustituye
-    silenciosamente el clon, no imprime secretos ni crea/reinicializa clones persistentes.
+    de DataSource y Flyway en el clon autorizado. El acceso a lysandri_db requiere
+    -UsarBaseOriginal, perfil original-dev y validación estricta del destino.
+    No imprime secretos ni crea/reinicializa clones persistentes.
 #>
 [CmdletBinding()]
 param(
@@ -16,6 +15,7 @@ param(
     [string]$CloneHost = "127.0.0.1",
     [int]$ClonePort = 5434,
     [string]$CloneDatabase = "lysandri_clone_db",
+    [switch]$UsarBaseOriginal,
     [switch]$SoloVerificar,
     [switch]$SoloVerificarBaseDatos,
     [switch]$ForzarHerramientaAusente
@@ -31,11 +31,28 @@ function Stop-Script {
     exit $ExitCode
 }
 
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+if ($UsarBaseOriginal) {
+    $rootEnv = Join-Path (Split-Path -Parent $scriptDir) ".env"
+    if (Test-Path -LiteralPath $rootEnv) {
+        Get-Content -LiteralPath $rootEnv | ForEach-Object {
+            $line = $_.Trim()
+            if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+                $parts = $line.Split("=", 2)
+                $name = $parts[0].Trim()
+                $value = $parts[1].Trim().Trim('"').Trim("'")
+                if (-not [System.Environment]::GetEnvironmentVariable($name)) {
+                    [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+                }
+            }
+        }
+    }
+}
+
 Write-Host "================================================================================" -ForegroundColor Cyan
 Write-Host "INICIO REPRODUCIBLE Y SEGURO: BACKEND LYSANDRI EXECUTIVE" -ForegroundColor Cyan
 Write-Host "================================================================================" -ForegroundColor Cyan
-
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 if (-not $SoloVerificarBaseDatos) {
     # 1. Comprobación de Java (Java 17 o superior)
@@ -101,15 +118,37 @@ foreach ($ep in $envPaths) {
     }
 }
 
-# Verificar contraseñas obligatorias del clon
-$cloneAppPass = $env:CLONE_APP_PASSWORD
-if ([string]::IsNullOrWhiteSpace($cloneAppPass)) {
-    Stop-Script "Falta la variable obligatoria CLONE_APP_PASSWORD. Definala en el entorno o en .env.local." 1
+. (Join-Path $scriptDir "correo.ps1")
+Import-Correo
+
+$dataSourceUser = "lysandri_app"
+$flywayUser = "lysandri_admin"
+$dataSourcePass = $env:CLONE_APP_PASSWORD
+$flywayPass = $env:CLONE_ADMIN_PASSWORD
+
+if ($UsarBaseOriginal) {
+    if ($Perfil -notmatch '(^|,)original-dev(,|$)' -or $Perfil -match '(^|,)(clone|test|prod|production)(,|$)') {
+        Stop-Script "El modo de base original requiere el perfil original-dev y no admite clone, test ni prod." 1
+    }
+    if ($env:DB_HOST -notin @("127.0.0.1", "localhost") -or $env:DB_PORT -ne "5432" -or $env:DB_NAME -ne "lysandri_db") {
+        Stop-Script "La configuración de .env no identifica exactamente 127.0.0.1:5432/lysandri_db." 1
+    }
+    $dataSourceUser = $env:DB_APP_USER
+    $flywayUser = $env:DB_ADMIN_USER
+    $dataSourcePass = $env:DB_APP_PASSWORD
+    $flywayPass = $env:DB_ADMIN_PASSWORD
+    $CloneHost = "127.0.0.1"
+    $ClonePort = 5432
+    $CloneDatabase = "lysandri_db"
+    $env:LYSANDRI_ALLOW_ORIGINAL_DB = "true"
+    Write-Host "  -> Modo original-dev habilitado explícitamente para 127.0.0.1:5432/lysandri_db." -ForegroundColor Yellow
 }
 
-$cloneAdminPass = $env:CLONE_ADMIN_PASSWORD
-if ([string]::IsNullOrWhiteSpace($cloneAdminPass)) {
-    Stop-Script "Falta la variable obligatoria CLONE_ADMIN_PASSWORD. Definala en el entorno o en .env.local." 1
+if ([string]::IsNullOrWhiteSpace($dataSourcePass) -or [string]::IsNullOrWhiteSpace($flywayPass) -or [string]::IsNullOrWhiteSpace($dataSourceUser) -or [string]::IsNullOrWhiteSpace($flywayUser)) {
+    if ($UsarBaseOriginal) {
+        Stop-Script "Faltan DB_APP_USER/DB_APP_PASSWORD o DB_ADMIN_USER/DB_ADMIN_PASSWORD en .env." 1
+    }
+    Stop-Script "Faltan CLONE_APP_PASSWORD o CLONE_ADMIN_PASSWORD en .env.local." 1
 }
 
 # Verificar clave obligatoria, externa y persistente para cifrado de activaciones (no se autogenera)
@@ -169,12 +208,12 @@ if (-not $SoloVerificarBaseDatos) {
 Write-Host "[5/7] Verificando PostgreSQL autorizado en $CloneHost`:$ClonePort ($CloneDatabase)..." -ForegroundColor Yellow
 
 # A. Restricción absoluta contra puerto 5432 o base de producción original
-if ($ClonePort -eq 5432 -or $CloneDatabase -eq "lysandri_db" -or $CloneHost -eq "lysandri-postgres") {
+if (-not $UsarBaseOriginal -and ($ClonePort -eq 5432 -or $CloneDatabase -eq "lysandri_db" -or $CloneHost -eq "lysandri-postgres")) {
     Stop-Script "VIOLACION DE SEGURIDAD: El destino especificado ($CloneHost`:$ClonePort/$CloneDatabase) corresponde a la base de datos original de produccion. Solo se permite conectar a bases clon autorizadas." 1
 }
 
 # B. Comprobar que el nombre de la base corresponde a un clon autorizado
-if (-not ($CloneDatabase -eq "lysandri_clone_db" -or $CloneDatabase.StartsWith("lysandri_clone_"))) {
+if (-not $UsarBaseOriginal -and -not ($CloneDatabase -eq "lysandri_clone_db" -or $CloneDatabase.StartsWith("lysandri_clone_"))) {
     Stop-Script "Base de datos no autorizada para perfil clone: '$CloneDatabase'. Solo se admiten 'lysandri_clone_db' o bases clon autorizadas." 4
 }
 
@@ -218,32 +257,31 @@ if (-not $psqlPath) {
     Stop-Script "Herramienta de verificacion no disponible: No se encontro cliente psql para verificar inequivocamente el destino $CloneHost`:$ClonePort/$CloneDatabase. Docker no puede verificar inequivocamente este destino. Abortando con error estricto." 4
 }
 
+function Confirm-PostgresIdentity {
+    param([string]$UserName, [string]$Password, [string]$Role)
+
+    $env:PGPASSWORD = $Password
+    $result = @(& $psqlPath -X -h $CloneHost -p $ClonePort -U $UserName -d $CloneDatabase -w -t -A -c "SELECT current_database() || '|' || current_user;" 2>&1)
+    $resultCode = $LASTEXITCODE
+
+    if ($resultCode -ne 0) {
+        $detail = $result -join "`n"
+        if ($detail -match 'the database system is (starting up|in recovery mode|shutting down|not yet accepting connections)|server closed the connection unexpectedly|connection refused|connection timed out|connection reset by peer') {
+            Stop-Script "PostgreSQL todavia no admite conexiones autenticadas en $CloneHost`:$ClonePort/$CloneDatabase. Reintente en unos segundos." 2
+        }
+    }
+    if ($resultCode -ne 0 -or $result.Count -ne 1 -or $result[0] -cne "$CloneDatabase|$UserName") {
+        Stop-Script "Fallo de autenticacion o identidad para usuario $Role '$UserName' en $CloneHost`:$ClonePort/$CloneDatabase." 4
+    }
+    Write-Host "  -> Identidad y autenticacion $Role ('$UserName') confirmada" -ForegroundColor Green
+}
+
 $identityVerified = $false
 try {
     Write-Host "  -> Verificando identidad del destino exacto ($CloneHost`:$ClonePort/$CloneDatabase) con psql..." -ForegroundColor DarkGray
-    
-    # 1. Verificar DataSource user (lysandri_app)
-    $env:PGPASSWORD = $cloneAppPass
-    $appResult = & $psqlPath -h $CloneHost -p $ClonePort -U lysandri_app -d $CloneDatabase -w -t -A -c "SELECT current_database() || '|' || current_user;" 2>&1
-    $appExitCode = $LASTEXITCODE
-
-    if ($appExitCode -ne 0 -or $appResult -ne "$CloneDatabase|lysandri_app") {
-        Stop-Script "Fallo de autenticacion o identidad para usuario DataSource 'lysandri_app' en $CloneHost`:$ClonePort/$CloneDatabase." 4
-    }
-
-    # 2. Verificar Flyway user (lysandri_admin)
-    $env:PGPASSWORD = $cloneAdminPass
-    $adminResult = & $psqlPath -h $CloneHost -p $ClonePort -U lysandri_admin -d $CloneDatabase -w -t -A -c "SELECT current_database() || '|' || current_user;" 2>&1
-    $adminExitCode = $LASTEXITCODE
-
-    if ($adminExitCode -ne 0 -or $adminResult -ne "$CloneDatabase|lysandri_admin") {
-        Stop-Script "Fallo de autenticacion o identidad para usuario Flyway 'lysandri_admin' en $CloneHost`:$ClonePort/$CloneDatabase." 4
-    }
-
-    Write-Host "  -> Identidad y autenticacion DataSource ('lysandri_app') confirmada" -ForegroundColor Green
-    Write-Host "  -> Identidad y autenticacion Flyway ('lysandri_admin') confirmada" -ForegroundColor Green
+    Confirm-PostgresIdentity -UserName $dataSourceUser -Password $dataSourcePass -Role "DataSource"
+    Confirm-PostgresIdentity -UserName $flywayUser -Password $flywayPass -Role "Flyway"
     $identityVerified = $true
-
 }
 finally {
     Remove-Item env:PGPASSWORD -ErrorAction SilentlyContinue
@@ -288,22 +326,34 @@ Write-Host "  -> Presione Ctrl+C para detener el backend.`n" -ForegroundColor Ye
 
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://$CloneHost`:$ClonePort/$CloneDatabase"
 $env:SPRING_FLYWAY_URL = "jdbc:postgresql://$CloneHost`:$ClonePort/$CloneDatabase"
-$env:SPRING_DATASOURCE_USERNAME = "lysandri_app"
-$env:SPRING_FLYWAY_USER = "lysandri_admin"
-$env:SPRING_DATASOURCE_PASSWORD = $cloneAppPass
-$env:SPRING_FLYWAY_PASSWORD = $cloneAdminPass
+$env:SPRING_DATASOURCE_USERNAME = $dataSourceUser
+$env:SPRING_FLYWAY_USER = $flywayUser
+$env:SPRING_DATASOURCE_PASSWORD = $dataSourcePass
+$env:SPRING_FLYWAY_PASSWORD = $flywayPass
 $env:ACTIVATION_ENCRYPTION_KEY = $activationKey
+
+if (-not $env:APP_RECOVERY_TUNNEL_STATE_FILE) {
+    $env:APP_RECOVERY_TUNNEL_STATE_FILE = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\.tunnel-session.json'))
+}
 
 $javaArgs = @(
     "-Dspring.profiles.active=$Perfil",
     "-Dserver.port=$HttpPort",
     "-Dspring.datasource.url=jdbc:postgresql://$CloneHost`:$ClonePort/$CloneDatabase",
-    "-Dspring.datasource.username=lysandri_app",
+    "-Dspring.datasource.username=$dataSourceUser",
     "-Dspring.flyway.url=jdbc:postgresql://$CloneHost`:$ClonePort/$CloneDatabase",
-    "-Dspring.flyway.user=lysandri_admin",
+    "-Dspring.flyway.user=$flywayUser",
     "-Dmoodle.url=$resolvedMoodleUrl",
     "-jar", $jarPath
 )
+
+if ($UsarBaseOriginal) {
+    if (-not $env:APP_RECOVERY_TUNNEL_STATE_FILE) {
+    $env:APP_RECOVERY_TUNNEL_STATE_FILE = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\.tunnel-session.json'))
+}
+
+$javaArgs = @("-DLYSANDRI_ALLOW_ORIGINAL_DB=true") + $javaArgs
+}
 
 if ($env:TEST_CAPTURE_JAVA_ARGS_FILE) {
     Set-Content -LiteralPath $env:TEST_CAPTURE_JAVA_ARGS_FILE -Value ($javaArgs -join "`n")
@@ -311,5 +361,22 @@ if ($env:TEST_CAPTURE_JAVA_ARGS_FILE) {
     exit 0
 }
 
-& java @javaArgs
-exit $LASTEXITCODE
+$ollamaProyecto = $null
+if ($env:LYSANDRI_OLLAMA_VULKAN -eq '1' -and -not $env:OLLAMA_URL -and
+    $Perfil -match '(^|,)(original-dev|clone)(,|$)' -and $Perfil -notmatch '(^|,)(prod|production)(,|$)') {
+    . (Join-Path $PSScriptRoot 'ollama-vulkan.ps1')
+    $ollamaProyecto = Start-OllamaProyecto
+    if ($ollamaProyecto) {
+        $env:OLLAMA_URL = $ollamaProyecto.Url
+        $env:OLLAMA_GPU_LAYERS = '-1'
+        Write-Host '  -> Ollama local listo con Vulkan.' -ForegroundColor Green
+    }
+}
+
+try {
+    & java @javaArgs
+    $codigoJava = $LASTEXITCODE
+} finally {
+    if ($ollamaProyecto) { Stop-OllamaProyecto $ollamaProyecto.Proceso }
+}
+exit $codigoJava

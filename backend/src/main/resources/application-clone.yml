@@ -31,14 +31,17 @@ spring:
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:1025}
-    username: no-reply@lysandri.com
-    password: 
+    username: ${SPRING_MAIL_USERNAME:no-reply@lysandri.com}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: false
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
           starttls:
-            enable: false
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED:false}
+          ssl:
+            checkserveridentity: true
           connectiontimeout: 5000
           timeout: 10000
           writetimeout: 5000
@@ -69,7 +72,7 @@ stripe:
   cancel-url: http://localhost:3000/checkout/cancel
 
 llm:
-  provider: openai
+  provider: ${LLM_PROVIDER:ollama}
   api-key: mock-key
   model: gpt-4o-mini
   embedding-model: text-embedding-3-small

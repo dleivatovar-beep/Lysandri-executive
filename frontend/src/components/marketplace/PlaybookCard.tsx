@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { NeutralCover } from '../common/NeutralCover';
 import {
   Clock3,
   Crown,
@@ -12,7 +13,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Playbook, TierLevel } from '../../types';
-import { useCart } from '../../context/CartContext';
+import { useCart, isPlaybookPurchasable } from '../../context/CartContext';
 
 interface PlaybookCardProps {
   playbook: Playbook;
@@ -51,6 +52,28 @@ const TIER_CONFIG: Record<
   },
 };
 
+const CardCoverImage: React.FC<{
+  src: string;
+  title: string;
+  category?: string;
+}> = ({ src, title, category }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <NeutralCover title={title} category={category} />;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={title || 'Portada del programa'}
+      loading="lazy"
+      className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+      onError={() => setHasError(true)}
+    />
+  );
+};
+
 export const PlaybookCard: React.FC<PlaybookCardProps> = ({
   playbook,
   onSelect,
@@ -59,6 +82,9 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
   onAskAi,
 }) => {
   const tierInfo = TIER_CONFIG[playbook.tier];
+  const isPurchasable = isPlaybookPurchasable(playbook);
+  const isSample = playbook.origin === 'SAMPLE' || playbook.isSample === true || playbook.isDemo === true ||
+    (typeof playbook.id === 'string' && playbook.id.startsWith('sample-'));
 
   let isInCart = false;
   try {
@@ -73,16 +99,9 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
       {/* Media Aspect Header */}
       <div className="relative aspect-video w-full overflow-hidden border-b border-slate-100 bg-[#08111e] dark:border-slate-800">
         {playbook.coverUrl ? (
-          <img
-            src={playbook.coverUrl}
-            alt={`Vista previa del curso ${playbook.title}`}
-            loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.05]"
-          />
+          <CardCoverImage src={playbook.coverUrl} title={playbook.title} category={playbook.category} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-600">
-            <BookOpen className="h-10 w-10" />
-          </div>
+          <NeutralCover title={playbook.title} category={playbook.category} />
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#08111e] via-[#08111e]/30 to-transparent opacity-90" />
@@ -109,9 +128,11 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
           </span>
 
           <div className="rounded-lg bg-slate-950/90 px-2.5 py-1 text-xs font-bold text-cyan-300">
-            {playbook.price != null
-                ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: playbook.currency || 'PEN' }).format(playbook.price)
-                : 'Consultar precio'}
+            {playbook.price != null && Number.isFinite(playbook.price) && playbook.currency && ['PEN', 'USD'].includes(playbook.currency.toUpperCase())
+              ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: playbook.currency!.toUpperCase() }).format(playbook.price)
+              : isSample
+              ? 'Muestra'
+              : 'Consultar precio'}
           </div>
         </div>
 
@@ -185,33 +206,41 @@ export const PlaybookCard: React.FC<PlaybookCardProps> = ({
             </div>
 
             {/* Action buttons */}
-            (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => onSelect?.(playbook)}
-                className="flex-1 flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-4 text-xs font-bold text-white shadow-md shadow-cyan-500/20 hover:opacity-95 transition-all duration-300 active:scale-95"
-              >
-                <span>Inscribirme / Comprar</span>
-              </button>
+            {isPurchasable ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => onSelect?.(playbook)}
+                  className="flex-1 flex h-10 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 px-4 text-xs font-bold text-white shadow-md shadow-cyan-500/20 hover:opacity-95 transition-all duration-300 active:scale-95"
+                >
+                  <span>Inscribirme / Comprar</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => onAddToCart?.(playbook)}
-                title={isInCart ? 'En el carrito' : 'Añadir al carrito'}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 ${
-                  isInCart
-                    ? 'border-emerald-500/40 bg-emerald-950/60 text-emerald-300 shadow-sm shadow-emerald-950/30'
-                    : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-300'
-                }`}
-              >
-                {isInCart ? (
-                  <Check className="h-4 w-4 text-emerald-400" />
-                ) : (
-                  <ShoppingCart className="h-4 w-4" />
-                )}
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => onAddToCart?.(playbook)}
+                  title={isInCart ? 'En el carrito' : 'Añadir al carrito'}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 ${
+                    isInCart
+                      ? 'border-emerald-500/40 bg-emerald-950/60 text-emerald-300 shadow-sm shadow-emerald-950/30'
+                      : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-200 hover:border-cyan-400 hover:text-cyan-600 dark:hover:text-cyan-300'
+                  }`}
+                >
+                  {isInCart ? (
+                    <Check className="h-4 w-4 text-emerald-400" />
+                  ) : (
+                    <ShoppingCart className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="flex min-h-10 w-full items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                <GraduationCap className="mr-2 h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" aria-hidden="true" />
+                {isSample
+                  ? 'Vista previa académica: puedes explorar el sílabo y el contenido de muestra.'
+                  : 'Consulta los detalles del programa.'}
+              </div>
+            )}
           </div>
         </div>
       </div>

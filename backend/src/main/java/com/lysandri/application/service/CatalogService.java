@@ -46,7 +46,52 @@ public class CatalogService implements CatalogUseCase {
     @Override
     @Transactional(readOnly = true)
     public List<Programa> listarProgramasActivos() {
-        return programRepository.listarActivos();
+        return programRepository.listarActivos().stream()
+                .map(this::agregarDisponibilidadCompra)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Programa> consultarDisponibilidadCompra(List<Long> idsPrograma) {
+        if (idsPrograma == null || idsPrograma.isEmpty()
+                || idsPrograma.stream().anyMatch(id -> id == null || id <= 0)
+                || new java.util.HashSet<>(idsPrograma).size() != idsPrograma.size()) {
+            throw new IllegalArgumentException("La consulta de disponibilidad requiere IDs positivos y únicos.");
+        }
+        return programRepository.buscarPorIds(idsPrograma).stream()
+                .map(this::agregarDisponibilidadCompra)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Programa> listarProgramasInformativos() {
+        return programRepository.listarTodos().stream()
+                .filter(Programa::isActivo)
+                .map(this::agregarDisponibilidadCompra)
+                .toList();
+    }
+
+    private Programa agregarDisponibilidadCompra(Programa programa) {
+        String motivo = null;
+        if (!programa.isActivo()) {
+            motivo = "Programa no activo para venta comercial";
+        } else if (!programa.isPrecioAprobado()) {
+            motivo = "Precio comercial pendiente de aprobación";
+        } else if (programa.getPrecio() == null || programa.getPrecio().signum() < 0
+                || (programa.getPrecio().signum() == 0 && !programa.isEsGratuito())) {
+            motivo = "Precio comercial ausente o inválido";
+        } else if (programa.getMoneda() == null
+                || !java.util.Set.of("PEN", "USD").contains(programa.getMoneda().trim().toUpperCase())) {
+            motivo = "Moneda comercial ausente o no admitida";
+        } else if (programa.getMoodleCourseId() == null || !programa.isVerificacionVigente(clock, ttlHours)) {
+            motivo = "Vinculación con Moodle sin verificación vigente";
+        }
+
+        programa.setDisponibleParaCompra(motivo == null);
+        programa.setMotivoNoDisponible(motivo);
+        return programa;
     }
 
     @Override

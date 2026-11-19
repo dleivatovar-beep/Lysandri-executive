@@ -31,146 +31,63 @@ import interbankLogo from '../../assets/payment-logos/interbank.svg';
 import { Playbook } from '../../types';
 import { storeService, CuentaBancariaAprobada } from '../../services/storeService';
 import { useAuth } from '../../context/AuthContext';
+import { compraClientePruebaService } from '../../services/comprasPruebaService';
+import { CompraClientePrueba } from './CompraClientePrueba';
+import { isPlaybookPurchasable, getUnpurchasableReason } from '../../context/CartContext';
+import { enqueueSdkOperation, getGlobalSdkOwnership, loadKryptonClientScript } from './checkoutSdk';
 
 export interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  playbook: Playbook | null;
+  playbook?: Playbook | null;
+  items?: Playbook[];
 }
 
 export type PaymentMethod = 'IZIPAY' | 'YAPE_PLIN' | 'TRANSFERENCIA';
 
-// Gestor centralizado de carga de script de Krypton (compartido entre sesiones)
-export type ScriptLoadStatus = 'IDLE' | 'LOADING' | 'LOADED' | 'FAILED';
-let kryptonScriptStatus: ScriptLoadStatus = 'IDLE';
-let kryptonScriptPromise: Promise<any> | null = null;
-
 // Contador global incremental para sesiones de Izipay (garantiza unicidad entre diferentes montajes)
 let globalSessionSequence = 0;
-
-// Estado de propiedad global del SDK entre instancias del componente
-export interface GlobalSdkOwnership {
-  activeRequestedSessionId: string | null;
-  activeOwnerSessionId: string | null;
-  ownerInstanceId: string | null;
-}
-
-export const getGlobalSdkOwnership = (): GlobalSdkOwnership => {
-  if (typeof window !== 'undefined') {
-    if (!(window as any).__krSdkOwnership) {
-      (window as any).__krSdkOwnership = {
-        activeRequestedSessionId: null,
-        activeOwnerSessionId: null,
-        ownerInstanceId: null,
-      };
-    }
-    return (window as any).__krSdkOwnership;
-  }
-  return {
-    activeRequestedSessionId: null,
-    activeOwnerSessionId: null,
-    ownerInstanceId: null,
-  };
-};
-
-export const resetGlobalSdkOwnership = (): void => {
-  const state = getGlobalSdkOwnership();
-  state.activeRequestedSessionId = null;
-  state.activeOwnerSessionId = null;
-  state.ownerInstanceId = null;
-};
-
-export const getKryptonScriptStatus = (): ScriptLoadStatus => kryptonScriptStatus;
-
-export const resetKryptonScriptLoader = (): void => {
-  kryptonScriptStatus = 'IDLE';
-  kryptonScriptPromise = null;
-  if (typeof document !== 'undefined') {
-    const existing = document.getElementById('izipay-krypton-client-sdk');
-    if (existing) {
-      existing.remove();
-    }
-  }
-};
-
-export const loadKryptonClientScript = (publicKey: string): Promise<any> => {
-  if (typeof window === 'undefined') {
-    return Promise.resolve(null);
-  }
-
-  if ((window as any).KR) {
-    kryptonScriptStatus = 'LOADED';
-    kryptonScriptPromise = null;
-    return Promise.resolve((window as any).KR);
-  }
-
-  if (kryptonScriptStatus === 'LOADING' && kryptonScriptPromise) {
-    return kryptonScriptPromise;
-  }
-
-  const scriptId = 'izipay-krypton-client-sdk';
-  if (typeof document !== 'undefined') {
-    const existing = document.getElementById(scriptId);
-    if (existing) {
-      existing.remove();
-    }
-  }
-
-  kryptonScriptStatus = 'LOADING';
-  kryptonScriptPromise = new Promise((resolve, reject) => {
-    if (typeof document === 'undefined') {
-      kryptonScriptStatus = 'LOADED';
-      kryptonScriptPromise = null;
-      resolve((window as any).KR || null);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js';
-    script.setAttribute('kr-public-key', publicKey);
-    script.setAttribute('kr-post-url-success', '');
-    script.setAttribute('kr-spa-mode', 'true');
-
-    script.onload = () => {
-      kryptonScriptStatus = 'LOADED';
-      kryptonScriptPromise = null;
-      resolve((window as any).KR);
-    };
-
-    script.onerror = () => {
-      kryptonScriptStatus = 'FAILED';
-      kryptonScriptPromise = null;
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      reject(new Error('Error de conexión al cargar la pasarela segura izipay. Por favor verifique su conexión e intente nuevamente.'));
-    };
-
-    document.head.appendChild(script);
-  });
-
-  return kryptonScriptPromise;
-};
-
-// Cola de serialización para operaciones asíncronas globales sobre el SDK (KR)
-let activeSdkOperationPromise: Promise<any> = Promise.resolve();
-
-export function enqueueSdkOperation<T>(op: () => Promise<T>): Promise<T> {
-  const nextPromise = activeSdkOperationPromise
-    .catch(() => {}) // Un fallo en operación previa no debe bloquear operaciones subsiguientes
-    .then(() => op());
-
-  activeSdkOperationPromise = nextPromise.then(() => {}, () => {});
-  return nextPromise;
-}
 
 export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   isOpen,
   onClose,
   playbook,
+  items,
 }) => {
+  const selectedItems = React.useMemo(() => {
+    if (items && items.length > 0) {
+      return [...new Map(items.map((item) => [item.programId, item])).values()];
+    }
+    if (playbook) return [playbook];
+    return [];
+  }, [items, playbook]);
+
+  const activePlaybook = selectedItems[0] || playbook || null;
+  const programaNoDisponible = selectedItems.find((item) => !isPlaybookPurchasable(item));
+  const compraHabilitada = selectedItems.length > 0 && !programaNoDisponible;
+  const isPracticeOrder = selectedItems.length > 0 && selectedItems.every((item) =>
+    (item.origin === 'SAMPLE' || item.isSample === true || item.isDemo === true ||
+      (typeof item.id === 'string' && item.id.startsWith('sample-'))) &&
+      Number.isInteger(item.programId) && item.programId >= 1001 && item.programId <= 1006
+  );
+  const selectionKey = React.useMemo(() => {
+    return storeService.resolveTargetKey(selectedItems.map((p) => p.programId));
+  }, [selectedItems]);
   const { user } = useAuth();
+  const clienteId = isOpen && isPracticeOrder && user?.rol === 'ESTUDIANTE' ? user.id : null;
+  const [clienteHabilitado, setClienteHabilitado] = useState<number | null>(null);
+
+  useEffect(() => {
+    setClienteHabilitado(null);
+    if (clienteId === null) return;
+    const controller = new AbortController();
+    compraClientePruebaService.habilitada(controller.signal).then(habilitada => {
+      if (!controller.signal.aborted && habilitada) setClienteHabilitado(clienteId);
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [clienteId]);
+
+  const checkoutCliente = clienteId !== null && clienteId === clienteHabilitado;
 
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [email, setEmail] = useState('');
@@ -178,7 +95,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [tipoComprobante, setTipoComprobante] = useState<'BOLETA' | 'FACTURA'>('BOLETA');
   const [numeroDocumento, setNumeroDocumento] = useState('');
   const [razonSocial, setRazonSocial] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('IZIPAY');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TRANSFERENCIA');
+  const [izipayDisponible, setIzipayDisponible] = useState(false);
+  const [errorMetodos, setErrorMetodos] = useState(false);
+  const [revisionMetodos, setRevisionMetodos] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let vigente = true;
+    setIzipayDisponible(false);
+    setErrorMetodos(false);
+    setPaymentMethod('TRANSFERENCIA');
+    storeService.obtenerMetodosPago().then((estado) => {
+      if (vigente) setIzipayDisponible(estado.izipayDisponible);
+    }).catch(() => {
+      if (vigente) setErrorMetodos(true);
+    });
+    return () => { vigente = false; };
+  }, [isOpen, revisionMetodos]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -190,6 +124,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Estado posterior al registro de orden manual
   const [ordenRegistradaCodigo, setOrdenRegistradaCodigo] = useState<string | null>(null);
   const [ordenRegistradaMetodo, setOrdenRegistradaMetodo] = useState<string | null>(null);
+  const [ordenEsPractica, setOrdenEsPractica] = useState(false);
 
   // Estado para formulario incrustado de izipay Online y ciclo de vida de Krypton SDK
   const [izipayData, setIzipayData] = useState<{
@@ -201,6 +136,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [izipayFormReady, setIzipayFormReady] = useState(false);
   const [izipaySdkError, setIzipaySdkError] = useState<string | null>(null);
   const [izipayVerifying, setIzipayVerifying] = useState(false);
+  const submissionLockRef = useRef(false);
 
   // Ciclo de vida explícito para sesiones y listeners de pasarela izipay (Krypton SDK)
   const instanceIdRef = useRef<string>(`modal_${Math.random().toString(36).substring(2, 10)}`);
@@ -288,7 +224,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       formReadyRef.current = false;
       if (typeof window !== 'undefined') {
         const coord = (window as any).__krCoordinator;
-        if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+        if (coord && (!coord.sessionId || coord.sessionId === sessToClean || coord.ownerId === instanceIdRef.current)) {
           (window as any).__krCoordinator = null;
         }
       }
@@ -307,7 +243,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setIzipayFormReady(false);
       if (typeof window !== 'undefined') {
         const coord = (window as any).__krCoordinator;
-        if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+        if (coord && (!coord.sessionId || coord.sessionId === sessToClean || coord.ownerId === instanceIdRef.current)) {
           (window as any).__krCoordinator = null;
         }
       }
@@ -324,14 +260,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return storeService.getBuyerScope(user, email);
   };
 
+  useEffect(() => {
+    storeService.clearSandboxCheckoutIntents();
+  }, []);
+
   const getIdempotencyKey = (): string => {
-    if (!playbook) return '';
+    if (selectedItems.length === 0) return '';
     const scope = getBuyerScope();
-    return storeService.getOrCreateIdempotencyKey(scope, playbook.programId);
+    return storeService.getOrCreateIdempotencyKey(scope, selectionKey);
   };
 
   const initKryptonSdk = useCallback(async () => {
-    if (!izipayData || !izipayData.formToken || !izipayData.publicKey) return;
+    if (!isOpen || !izipayData || !izipayData.formToken || !izipayData.publicKey) return;
 
     setIzipaySdkError(null);
     setIzipaySdkLoading(true);
@@ -446,71 +386,74 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         // Comprobar vigencia tras setFormToken
         if (!isSessionActive()) return;
 
-        // Renderizar el formulario mediante renderElements (contrato oficial Lyra / Krypton)
-        // La promesa devuelta por renderElements confirma que los elementos fueron inyectados en el DOM.
-        // Si renderElements rechaza (por cualquier error, incluyendo "already rendered"),
-        // no se asume disponibilidad ni se valida por la mera existencia de contenedores vacíos en el DOM.
+        // Renderizar el formulario mediante renderElements
         if (typeof KR.renderElements === 'function') {
-          await KR.renderElements('.kr-embedded');
-        } else {
-          throw new Error('Método KR.renderElements no disponible en el SDK de izipay.');
+          await KR.renderElements();
         }
 
-        // Comprobar vigencia de la sesión tras la confirmación del renderizado
+        // Comprobar vigencia tras renderElements
         if (!isSessionActive()) return;
 
-        // Registrar propiedad de los recursos creados en el SDK
-        const ownershipSuccess = getGlobalSdkOwnership();
-        ownershipSuccess.activeOwnerSessionId = currentSessionId;
-        ownershipSuccess.ownerInstanceId = instanceIdRef.current;
+        // Registrar callbacks de evento vinculados a esta sesión
+        if (typeof KR.onError === 'function') {
+          await KR.onError(handleSessionError);
+        }
+        if (typeof KR.onSubmit === 'function') {
+          await KR.onSubmit(handleSessionSubmit);
+        }
+
+        // Comprobar vigencia tras registrar callbacks
+        if (!isSessionActive()) return;
+
+        // Registrar como sesión propietaria activa globalmente
+        const currentOwnership = getGlobalSdkOwnership();
+        currentOwnership.activeOwnerSessionId = currentSessionId;
+        currentOwnership.ownerInstanceId = instanceIdRef.current;
 
         formReadyRef.current = true;
         setIzipayFormReady(true);
         setIzipaySdkLoading(false);
-
-        // Registrar callbacks directamente en el SDK solo tras confirmar la disponibilidad documentada
-        if (typeof KR.onError === 'function') {
-          KR.onError(handleSessionError);
-        }
-        if (typeof KR.onSubmit === 'function') {
-          KR.onSubmit(handleSessionSubmit);
-        }
       });
     } catch (err: any) {
-      if (isSessionActive()) {
-        formReadyRef.current = false;
-        setIzipayFormReady(false);
-        setIzipaySdkLoading(false);
-        const detail = err?.message ? `: ${err.message}` : '';
-        const msg = `No se pudo inicializar el formulario seguro de izipay${detail}. Por favor reintente.`;
-        setIzipaySdkError(msg);
-      }
+      if (!isSessionActive()) return;
+      const detail = err?.message ? `: ${err.message}` : '';
+      const msg = `No se pudo inicializar el formulario seguro de izipay${detail}. Por favor reintente.`;
+      setIzipaySdkError(msg);
+      setIzipaySdkLoading(false);
     }
-  }, [izipayData, isOpen, coordinateAsyncCleanup, generateUniqueSessionId]);
+  }, [
+    izipayData,
+    isOpen,
+    generateUniqueSessionId,
+    coordinateAsyncCleanup,
+  ]);
 
+  // Inicializar o re-inicializar el formulario de izipay cuando llegue el token
   useEffect(() => {
-    if (izipayData) {
+    if (izipayData && izipayData.formToken && izipayData.publicKey) {
       initKryptonSdk();
     }
-    const sessToClean = activeSessionIdRef.current;
-    return () => {
-      // Solo limpiar si la sesión que se desmonta o cambia es la que aún está activa
-      coordinateAsyncCleanup(sessToClean);
-    };
-  }, [izipayData, initKryptonSdk, coordinateAsyncCleanup]);
+  }, [izipayData, initKryptonSdk]);
 
   useEffect(() => {
     const sessToClean = activeSessionIdRef.current;
     activeSessionIdRef.current = null;
     activeOrderCodeRef.current = null;
+    if (typeof window !== 'undefined') {
+      const coord = (window as any).__krCoordinator;
+      if (coord && (!coord.sessionId || coord.sessionId === sessToClean || coord.ownerId === instanceIdRef.current)) {
+        (window as any).__krCoordinator = null;
+      }
+    }
     coordinateAsyncCleanup(sessToClean);
     setIzipayData(null);
     setIzipaySdkError(null);
     setIzipaySdkLoading(false);
     setIzipayVerifying(false);
-  }, [playbook?.programId, coordinateAsyncCleanup]);
+  }, [selectionKey, coordinateAsyncCleanup]);
 
   const handleStartNewOrder = () => {
+    storeService.clearCheckoutIntent(getBuyerScope(), selectionKey);
     generationRef.current += 1;
     const sessToClean = activeSessionIdRef.current;
     activeSessionIdRef.current = null;
@@ -519,17 +462,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setIzipayFormReady(false);
     if (typeof window !== 'undefined') {
       const coord = (window as any).__krCoordinator;
-      if (coord && (!coord.sessionId || coord.sessionId === sessToClean)) {
+      if (coord && (!coord.sessionId || coord.sessionId === sessToClean || coord.ownerId === instanceIdRef.current)) {
         (window as any).__krCoordinator = null;
       }
     }
     coordinateAsyncCleanup(sessToClean);
-    if (playbook) {
-      const scope = getBuyerScope();
-      storeService.clearCheckoutIntent(scope, playbook.programId);
-    }
     setOrdenRegistradaCodigo(null);
     setOrdenRegistradaMetodo(null);
+    setOrdenEsPractica(false);
     setIzipayData(null);
     setIzipaySdkError(null);
     setIzipaySdkLoading(false);
@@ -551,7 +491,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // Cargar cuentas bancarias oficiales.
   useEffect(() => {
-    if (isOpen && playbook) {
+    if (isOpen && selectedItems.length > 0) {
       setErrorMessage('');
       setCargandoCuentas(true);
 
@@ -572,38 +512,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           setCargandoCuentas(false);
         });
     }
-  }, [isOpen, playbook]);
+  }, [isOpen, selectionKey]);
 
   // Recuperar órdenes solo para la identidad actual del comprador.
   useEffect(() => {
-    if (!isOpen || !playbook) return;
+    if (!isOpen || selectedItems.length === 0) return;
 
     const scope = getBuyerScope();
-    const existingIntent = storeService.getCheckoutIntent(scope, playbook.programId);
-    if (existingIntent && existingIntent.codigoOrden) {
-      setOrdenRegistradaCodigo(existingIntent.codigoOrden);
-      setOrdenRegistradaMetodo(existingIntent.metodoPago || null);
+    const existingIntent = storeService.getCheckoutIntent(scope, selectionKey);
+    if (existingIntent) {
+      if (existingIntent.email) setEmail(existingIntent.email);
       if (existingIntent.nombreCompleto) setNombreCompleto(existingIntent.nombreCompleto);
+      if (existingIntent.telefono) setTelefono(existingIntent.telefono);
       if (existingIntent.numeroDocumento) setNumeroDocumento(existingIntent.numeroDocumento);
       if (existingIntent.tipoComprobante) setTipoComprobante(existingIntent.tipoComprobante);
       if (existingIntent.nombreFacturacion) setRazonSocial(existingIntent.nombreFacturacion);
+      if (existingIntent.codigoOrden) {
+        setOrdenRegistradaCodigo(existingIntent.codigoOrden);
+        setOrdenRegistradaMetodo(existingIntent.metodoPago || null);
+        setOrdenEsPractica(existingIntent.metodoPago === 'Orden de práctica');
+      }
     } else {
       setOrdenRegistradaCodigo(null);
       setOrdenRegistradaMetodo(null);
     }
-  }, [isOpen, playbook, user, email]);
+  }, [isOpen, selectionKey, user, email]);
 
-  if (!isOpen || !playbook) return null;
+  if (!isOpen || selectedItems.length === 0 || !activePlaybook) return null;
 
-  const getPrice = (): number => {
-    if (playbook.price && playbook.price > 0) return playbook.price;
-    if (playbook.tier === 'ENTERPRISE') return 950;
-    if (playbook.tier === 'ADVANCED') return 899;
-    return 799;
+  const getCalculatedPrice = (): number => {
+    return selectedItems.reduce((acc, it) => {
+      if (typeof it.price === 'number' && Number.isFinite(it.price) && it.price >= 0) {
+        return acc + it.price;
+      }
+      return acc;
+    }, 0);
   };
 
-  const priceAmount = getPrice();
-  const priceCurrency = playbook.currency || 'USD';
+  const priceAmount = getCalculatedPrice();
+  const priceCurrency = activePlaybook.currency?.trim().toUpperCase() || '';
 
   const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value.replace(/\D/g, '');
@@ -633,6 +580,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return false;
     }
 
+    if (isPracticeOrder) return true;
+
     if (tipoComprobante === 'BOLETA') {
       if (numeroDocumento.length !== 8) {
         setErrorMessage('El DNI debe contener exactamente 8 dígitos.');
@@ -654,14 +603,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleSubmitIzipay = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!compraHabilitada) {
+      setErrorMessage(getUnpurchasableReason(programaNoDisponible));
+      return;
+    }
+    if (!izipayDisponible) {
+      setErrorMessage('El pago con tarjeta no está disponible. Selecciona una transferencia bancaria disponible.');
+      return;
+    }
     if (!validateFields()) return;
-    const parsedId = Number(playbook.id);
-    if (!playbook.id || isNaN(parsedId) || parsedId <= 0 || !Number.isInteger(parsedId)) {
+    const invalidItem = selectedItems.find(
+      (p) => !Number.isInteger(p.programId) || p.programId <= 0
+    );
+    if (invalidItem) {
       setErrorMessage('El programa seleccionado no es válido o no está disponible para compra.');
       return;
     }
-    if (isSubmitting) return;
+    if (isSubmitting || submissionLockRef.current) return;
 
+    submissionLockRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -672,7 +632,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       let guestToken: string | undefined = undefined;
 
       if (isGuest) {
-        guestToken = await storeService.getOrCreateGuestSession(email.trim(), scope, playbook.programId);
+        guestToken = await storeService.getOrCreateGuestSession(email.trim(), scope, selectionKey);
         if (!guestToken || guestToken.trim().length === 0) {
           throw new Error('No se pudo establecer una sesión de compra segura. Por favor intente nuevamente.');
         }
@@ -681,7 +641,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Persistir estado de intención y credencial criptográfica ANTES del envío a la red
       storeService.saveCheckoutIntent({
         claveIdempotencia: key,
-        programId: playbook.programId,
+        programId: activePlaybook.programId,
+        targetKey: selectionKey,
+        programaIds: selectedItems.map((p) => p.programId),
         buyerScope: scope,
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
@@ -692,11 +654,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         guestSessionToken: guestToken,
         status: 'PENDIENTE',
         createdAt: Date.now(),
-      });
+      }, selectionKey);
 
       const response = await storeService.createCheckoutSession({
-        programaIds: [playbook.programId],
-        programaTitulo: playbook.title,
+        programaIds: selectedItems.map((p) => p.programId),
+        programaTitulo: selectedItems.length === 1 ? activePlaybook.title : selectedItems.map((p) => p.title).join(', '),
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
         telefono: telefono.trim(),
@@ -720,7 +682,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           codigoOrden: response.codigoOrden,
         });
       } else if (response.checkoutUrl || response.stripeCheckoutUrl) {
-        storeService.clearCheckoutIntent(scope, playbook.programId);
         window.location.href = response.checkoutUrl || response.stripeCheckoutUrl!;
       } else {
         throw new Error('No se pudo generar la sesión de pago con izipay Online');
@@ -734,19 +695,90 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           'Ocurrió un inconveniente al conectar con la pasarela izipay. Por favor intenta de nuevo o escríbenos por WhatsApp.'
       );
     } finally {
+      submissionLockRef.current = false;
       setIsSubmitting(false);
     }
   };
 
   const handleManualOrderRegistration = async (metodoTecnico: 'TRANSFERENCIA' | 'YAPE' | 'PLIN', nombreVisible: string) => {
+    if (isPracticeOrder) {
+      if (!validateFields() || isSubmitting || submissionLockRef.current) return;
+      submissionLockRef.current = true;
+      setIsSubmitting(true);
+      setErrorMessage('');
+      try {
+        const scope = getBuyerScope();
+        const key = getIdempotencyKey();
+        storeService.saveCheckoutIntent({
+          claveIdempotencia: key,
+          programId: activePlaybook.programId,
+          targetKey: selectionKey,
+          programaIds: selectedItems.map((item) => item.programId),
+          buyerScope: scope,
+          email: email.trim(),
+          telefono: telefono.trim() || undefined,
+          nombreCompleto: nombreCompleto.trim(),
+          tipoComprobante,
+          numeroDocumento: numeroDocumento.trim(),
+          nombreFacturacion: tipoComprobante === 'FACTURA' ? razonSocial.trim() : nombreCompleto.trim(),
+          metodoPago: 'Orden de práctica',
+          status: 'PENDIENTE',
+          createdAt: Date.now(),
+        }, selectionKey);
+        const response = await storeService.crearOrdenPractica({
+          claveIdempotencia: key,
+          nombre: nombreCompleto.trim(),
+          email: email.trim(),
+          telefono: telefono.trim() || undefined,
+          programas: selectedItems.map((item) => ({ id: item.programId, titulo: item.title })),
+        });
+        storeService.saveCheckoutIntent({
+          claveIdempotencia: key,
+          programId: activePlaybook.programId,
+          targetKey: selectionKey,
+          programaIds: selectedItems.map((item) => item.programId),
+          buyerScope: scope,
+          email: email.trim(),
+          telefono: telefono.trim() || undefined,
+          nombreCompleto: nombreCompleto.trim(),
+          tipoComprobante,
+          numeroDocumento: numeroDocumento.trim(),
+          nombreFacturacion: tipoComprobante === 'FACTURA' ? razonSocial.trim() : nombreCompleto.trim(),
+          metodoPago: 'Orden de práctica',
+          codigoOrden: response.codigoOrden,
+          status: 'REGISTRADA',
+          createdAt: Date.now(),
+        }, selectionKey);
+        setOrdenRegistradaCodigo(response.codigoOrden);
+        setOrdenRegistradaMetodo('Orden de práctica');
+        setOrdenEsPractica(true);
+      } catch (err: any) {
+        setErrorMessage(err.response?.data?.message || err.response?.data?.error || err.message || 'No se pudo registrar la inscripción de práctica.');
+      } finally {
+        submissionLockRef.current = false;
+        setIsSubmitting(false);
+      }
+      return;
+    }
+    if (!compraHabilitada) {
+      setErrorMessage(getUnpurchasableReason(programaNoDisponible));
+      return;
+    }
+    if (metodoTecnico === 'TRANSFERENCIA' && (cargandoCuentas || cuentasActivas.length === 0)) {
+      setErrorMessage('No hay una cuenta bancaria disponible para la moneda de esta compra. Contacta con admisiones.');
+      return;
+    }
     if (!validateFields()) return;
-    const parsedId = Number(playbook.id);
-    if (!playbook.id || isNaN(parsedId) || parsedId <= 0 || !Number.isInteger(parsedId)) {
+    const invalidItem = selectedItems.find(
+      (p) => !Number.isInteger(p.programId) || p.programId <= 0
+    );
+    if (invalidItem) {
       setErrorMessage('El programa seleccionado no es válido o no está disponible para compra.');
       return;
     }
-    if (isSubmitting) return;
+    if (isSubmitting || submissionLockRef.current) return;
 
+    submissionLockRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -757,7 +789,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       let guestToken: string | undefined = undefined;
 
       if (isGuest) {
-        guestToken = await storeService.getOrCreateGuestSession(email.trim(), scope, playbook.programId);
+        guestToken = await storeService.getOrCreateGuestSession(email.trim(), scope, selectionKey);
         if (!guestToken || guestToken.trim().length === 0) {
           throw new Error('No se pudo establecer una sesión de compra segura. Por favor intente nuevamente.');
         }
@@ -766,7 +798,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Persistir estado de intención previo al envío a la red
       storeService.saveCheckoutIntent({
         claveIdempotencia: key,
-        programId: playbook.programId,
+        programId: activePlaybook.programId,
+        targetKey: selectionKey,
+        programaIds: selectedItems.map((p) => p.programId),
         buyerScope: scope,
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
@@ -777,11 +811,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         guestSessionToken: guestToken,
         status: 'PENDIENTE',
         createdAt: Date.now(),
-      });
+      }, selectionKey);
 
       const response = await storeService.createCheckoutSession({
-        programaIds: [playbook.programId],
-        programaTitulo: playbook.title,
+        programaIds: selectedItems.map((p) => p.programId),
+        programaTitulo: selectedItems.length === 1 ? activePlaybook.title : selectedItems.map((p) => p.title).join(', '),
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
         telefono: telefono.trim(),
@@ -800,7 +834,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // Persistir código de orden confirmado para recuperación tras recarga o reintentos
       storeService.saveCheckoutIntent({
         claveIdempotencia: key,
-        programId: playbook.programId,
+        programId: activePlaybook.programId,
+        targetKey: selectionKey,
+        programaIds: selectedItems.map((p) => p.programId),
         buyerScope: scope,
         email: email.trim(),
         nombreCompleto: nombreCompleto.trim(),
@@ -812,7 +848,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         guestSessionToken: response.guestSessionToken || guestToken,
         status: 'REGISTRADA',
         createdAt: Date.now(),
-      });
+      }, selectionKey);
 
       setOrdenRegistradaCodigo(response.codigoOrden);
       setOrdenRegistradaMetodo(nombreVisible);
@@ -825,6 +861,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         'No se pudo registrar la orden en el servidor. Por favor intenta de nuevo.';
       setErrorMessage(mensaje);
     } finally {
+      submissionLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -832,12 +869,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleOpenWhatsAppForRegisteredOrder = () => {
     if (!ordenRegistradaCodigo) return;
 
+    const programasTexto = selectedItems.length === 1
+      ? selectedItems[0].title
+      : selectedItems.map((p, idx) => `${idx + 1}. ${p.title} (${p.currency || 'Moneda no disponible'} ${p.price ?? 'Precio no disponible'})`).join('\n   ');
+
     const message =
       `¡Hola Lysandri! He registrado mi orden de matrícula:\n\n` +
       `📋 *Código de Orden:* ${ordenRegistradaCodigo}\n` +
-      `🎓 *Programa:* ${playbook.title}\n` +
+      `🎓 *Programa(s):* ${selectedItems.length > 1 ? '\n   ' : ''}${programasTexto}\n` +
       `💳 *Método de Pago:* ${ordenRegistradaMetodo || 'Transferencia Bancaria'}\n` +
-      `💵 *Monto:* ${priceAmount} ${priceCurrency}\n\n` +
+      `💵 *Monto Total:* ${priceAmount} ${priceCurrency}\n\n` +
       `📌 *Datos del Titular / Comprobante:*\n` +
       `- *Nombres:* ${nombreCompleto.trim()}\n` +
       `- *Correo:* ${email.trim()}\n` +
@@ -849,7 +890,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     window.open(`https://wa.me/51941238905?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const cuentasActivas = cuentasBancarias.filter((c) => c.activo && c.numeroCuenta);
+  const cuentasActivas = cuentasBancarias.filter((c) => c.activo && c.numeroCuenta && c.moneda?.toUpperCase() === priceCurrency);
 
   return (
     <div
@@ -873,14 +914,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="lx-checkout-course">
             <p className="lx-checkout-kicker">
               <Sparkles size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: '4px' }} />
-              Matrícula ejecutiva oficial · Campus Moodle 24/7
+              {isPracticeOrder ? 'Inscripción de práctica' : compraHabilitada ? 'Inscripción al programa' : 'Información de inscripción · Pendiente de habilitación'}
             </p>
-            <h2 id="checkout-dialog-title">{playbook.title}</h2>
+            <h2 id="checkout-dialog-title">
+              {selectedItems.length === 1
+                ? activePlaybook.title
+                : `Matrícula ejecutiva (${selectedItems.length} programas)`}
+            </h2>
           </div>
 
           <div className="lx-checkout-price">
-            <strong>{priceCurrency === 'USD' ? `$${priceAmount}` : `S/ ${priceAmount}`}</strong>
-            <span>{priceCurrency} · SUNAT Oficial</span>
+            <strong>{priceCurrency === 'USD' ? `$${priceAmount}` : priceCurrency === 'PEN' ? `S/ ${priceAmount}` : 'Precio no disponible'}</strong>
+            <span>{`${priceCurrency}${compraHabilitada ? '' : ' · Precio referencial, no aprobado para cobro'}`}</span>
           </div>
 
           <button
@@ -897,7 +942,75 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div className="lx-checkout-body">
           
 
-          {/* Tarjeta de Asesora Académica */}
+          {/* Desglose de seleccion multiple */}
+          {selectedItems.length > 1 && (
+            <div
+              className="lx-checkout-itemized-summary"
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                marginBottom: '14px',
+              }}
+            >
+              <h4
+                style={{
+                  margin: '0 0 8px',
+                  fontSize: '11px',
+                  color: '#9eb0bc',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Programas incluidos ({selectedItems.length})
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {selectedItems.map((item, idx) => (
+                  <li
+                    key={item.id || item.programId}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '5px 0',
+                      borderBottom: idx < selectedItems.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <span style={{ color: '#e2e8f0', flex: 1, paddingRight: '8px' }}>
+                      {item.title}
+                    </span>
+                    <strong style={{ color: '#53cbe5', fontFamily: 'monospace' }}>
+                      {typeof item.price === 'number' && Number.isFinite(item.price) && item.currency && ['PEN', 'USD'].includes(item.currency.toUpperCase())
+                        ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: item.currency.toUpperCase() }).format(item.price)
+                        : 'Precio no disponible'}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: '8px',
+                  paddingTop: '8px',
+                  borderTop: '1px solid rgba(255,255,255,0.12)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                }}
+              >
+                <span style={{ color: '#ffffff' }}>{`Total combinado (${priceCurrency}):`}</span>
+                <span style={{ color: '#ffffff', fontFamily: 'monospace' }}>
+                  {priceCurrency && ['PEN', 'USD'].includes(priceCurrency)
+                    ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: priceCurrency }).format(priceAmount)
+                    : 'Importe no disponible'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Tarjeta de Asesora Academica */}
           <div className="lx-advisor-box">
             <GraduationCap size={18} />
             <div style={{ flex: 1 }}>
@@ -920,36 +1033,49 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
 
           {/* Banner de Confirmación de Orden Registrada (cuando aplica) */}
+          {!compraHabilitada && !isPracticeOrder && (
+            <div className="lx-checkout-alert" role="alert">
+              La inscripción de este programa todavía no puede confirmarse: {getUnpurchasableReason(programaNoDisponible)}.
+              Podrás registrar tu compra cuando el programa esté habilitado.
+            </div>
+          )}
           {ordenRegistradaCodigo ? (
             <div className="lx-order-confirmed">
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                 <CheckCircle2 size={22} style={{ color: '#34d399', flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ flex: 1 }}>
-                  <h4>¡Orden Registrada en el Sistema Lysandri!</h4>
+                  <h4>{ordenEsPractica ? 'Inscripción de práctica guardada' : '¡Orden Registrada en el Sistema Lysandri!'}</h4>
                   <p style={{ margin: '4px 0 8px', fontSize: '12px', fontFamily: 'monospace', color: '#6ee7b7' }}>
-                    Código Oficial: <strong style={{ fontSize: '16px', color: '#ffffff' }}>{ordenRegistradaCodigo}</strong>
+                    {ordenEsPractica ? 'Código de práctica:' : 'Código Oficial:'}{' '}
+                    <strong style={{ fontSize: '16px', color: '#ffffff' }}>{ordenRegistradaCodigo}</strong>
                   </p>
                   <p style={{ margin: '0 0 10px', fontSize: '11px', lineHeight: 1.45, color: '#d1fae5' }}>
-                    Tu orden se encuentra en estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PENDIENTE_PAGO</strong>.
-                    Por favor remite tu comprobante de abono bancario indicando este código.
-                    Nuestro equipo administrativo validará el abono en cuenta bancaria antes de activar tus credenciales en el Campus Virtual.
+                    {ordenEsPractica ? (
+                      <>Registro guardado en el entorno de práctica con estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PRACTICA</strong>. No se realizó ningún cobro ni se activaron accesos.</>
+                    ) : (
+                    <>Tu orden se encuentra en estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PENDIENTE_PAGO</strong>.
+                        Por favor remite tu comprobante de abono bancario indicando este código.
+                        Nuestro equipo administrativo validará el abono en cuenta bancaria antes de activar tus credenciales en el Campus Virtual.</>
+                    )}
                   </p>
                   <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', fontSize: '11px', marginBottom: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ color: '#9eb0bc' }}>Importe Registrado:</span>
+                      <span style={{ color: '#9eb0bc' }}>{ordenEsPractica ? 'Total referencial:' : 'Importe Registrado:'}</span>
                       <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{priceAmount} {priceCurrency}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ color: '#9eb0bc' }}>Titular:</span>
-                      <span style={{ color: '#ffffff' }}>{nombreCompleto}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#9eb0bc' }}>Comprobante:</span>
-                      <span style={{ color: '#ffffff' }}>{tipoComprobante} ({numeroDocumento})</span>
-                    </div>
+                    {!ordenEsPractica && <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ color: '#9eb0bc' }}>Titular:</span>
+                        <span style={{ color: '#ffffff' }}>{nombreCompleto}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#9eb0bc' }}>Comprobante:</span>
+                        <span style={{ color: '#ffffff' }}>{tipoComprobante} ({numeroDocumento})</span>
+                      </div>
+                    </>}
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button
+                    {!ordenEsPractica && <button
                       type="button"
                       onClick={handleOpenWhatsAppForRegisteredOrder}
                       className="lx-checkout-whatsapp-action"
@@ -958,7 +1084,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <MessageCircle size={16} />
                       <span>Enviar Comprobante por WhatsApp</span>
                       <ExternalLink size={14} />
-                    </button>
+                    </button>}
                     <button
                       type="button"
                       onClick={handleStartNewOrder}
@@ -971,7 +1097,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : (
+          ) : (compraHabilitada || isPracticeOrder) && (
             <>
               {errorMessage && (
                 <div className="lx-checkout-error" role="alert">
@@ -995,12 +1121,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               )}
 
-              {/* Sección 1: Datos del Alumno y Facturación */}
+              {checkoutCliente ? (
+                <CompraClientePrueba key={`${clienteId}:${selectionKey}`} clienteId={clienteId}
+                  programas={selectedItems.map(item => item.programId)} />
+              ) : <>
+              {/* Sección 1: Datos del comprador */}
               <section className="lx-checkout-section" aria-labelledby="checkout-customer-heading">
                 <div className="lx-section-heading">
                   <div>
-                    <h3 id="checkout-customer-heading">1. Datos del Alumno y Facturación</h3>
-                    <p>Emisión oficial de diploma directivo y comprobante fiscal SUNAT.</p>
+                    <h3 id="checkout-customer-heading">{isPracticeOrder ? '1. Datos de contacto' : '1. Datos del Alumno y Facturación'}</h3>
+                    <p>
+                      {isPracticeOrder ? 'Se usarán para identificar el registro de práctica.' : 'Emisión oficial de diploma directivo y comprobante fiscal SUNAT.'}
+                    </p>
                   </div>
                 </div>
 
@@ -1017,7 +1149,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onChange={(e) => setNombreCompleto(e.target.value)}
                       placeholder="Ej. Carlos Alberto Mendoza Alarcón"
                     />
-                    <small>Así figurará exactamente en tu diploma directivo con código QR y LinkedIn.</small>
+                    <small>{isPracticeOrder ? 'Nombre de referencia para el registro.' : 'Así figurará exactamente en tu diploma directivo con código QR y LinkedIn.'}</small>
                   </div>
 
                   <div className="lx-field">
@@ -1032,7 +1164,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="c.mendoza@empresa.com"
                     />
-                    <small>Para enviarte tus accesos al campus y comprobante de pago.</small>
+                    <small>{isPracticeOrder ? 'Correo asociado al registro.' : 'Para enviarte tus accesos al campus y comprobante de pago.'}</small>
                   </div>
 
                   <div className="lx-field">
@@ -1050,6 +1182,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
                 </div>
 
+                {!isPracticeOrder && <>
                 <fieldset className="lx-invoice-picker">
                   <legend>¿Tu comprobante es a título personal o para tu empresa? *</legend>
                   <div className="lx-invoice-options">
@@ -1112,27 +1245,71 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                   )}
                 </div>
+                </>}
               </section>
 
-              {/* Sección 2: Métodos de Pago */}
+              {isPracticeOrder ? (
+                <section className="lx-checkout-section" aria-labelledby="checkout-practice-heading">
+                  <div className="lx-section-heading">
+                    <div>
+                      <h3 id="checkout-practice-heading">2. Registrar inscripción</h3>
+                      <p>Se guardará una orden separada para revisar el recorrido con tu asesor.</p>
+                    </div>
+                  </div>
+                  <div className="lx-method-panel">
+                    <p style={{ margin: '0 0 14px', color: '#cbd5e1', fontSize: '12px', lineHeight: 1.5 }}>
+                      Esta inscripción usa un programa referencial y un precio de muestra. Se registra en el backend como práctica; no procesa pagos, no genera comprobante y no da acceso a Moodle.
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => handleManualOrderRegistration('TRANSFERENCIA', 'Orden de práctica')}
+                      className="lx-checkout-primary-action"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <LoaderCircle size={17} className="lx-spinner" />
+                          <span>Guardando inscripción...</span>
+                        </>
+                      ) : (
+                        <>
+                          <GraduationCap size={16} />
+                          <span>Registrar inscripción</span>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </section>
+              ) : (
               <section className="lx-checkout-section" aria-labelledby="checkout-payment-heading">
                 <div className="lx-section-heading">
                   <div>
-                    <h3 id="checkout-payment-heading">2. Elige tu método de pago preferido</h3>
-                    <p>Selecciona cómo completar tu matrícula con respaldo oficial.</p>
+                    <h3 id="checkout-payment-heading">
+                      2. Elige tu método de pago preferido
+                    </h3>
+                    <p>
+                      Selecciona cómo completar tu matrícula con respaldo oficial.
+                    </p>
                   </div>
                 </div>
 
+                {errorMetodos && (
+                  <p role="alert">No se pudo verificar la disponibilidad del pago con tarjeta.{' '}
+                    <button type="button" onClick={() => setRevisionMetodos((valor) => valor + 1)}>Reintentar</button>
+                  </p>
+                )}
                 <div className="lx-payment-options" role="group" aria-label="Métodos de pago">
                   <button
                     type="button"
                     aria-pressed={paymentMethod === 'IZIPAY'}
+                    disabled={!izipayDisponible}
                     className={paymentMethod === 'IZIPAY' ? 'is-selected' : ''}
                     onClick={() => setPaymentMethod('IZIPAY')}
                   >
                     <CreditCard size={18} />
                     <span>Tarjeta Online</span>
-                    <small>izipay Online</small>
+                    <small>{izipayDisponible ? 'izipay Online' : errorMetodos ? 'No disponible' : 'Próximamente'}</small>
                   </button>
 
                   <button
@@ -1271,7 +1448,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         <button
                           type="button"
                           onClick={handleSubmitIzipay}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !compraHabilitada}
                           className="lx-checkout-primary-action"
                         >
                           {isSubmitting ? (
@@ -1329,7 +1506,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                     <button
                       type="button"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !compraHabilitada}
                       onClick={() => handleManualOrderRegistration('YAPE', 'Yape / Plin')}
                       className="lx-checkout-primary-action"
                     >
@@ -1418,7 +1595,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <div style={{ padding: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '8px', color: '#fef3c7', fontSize: '11px', marginTop: '12px' }}>
                         <strong>Cuentas Corrientes en Configuración Oficial</strong>
                         <p style={{ margin: '4px 0 0', lineHeight: 1.4 }}>
-                          Las cuentas bancarias corporativas para transferencias directas se encuentran en proceso de formalización técnica en este entorno. Puedes registrar tu orden para recibir la orientación de abono verificada por parte de nuestra asesora académica, o pagar con tarjeta mediante izipay Online.
+                          No hay cuentas bancarias disponibles para la moneda de esta compra. Contacta con admisiones antes de realizar un abono.
                         </p>
                       </div>
                     )}
@@ -1428,12 +1605,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </p>
 
                     <p style={{ fontSize: '11px', color: '#8da2af', margin: '10px 0 14px' }}>
-                      Al presionar el botón, el backend registrará formalmente tu orden de compra con método <strong style={{ color: '#53cbe5', fontFamily: 'monospace' }}>TRANSFERENCIA</strong> en estado <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>PENDIENTE_PAGO</strong>. Una vez que tu abono sea verificado por personal administrativo autorizado, se activarán tus accesos en el Campus Virtual.
+                      Registraremos tu solicitud pendiente de pago. El equipo autorizado revisará tu abono antes de confirmar la compra y gestionar tus accesos.
                     </p>
 
                     <button
                       type="button"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !compraHabilitada || cargandoCuentas || cuentasActivas.length === 0}
                       onClick={() => handleManualOrderRegistration('TRANSFERENCIA', 'Transferencia Bancaria')}
                       className="lx-checkout-primary-action"
                     >
@@ -1453,6 +1630,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
                 )}
               </section>
+              )}
+              </>}
             </>
           )}
 
@@ -1476,9 +1655,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </a>
           </div>
 
-          <p className="lx-checkout-footnote">
-            Al continuar, confirmas que los datos del comprobante son correctos.
-          </p>
+          {(compraHabilitada || isPracticeOrder) && <p className="lx-checkout-footnote">
+            {isPracticeOrder ? 'Esta inscripción se guardará en el entorno de práctica y no procesará ningún pago.' : 'Al continuar, confirmas que los datos del comprobante son correctos.'}
+          </p>}
         </div>
       </section>
     </div>

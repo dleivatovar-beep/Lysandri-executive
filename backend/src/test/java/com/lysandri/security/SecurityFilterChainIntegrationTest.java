@@ -49,6 +49,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {
         AuthController.class,
+        com.lysandri.adapters.in.web.TesoreriaController.class,
+        com.lysandri.adapters.in.web.OperacionesController.class,
+        com.lysandri.adapters.in.web.CuentaController.class,
+        com.lysandri.adapters.in.web.ComprasPruebaController.class,
+        com.lysandri.adapters.in.web.RecuperacionController.class,
         UsuarioController.class,
         OrderController.class,
         com.lysandri.adapters.in.web.WhatsAppWebhookController.class,
@@ -56,14 +61,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtService.class, GlobalExceptionHandler.class, com.lysandri.config.CuentasBancariasProperties.class})
 @TestPropertySource(properties = {
+        "purchase.sandbox.enabled=true",
         "jwt.secret=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970337336763979244226452948404D6351655468576D5A7134743777217A25432A",
         "jwt.expiration=3600000"
 })
 @DisplayName("Pruebas HTTP de Cadena de Seguridad: Filtros JWT, Distinción 401 vs 403, Inicio de Sesión y Activación")
+@org.springframework.test.context.ActiveProfiles({"test","sandbox"})
 class SecurityFilterChainIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private com.lysandri.config.DisponibilidadPagos disponibilidadPagos;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -100,6 +110,114 @@ class SecurityFilterChainIntegrationTest {
 
     private UsuarioEntity clienteUser;
     private UsuarioEntity adminUser;
+
+    @MockBean private com.lysandri.application.service.TesoreriaService tesoreria;
+    @MockBean private com.lysandri.application.service.IncidenciasService incidencias;
+    @MockBean private com.lysandri.application.service.ReporteOperativoService reportes;
+
+    @Test void operacionesExigeSesionYRestringeElSeguimientoAAdministracion() throws Exception {
+        String ruta = "/api/v1/internal/operaciones";
+        mockMvc.perform(get(ruta + "/incidencias")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(ruta + "/incidencias")
+                .header("Authorization", "Bearer " + jwtService.generateToken(clienteUser)))
+                .andExpect(status().isForbidden());
+        var contador = UsuarioEntity.builder().idUser(45L).email("contador-operaciones@prueba.local")
+                .rol(RolUsuario.CONTABILIDAD).activo(true).build();
+        when(userDetailsService.loadUserByUsername(contador.getEmail())).thenReturn(contador);
+        String token = jwtService.generateToken(contador);
+        mockMvc.perform(get(ruta + "/reporte").param("desde", "2026-11-01").param("hasta", "2026-11-10")
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mockMvc.perform(post(ruta + "/incidencias/revisar")
+                .header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+        mockMvc.perform(post(ruta + "/incidencias/revisar")
+                .header("Authorization", "Bearer " + jwtService.generateToken(adminUser)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get(ruta + "/reporte").param("desde", "fecha-invalida").param("hasta", "2026-11-10")
+                .header("Authorization", "Bearer " + jwtService.generateToken(adminUser)))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get(ruta + "/incidencias/identificador-invalido/historial")
+                .header("Authorization", "Bearer " + jwtService.generateToken(adminUser)))
+                .andExpect(status().isBadRequest());
+        org.mockito.Mockito.verify(incidencias).revisar();
+    }
+
+
+    @Test void importacionDeTesoreriaRechazaListasVaciasYDepositosIncompletos() throws Exception {
+        String token = jwtService.generateToken(adminUser);
+        for (String cuerpo : java.util.List.of("{\"movimientos\":[]}", "{\"movimientos\":[{}]}", "{\"movimientos\":[null]}")) {
+            mockMvc.perform(post("/api/v1/internal/tesoreria/movimientos/importar")
+                            .header("Authorization", "Bearer " + token)
+                            .contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+                    .andExpect(status().isBadRequest());
+        }
+        org.mockito.Mockito.verifyNoInteractions(tesoreria);
+    }
+    @Test void tesoreriaSeparaConsultaDeAuditoriaYRegistroContable() throws Exception {
+        var consulta = "/api/v1/internal/tesoreria?desde=2026-11-01&hasta=2026-11-10&entorno=PRUEBA";
+        mockMvc.perform(get(consulta)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(consulta).header("Authorization", "Bearer " + jwtService.generateToken(clienteUser)))
+                .andExpect(status().isForbidden());
+        var auditor = UsuarioEntity.builder().idUser(44L).email("auditor@prueba.local")
+                .rol(RolUsuario.AUDITOR).activo(true).build();
+        when(userDetailsService.loadUserByUsername(auditor.getEmail())).thenReturn(auditor);
+        String tokenAuditor = jwtService.generateToken(auditor);
+        mockMvc.perform(get(consulta).header("Authorization", "Bearer " + tokenAuditor))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/internal/tesoreria/conciliaciones/automaticas")
+                        .param("desde", "2026-11-01").param("hasta", "2026-11-10").param("entorno", "PRUEBA")
+                        .header("Authorization", "Bearer " + tokenAuditor))
+                .andExpect(status().isForbidden());
+        var contador = UsuarioEntity.builder().idUser(45L).email("contador@prueba.local")
+                .rol(RolUsuario.CONTABILIDAD).activo(true).build();
+        when(userDetailsService.loadUserByUsername(contador.getEmail())).thenReturn(contador);
+        mockMvc.perform(post("/api/v1/internal/tesoreria/conciliaciones/automaticas")
+                        .param("desde", "2026-11-01").param("hasta", "2026-11-10").param("entorno", "PRUEBA")
+                        .header("Authorization", "Bearer " + jwtService.generateToken(contador)))
+                .andExpect(status().isOk());
+        org.mockito.Mockito.verify(tesoreria).conciliarCoincidencias(
+                java.time.LocalDate.of(2026, 11, 1), java.time.LocalDate.of(2026, 11, 10), "PRUEBA", contador.getEmail());
+    }
+
+    @MockBean private com.lysandri.application.service.RecuperacionService recuperacion;
+    @MockBean private com.lysandri.application.service.CuentaService cuentas;
+    @MockBean private com.lysandri.application.service.ComprasPruebaService comprasPrueba;
+
+    @Test void cambioDePasswordExigeSesionYUsaLaIdentidadDelToken() throws Exception {
+        String cuerpo="{\"actual\":\"AnteriorPrueba2026\",\"nueva\":\"NuevaPrueba2026\",\"id\":999}";
+        mockMvc.perform(post("/api/v1/cuenta/password").contentType(MediaType.APPLICATION_JSON).content(cuerpo)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/cuenta/password").header("Authorization","Bearer "+jwtService.generateToken(clienteUser))
+            .contentType(MediaType.APPLICATION_JSON).content(cuerpo)).andExpect(status().isOk());
+        org.mockito.Mockito.verify(cuentas).cambiarPassword(10L,"AnteriorPrueba2026","NuevaPrueba2026");
+    }
+
+    @Test void pruebasComercialesExigenPermisosDePersonal() throws Exception {
+        mockMvc.perform(get("/api/v1/pruebas/comerciales/compras")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/pruebas/comerciales/compras").header("Authorization","Bearer "+jwtService.generateToken(clienteUser))).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/pruebas/comerciales/compras").header("Authorization","Bearer "+jwtService.generateToken(adminUser))).andExpect(status().isOk());
+        var contador=UsuarioEntity.builder().idUser(20L).email("contador@prueba.local").rol(RolUsuario.CONTABILIDAD).activo(true).build();
+        when(userDetailsService.loadUserByUsername(contador.getEmail())).thenReturn(contador);
+        mockMvc.perform(get("/api/v1/pruebas/comerciales/compras").header("Authorization","Bearer "+jwtService.generateToken(contador))).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/pruebas/comerciales/cotizar").header("Authorization","Bearer "+jwtService.generateToken(contador))
+            .contentType(MediaType.APPLICATION_JSON).content("{\"programas\":[1001],\"cuotas\":1,\"medio\":\"BCP\"}")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void recuperacionPublicaNoRequiereJwt() throws Exception {
+        when(recuperacion.solicitar(any(), any(), any())).thenReturn(com.lysandri.application.service.RecuperacionService.MENSAJE);
+        mockMvc.perform(post("/api/v1/auth/recuperar-contrasena").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"ana@prueba.local\",\"origen\":\"http://127.0.0.1:3000\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.mensaje").value(com.lysandri.application.service.RecuperacionService.MENSAJE));
+    }
+
+    @Test
+    void restablecimientoPublicoValidaElCuerpo() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/restablecer-contrasena").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"token\":\"" + "a".repeat(43) + "\",\"password\":\"ContrasenaPrueba2026\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/auth/restablecer-contrasena").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"token\":\"invalido\",\"password\":\"corta\"}"))
+                .andExpect(status().isBadRequest());
+    }
 
     @BeforeEach
     void setUp() {

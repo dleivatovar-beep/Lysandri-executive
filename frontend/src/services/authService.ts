@@ -24,7 +24,31 @@ const toAuthResponse = (response: BackendAuthResponse): AuthResponse => ({
   rol: response.rol === 'CLIENTE' ? 'ESTUDIANTE' : response.rol,
 });
 
+export interface CondicionesRegistro {
+  version: string;
+  terminos: string;
+  privacidad: string;
+}
+
 export const authService = {
+  async condicionesRegistro(signal: AbortSignal): Promise<CondicionesRegistro> {
+    const response = await apiClient.get<CondicionesRegistro>('/auth/condiciones-registro', { signal });
+    return response.data;
+  },
+  async cambiarPassword(actual: string, nueva: string): Promise<{ mensaje: string }> {
+    const respuesta = await apiClient.post<{ mensaje: string }>('/cuenta/password', { actual, nueva });
+    return respuesta.data;
+  },
+  async recuperarPassword(email: string, origen: string): Promise<{ mensaje: string }> {
+    const response = await apiClient.post<{ mensaje: string }>('/auth/recuperar-contrasena', { email, origen });
+    return response.data;
+  },
+
+  async restablecerPassword(token: string, password: string): Promise<{ mensaje: string }> {
+    const response = await apiClient.post<{ mensaje: string }>('/auth/restablecer-contrasena', { token, password });
+    return response.data;
+  },
+
   async login(
     credentials: LoginRequest,
   ): Promise<AuthResponse> {
@@ -38,8 +62,12 @@ export const authService = {
 
   async register(
     data: RegisterRequest,
-  ): Promise<AuthResponse> {
-    const response = await apiClient.post<BackendAuthResponse>(
+  ): Promise<string> {
+    const response = await apiClient.post<{
+      token: string | null;
+      pendienteActivacion: boolean;
+      mensaje?: string;
+    }>(
       '/auth/register',
       {
         nombres: data.nombre,
@@ -47,9 +75,31 @@ export const authService = {
         email: data.email,
         password: data.password,
         telefono: data.telefono,
+        aceptaTerminos: data.aceptaTerminos,
+        aceptaPrivacidad: data.aceptaPrivacidad,
+        version: data.version,
       },
     );
 
+    if (!response.data.pendienteActivacion || response.data.token) {
+      throw new Error('El servidor no confirmó que la cuenta esté pendiente de verificación.');
+    }
+
+    return response.data.mensaje || 'Verifica tu correo antes de iniciar sesión.';
+  },
+
+  async registerInternal(data: {
+    nombres: string;
+    apellidos: string;
+    email: string;
+    password: string;
+    telefono?: string;
+    area: string;
+  }): Promise<AuthResponse> {
+    const response = await apiClient.post<BackendAuthResponse>(
+      '/auth/register-interno',
+      data,
+    );
     return toAuthResponse(response.data);
   },
 
@@ -103,9 +153,10 @@ export const getApiErrorMessage = (
     return responseData.message;
   }
 
-  if (responseData?.errors) {
+  const fieldErrors = responseData?.details ?? responseData?.errors;
+  if (fieldErrors) {
     const firstMessage = Object.values(
-      responseData.errors,
+      fieldErrors,
     )[0];
 
     if (firstMessage) {

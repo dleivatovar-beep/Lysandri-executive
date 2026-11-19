@@ -11,7 +11,6 @@ import {
   AuthResponse,
   AuthUser,
   LoginRequest,
-  RegisterRequest,
 } from '../types';
 
 import { isJwtExpired } from '../services/api';
@@ -26,9 +25,6 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<AuthUser>;
-  register: (
-    data: RegisterRequest,
-  ) => Promise<AuthUser>;
   activarCuenta: (
     token: string,
     password: string,
@@ -148,14 +144,6 @@ export const AuthProvider: React.FC<
     return saveSession(response);
   };
 
-  const register = async (
-    data: RegisterRequest,
-  ): Promise<AuthUser> => {
-    const response = await authService.register(data);
-
-    return saveSession(response);
-  };
-
   const activarCuenta = async (
     token: string,
     password: string,
@@ -186,7 +174,6 @@ export const AuthProvider: React.FC<
       isAuthenticated: Boolean(user && token),
       isLoading,
       login,
-      register,
       activarCuenta,
       logout,
       setSessionUser,

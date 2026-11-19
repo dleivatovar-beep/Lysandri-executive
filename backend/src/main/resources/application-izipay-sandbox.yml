@@ -1,0 +1,7 @@
+# Combinar como clone,izipay-sandbox y configurar credenciales de prueba emitidas por Izipay.
+izipay:
+  shop-id: ${IZIPAY_SHOP_ID}
+  api-key: ${IZIPAY_API_KEY}
+  public-key: ${IZIPAY_PUBLIC_KEY}
+  sha256-key: ${IZIPAY_SHA256_KEY}
+  endpoint: ${IZIPAY_ENDPOINT:https://api.micuentaweb.pe}

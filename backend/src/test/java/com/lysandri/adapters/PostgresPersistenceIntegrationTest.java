@@ -6,6 +6,7 @@ import com.lysandri.domain.model.Usuario;
 import com.lysandri.domain.model.Orden;
 import com.lysandri.domain.ports.out.BillingPort;
 import com.lysandri.domain.ports.in.UserManagementUseCase;
+import com.lysandri.application.service.SandboxOrderService;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "sandbox"})
 class PostgresPersistenceIntegrationTest extends PostgresTestDatabase {
 
     @Autowired
@@ -54,14 +55,106 @@ class PostgresPersistenceIntegrationTest extends PostgresTestDatabase {
         @Autowired
         private BillingPort billingPort;
 
+    @Autowired
+    private SandboxOrderService sandboxOrderService;
+
     @Test
-    void flywayAplicaYValidaLasMigracionesV1HastaV26YHibernateValidaElEsquema() {
+    void ordenesDePracticaSePersistenConPrecioOficialEIdempotenciaEnPostgresDesechable() {
+        String key = "sandbox-test-" + UUID.randomUUID();
+        var request = new SandboxOrderService.SandboxOrderRequest(key, "Usuario de práctica", "prueba@example.com", null, java.util.List.of(
+                new SandboxOrderService.SandboxProgramRequest(1001L, "Inteligencia Artificial para Directivos & C-Suite"),
+                new SandboxOrderService.SandboxProgramRequest(1002L, "Ciberseguridad & Protección Antifraude para Empresas")
+        ));
+
+        try {
+            var created = sandboxOrderService.createOrder(request);
+            var retried = sandboxOrderService.createOrder(request);
+
+            assertEquals(created.codigoOrden(), retried.codigoOrden());
+            assertEquals(java.util.List.of(1001L, 1002L), created.programaIds());
+            assertEquals(new java.math.BigDecimal("198.00"), created.total());
+            assertEquals("USD", created.moneda());
+            assertEquals("PRACTICA", created.estado());
+            assertEquals(2, created.programas().size());
+            assertEquals(1, jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sandbox_orders WHERE clave_idempotencia = ?", Integer.class, key));
+            assertEquals(2, jdbcTemplate.queryForObject(
+                    """
+                    SELECT COUNT(*)
+                    FROM sandbox_order_items item
+                    JOIN sandbox_orders orders ON orders.id = item.sandbox_order_id
+                    WHERE orders.clave_idempotencia = ?
+                    """, Integer.class, key));
+
+            assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+                    sandboxOrderService.createOrder(new SandboxOrderService.SandboxOrderRequest(
+                            key,
+                            "Usuario de práctica", "prueba@example.com", null,
+                            java.util.List.of(new SandboxOrderService.SandboxProgramRequest(1003L, "Gestión Financiera Estratégica & Optimización de Costos"))
+                    )));
+        } finally {
+            jdbcTemplate.update("DELETE FROM sandbox_orders WHERE clave_idempotencia = ?", key);
+        }
+    }
+
+    @Test
+    void endpointDePruebaGuardaUnaOrdenSimuladaSinCrearUnaOrdenComercial() throws Exception {
+        String key = "sandbox-http-" + UUID.randomUUID();
+        var request = new com.lysandri.adapters.in.web.SandboxOrderController.CreateRequest(
+                key,
+                "Usuario de práctica",
+                "prueba@example.com",
+                null,
+                java.util.List.of(
+                        new com.lysandri.adapters.in.web.SandboxOrderController.ProgramRequest(1001L, "Inteligencia Artificial para Directivos & C-Suite"),
+                        new com.lysandri.adapters.in.web.SandboxOrderController.ProgramRequest(1002L, "Ciberseguridad & Protección Antifraude para Empresas")
+                )
+        );
+
+        try {
+            String firstResponse = mockMvc.perform(post("/api/v1/orders/sandbox")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.estado").value("PRACTICA"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.total").value(198.0))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.programaIds.length()").value(2))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            String secondResponse = mockMvc.perform(post("/api/v1/orders/sandbox")
+                            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            assertEquals(
+                    objectMapper.readTree(firstResponse).get("codigoOrden").asText(),
+                    objectMapper.readTree(secondResponse).get("codigoOrden").asText()
+            );
+            assertEquals(0, jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM ordenes WHERE clave_idempotencia = ?", Integer.class, key));
+            assertEquals(1, jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM sandbox_orders WHERE clave_idempotencia = ?", Integer.class, key));
+        } finally {
+            jdbcTemplate.update("DELETE FROM sandbox_orders WHERE clave_idempotencia = ?", key);
+        }
+    }
+
+    @Test
+    void flywayAplicaYValidaLasMigracionesVersionadas() {
         flyway.validate();
 
         Integer appliedMigrations = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE AND version IS NOT NULL",
                 Integer.class);
-        assertEquals(41, appliedMigrations);
+        long migracionesVersionadas = java.util.Arrays.stream(flyway.info().all())
+                .filter(info -> info.getVersion() != null)
+                .count();
+        assertEquals(migracionesVersionadas, appliedMigrations.longValue());
+        assertEquals(0, flyway.info().pending().length);
 
         Integer v20 = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '20' AND success = TRUE",
@@ -133,6 +226,10 @@ class PostgresPersistenceIntegrationTest extends PostgresTestDatabase {
                 "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='ordenes' AND column_name='guest_session_hash'", String.class));
         assertEquals("clave_idempotencia", jdbcTemplate.queryForObject(
                 "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='ordenes' AND column_name='clave_idempotencia'", String.class));
+        assertEquals("sandbox_orders", jdbcTemplate.queryForObject(
+                "SELECT to_regclass('public.sandbox_orders')::text", String.class));
+        assertEquals("sandbox_order_items", jdbcTemplate.queryForObject(
+                "SELECT to_regclass('public.sandbox_order_items')::text", String.class));
 
         assertEquals("whatsapp_mensaje", jdbcTemplate.queryForObject(
                 "SELECT to_regclass('public.whatsapp_mensaje')::text", String.class));

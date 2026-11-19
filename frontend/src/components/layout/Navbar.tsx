@@ -30,7 +30,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [activeNav, setActiveNav] = useState('catalogo-section');
   const [isPublicMenuOpen, setIsPublicMenuOpen] = useState(false);
   const isAdmin = user?.role === 'ADMIN';
-  const adminSection = location.pathname.includes('/admin/contabilidad') || location.pathname.includes('/admin/reportes')
+  const adminSection = location.pathname.startsWith('/admin/ia')
+    ? 'IA'
+    : location.pathname.includes('/admin/contabilidad') || location.pathname.includes('/admin/reportes')
     ? 'Área contable'
     : location.pathname.includes('/admin/inscripciones')
       ? 'Inscripciones'

@@ -54,8 +54,10 @@ public class JwtService {
             UserDetails userDetails,
             long expiration
     ) {
+        Map<String, Object> claims = new HashMap<>(extraClaims);
+        if (userDetails instanceof UsuarioEntity usuario) claims.put("cv", usuario.getVersionCredenciales());
         return Jwts.builder()
-                .claims(extraClaims)
+                .claims(claims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
@@ -64,8 +66,14 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        Claims claims = extractAllClaims(token);
+        if (!userDetails.getUsername().equals(claims.getSubject()) || claims.getExpiration() == null
+                || !claims.getExpiration().after(new Date())) return false;
+        if (userDetails instanceof UsuarioEntity usuario) {
+            Integer version = claims.get("cv", Integer.class);
+            return (version == null ? 0 : version) == usuario.getVersionCredenciales();
+        }
+        return true;
     }
 
     public record GuestSessionClaims(String sessionId, String email) {}

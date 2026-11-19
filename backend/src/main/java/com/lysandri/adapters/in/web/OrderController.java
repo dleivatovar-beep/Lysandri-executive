@@ -36,6 +36,14 @@ public class OrderController {
     private final CuentasBancariasProperties cuentasBancariasProperties;
     private final com.lysandri.security.JwtService jwtService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.lysandri.config.DisponibilidadPagos disponibilidadPagos;
+
+    @GetMapping("/metodos-pago")
+    public java.util.Map<String, Boolean> metodosPago() {
+        return java.util.Map.of("izipayDisponible", disponibilidadPagos.izipayDisponible());
+    }
+
     public record GuestSessionRequest(String email) {}
     public record GuestSessionResponse(String guestSessionToken, String guestSessionId, long expiresIn) {}
 
@@ -89,9 +97,30 @@ public class OrderController {
             @RequestHeader(value = "X-Guest-Session-Token", required = false) String guestTokenHeader,
             @Valid @RequestBody CreateOrderRequest request) {
 
+        String metodo = request.getMetodoPago() == null || request.getMetodoPago().isBlank()
+                ? "IZIPAY" : request.getMetodoPago().trim().toUpperCase(java.util.Locale.ROOT);
+        if (java.util.Set.of("IZIPAY", "TARJETA", "ONLINE").contains(metodo)
+                && (disponibilidadPagos == null || !disponibilidadPagos.izipayDisponible())) {
+            throw new IllegalStateException("Pago con tarjeta próximamente. Seleccione una transferencia bancaria disponible.");
+        }
+
         Long idUser = usuario != null ? usuario.getIdUser() : null;
         String email = usuario != null ? usuario.getEmail() : request.getEmail();
-        String nombre = usuario != null ? usuario.getNombres() + " " + usuario.getApellidos() : request.getNombreCompleto();
+        String nombre;
+        if (usuario != null) {
+            String nom = usuario.getNombres() != null ? usuario.getNombres().trim() : "";
+            String ape = usuario.getApellidos() != null ? usuario.getApellidos().trim() : "";
+            String compuesto = (nom + " " + ape).trim();
+            nombre = !compuesto.isBlank()
+                    ? compuesto
+                    : (request.getNombreCompleto() != null && !request.getNombreCompleto().isBlank()
+                            ? request.getNombreCompleto().trim()
+                            : "Cliente");
+        } else {
+            nombre = request.getNombreCompleto() != null && !request.getNombreCompleto().isBlank()
+                    ? request.getNombreCompleto().trim()
+                    : null;
+        }
 
         String clave = request.getClaveIdempotencia() != null && !request.getClaveIdempotencia().isBlank()
                 ? request.getClaveIdempotencia().trim()

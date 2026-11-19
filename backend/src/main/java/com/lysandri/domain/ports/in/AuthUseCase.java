@@ -1,6 +1,7 @@
 package com.lysandri.domain.ports.in;
 
 import com.lysandri.domain.model.Usuario;
+import com.lysandri.domain.model.RolUsuario;
 
 public interface AuthUseCase {
 
@@ -9,8 +10,15 @@ public interface AuthUseCase {
             String apellidos,
             String email,
             String password,
-            String telefono
-    ) {}
+            String telefono,
+            boolean aceptaTerminos,
+            boolean aceptaPrivacidad,
+            String version
+    ) {
+        public RegisterCommand(String nombres,String apellidos,String email,String password,String telefono) {
+            this(nombres,apellidos,email,password,telefono,false,false,"");
+        }
+    }
 
     record LoginCommand(
             String email,
@@ -23,8 +31,14 @@ public interface AuthUseCase {
             String email,
             String nombreCompleto,
             String rol,
-            Long moodleUserId
-    ) {}
+            Long moodleUserId,
+            boolean pendienteActivacion,
+            String mensaje
+    ) {
+        public AuthResponse(String token,Long idUser,String email,String nombreCompleto,String rol,Long moodleUserId) {
+            this(token,idUser,email,nombreCompleto,rol,moodleUserId,false,"");
+        }
+    }
 
     record ActivarCuentaCommand(
             String token,
@@ -40,6 +54,8 @@ public interface AuthUseCase {
     ) {}
 
     AuthResponse register(RegisterCommand command);
+
+    AuthResponse registerInternal(RegisterCommand command, RolUsuario role);
 
     AuthResponse login(LoginCommand command);
 

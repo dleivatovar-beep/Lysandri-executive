@@ -14,7 +14,7 @@ import {
   Banknote,
   GraduationCap,
 } from 'lucide-react';
-import { storeService, OrdenResponse } from '../../services/storeService';
+import { storeService, OrdenResponse, SandboxOrderResponse } from '../../services/storeService';
 import { getApiErrorMessage } from '../../services/authService';
 
 type FilterStatus = 'TODAS' | 'PENDIENTE_PAGO' | 'PAGADO' | 'CANCELADO';
@@ -25,6 +25,10 @@ export const AdminManualPayments: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('PENDIENTE_PAGO');
+  const [showPracticeOrders, setShowPracticeOrders] = useState(false);
+  const [practiceOrders, setPracticeOrders] = useState<SandboxOrderResponse[]>([]);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [practiceError, setPracticeError] = useState('');
 
   // Modal de aprobación y campos de verificación bancaria
   const [selectedOrderToApprove, setSelectedOrderToApprove] = useState<OrdenResponse | null>(null);
@@ -137,6 +141,22 @@ export const AdminManualPayments: React.FC = () => {
   useEffect(() => {
     void loadOrders();
   }, [loadOrders]);
+
+  const loadPracticeOrders = useCallback(async () => {
+    setPracticeLoading(true);
+    setPracticeError('');
+    try {
+      setPracticeOrders(await storeService.listarOrdenesPractica());
+    } catch (err: any) {
+      setPracticeError(getApiErrorMessage(err));
+    } finally {
+      setPracticeLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showPracticeOrders) void loadPracticeOrders();
+  }, [showPracticeOrders, loadPracticeOrders]);
 
   const handleOpenApproveModal = (orden: OrdenResponse) => {
     setSelectedOrderToApprove(orden);
@@ -305,6 +325,13 @@ export const AdminManualPayments: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setShowPracticeOrders((shown) => !shown)}
+              className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-bold transition ${showPracticeOrders ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-300' : 'border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'}`}
+            >
+              {showPracticeOrders ? 'Ocultar prácticas' : 'Órdenes de práctica'}
+            </button>
+            <button
+              type="button"
               onClick={() => void loadOrders()}
               disabled={isLoading}
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
@@ -315,6 +342,45 @@ export const AdminManualPayments: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showPracticeOrders && (
+        <section className="space-y-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5" aria-labelledby="practice-orders-heading">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="practice-orders-heading" className="text-lg font-black text-slate-900 dark:text-white">Órdenes de práctica</h2>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Registros aislados para demostración. No son ventas, pagos ni ingresos contables.</p>
+            </div>
+            <button type="button" onClick={() => void loadPracticeOrders()} disabled={practiceLoading} className="rounded-xl border border-amber-500/30 px-3 py-2 text-xs font-bold text-amber-700 disabled:opacity-50 dark:text-amber-300">
+              {practiceLoading ? 'Cargando…' : 'Actualizar prácticas'}
+            </button>
+          </div>
+          {practiceError && <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-300">{practiceError}</p>}
+          {practiceLoading ? <p className="text-sm text-slate-500">Consultando el backend…</p> : practiceOrders.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-amber-500/30 p-5 text-center text-sm text-slate-500">Todavía no hay inscripciones de práctica.</p>
+          ) : (
+            <div className="grid gap-3">
+              {practiceOrders.map((order) => (
+                <article key={order.codigoOrden} className="rounded-xl border border-amber-500/20 bg-white p-4 dark:bg-slate-950/60">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <strong className="font-mono text-sm text-cyan-700 dark:text-cyan-300">{order.codigoOrden}</strong>
+                      <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{order.nombre}</p>
+                      <p className="text-xs text-slate-500">{order.email}{order.telefono ? ` · ${order.telefono}` : ''}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">{order.estado}</span>
+                      <p className="mt-2 font-mono font-bold text-slate-900 dark:text-white">{new Intl.NumberFormat('en-US', { style: 'currency', currency: order.moneda }).format(order.total)}</p>
+                    </div>
+                  </div>
+                  <ul className="mt-3 list-inside list-disc text-xs text-slate-600 dark:text-slate-300">
+                    {order.programas.map((program) => <li key={program.id}>{program.titulo} · {new Intl.NumberFormat('en-US', { style: 'currency', currency: program.moneda }).format(program.precio)}</li>)}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Tarjetas de Métricas */}
       <div className="grid gap-4 sm:grid-cols-3">

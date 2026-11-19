@@ -41,6 +41,10 @@ public class UsuarioEntity implements UserDetails {
     @Column(name = "passw", nullable = false)
     private String passw;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "version_credenciales", nullable = false, updatable = false)
+    private int versionCredenciales;
+
     @Column(name = "telefono", length = 25)
     private String telefono;
 

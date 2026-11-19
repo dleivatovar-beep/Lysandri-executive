@@ -229,8 +229,12 @@ public class GuestActivationHttpMockSmtpIntegrationTest extends PostgresTestData
         private volatile boolean running = true;
 
         public SimpleMockSmtpServer(int port) throws IOException {
-            this.serverSocket = new ServerSocket(port);
+            this.serverSocket = new ServerSocket(port, 50, java.net.InetAddress.getByName("127.0.0.1"));
             executor.submit(this::listen);
+        }
+
+        int getPort() {
+            return serverSocket.getLocalPort();
         }
 
         private void listen() {

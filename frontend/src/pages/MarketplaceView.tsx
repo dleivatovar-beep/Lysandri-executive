@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,9 +26,14 @@ import { CartDrawer } from '../components/marketplace/CartDrawer';
 import { EditorialSyllabusModal } from '../components/marketplace/EditorialSyllabusModal';
 import { ExecutiveChatDrawer } from '../components/chat/ExecutiveChatDrawer';
 import { CorporateInCompanyModal } from '../components/marketplace/CorporateInCompanyModal';
+import { ConsentimientoConversion } from '../components/marketplace/ConsentimientoConversion';
 import { CheckoutModal } from '../components/marketplace/CheckoutModal';
 import { Category, Playbook } from '../types';
-import { useCart } from '../context/CartContext';
+import { useCart, isPlaybookPurchasable } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import { FALLBACK_PLAYBOOKS } from '../services/courseCatalog';
+import { conversionPrueba } from '../services/conversionPrueba';
 import './marketplace-editorial.css';
 
 interface MarketplaceViewProps {
@@ -155,10 +160,30 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
   const [isCorporateOpen, setIsCorporateOpen] = useState(false);
   const [selectedForSyllabus, setSelectedForSyllabus] = useState<Playbook | null>(null);
   const [selectedForAi, setSelectedForAi] = useState<Playbook | null>(null);
-  const [selectedForCheckout, setSelectedForCheckout] = useState<Playbook | null>(null);
+  const [selectedForCheckout, setSelectedForCheckout] = useState<Playbook[]>([]);
+  const { user } = useAuth();
+  const [pruebasDisponibles, setPruebasDisponibles] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    void conversionPrueba.disponible().then(disponible => {
+      if (activo) setPruebasDisponibles(disponible);
+    }).catch(() => {});
+    return () => { activo = false; };
+  }, []);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
-  const { cartItems, addToCart, removeFromCart, clearCart, isCartOpen, setIsCartOpen } = useCart();
+  const {
+    cartItems,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    isCartOpen,
+    setIsCartOpen,
+    verificationStatus,
+    verificationError,
+    retryVerification,
+  } = useCart();
   const featured = playbooks.length > 0 ? playbooks[featuredIndex % playbooks.length] : null;
 
   const filteredPlaybooks = useMemo(() => {
@@ -185,7 +210,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
     if (onSelectPlaybook) {
       void onSelectPlaybook(playbook);
     }
-    setSelectedForCheckout(playbook);
+    setSelectedForCheckout([playbook]);
   };
 
   const scrollToCatalog = () =>
@@ -310,7 +335,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
         </div>
         <div className="lx-concierge-actions">
           <a
-            href="https://wa.me/51987654321?text=Hola%20Sof%C3%ADa%2C%20quisiera%20asesor%C3%ADa%20personalizada%20sobre%20los%20programas%20ejecutivos%20de%20Lysandri."
+            href="https://wa.me/51954111044?text=Hola%20Sof%C3%ADa%2C%20quisiera%20asesor%C3%ADa%20personalizada%20sobre%20los%20programas%20ejecutivos%20de%20Lysandri."
             target="_blank"
             rel="noopener noreferrer"
             className="lx-concierge-btn-wa"
@@ -318,9 +343,9 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             <MessageCircle aria-hidden="true" style={{ width: '1.05rem', height: '1.05rem' }} />
             <span>Chat WhatsApp</span>
           </a>
-          <a href="tel:+51987654321" className="lx-concierge-btn-phone">
+          <a href="tel:+51954111044" className="lx-concierge-btn-phone">
             <Phone aria-hidden="true" style={{ width: '0.95rem', height: '0.95rem' }} />
-            <span>+51 987 654 321</span>
+            <span>+51 954 111 044</span>
           </a>
         </div>
       </section>
@@ -338,6 +363,21 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
             resultsCount={filteredPlaybooks.length}
           />
         </div>
+        <ConsentimientoConversion />
+        {pruebasDisponibles && (
+          <section className="mx-auto my-4 max-w-5xl rounded border border-slate-500 p-3 text-sm" aria-labelledby="compra-de-muestra">
+            <h3 id="compra-de-muestra" className="font-semibold">Compra de muestra</h3>
+            <p>Usa un programa ficticio para practicar el proceso de compra y consultar su estado.</p>
+            {user?.rol === 'ESTUDIANTE' ? (
+              <button type="button" className="mt-2 rounded border border-cyan-600 px-3 py-1"
+                onClick={() => handleEnroll(FALLBACK_PLAYBOOKS[0])}>Abrir compra de muestra</button>
+            ) : user ? (
+              <p>Para hacer una compra de muestra, inicia sesión con una cuenta de cliente de prueba.</p>
+            ) : (
+              <Link className="mt-2 inline-block underline" to="/intranet">Entrar con una cuenta de cliente de prueba</Link>
+            )}
+          </section>
+        )}
         <div className="lx-catalog-filters">
           <CategoryFilter
             categories={categories}
@@ -362,7 +402,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
           <div className="lx-catalog-state" role="status">
             <LoaderCircle className="animate-spin" aria-hidden="true" /> Cargando programas...
           </div>
-        ) : errorMessage ? (
+        ) : errorMessage && playbooks.length === 0 ? (
           <div className="lx-catalog-state lx-catalog-error" role="alert">
             <ShieldAlert aria-hidden="true" />
             <div>
@@ -595,7 +635,7 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
       {/* BOTÓN FLOTANTE WHATSAPP CONCIERGE */}
       <a
-        href="https://wa.me/51987654321?text=Hola%20Sof%C3%ADa%2C%20quisiera%20consultar%20sobre%20la%20matr%C3%ADcula%20y%20programas%20de%20Lysandri."
+        href="https://wa.me/51954111044?text=Hola%20Sof%C3%ADa%2C%20quisiera%20consultar%20sobre%20la%20matr%C3%ADcula%20y%20programas%20de%20Lysandri."
         target="_blank"
         rel="noopener noreferrer"
         className="lx-whatsapp-floating"
@@ -618,11 +658,26 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
 
       {/* DRAWERS Y MODALES */}
       <CartDrawer
+        verificationStatus={verificationStatus}
+        verificationError={verificationError}
+        onRetryVerification={retryVerification}
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cartItems={cartItems}
         onRemoveItem={removeFromCart}
         onClearCart={clearCart}
+        onProceedToCheckout={(items) => {
+          setIsCartOpen(false);
+          const practiceOnly = items.length > 0 && items.every((item) => {
+            const isSample = item.origin === 'SAMPLE' || item.isSample === true || item.isDemo === true ||
+              (typeof item.id === 'string' && item.id.startsWith('sample-'));
+            return isSample && Number.isInteger(item.programId) && item.programId >= 1001 && item.programId <= 1006;
+          });
+          const checkoutItems = practiceOnly ? items : items.filter(isPlaybookPurchasable);
+          if (checkoutItems.length > 0) {
+            setSelectedForCheckout(checkoutItems);
+          }
+        }}
       />
 
       <EditorialSyllabusModal
@@ -647,9 +702,10 @@ export const MarketplaceView: React.FC<MarketplaceViewProps> = ({
       />
 
       <CheckoutModal
-        isOpen={Boolean(selectedForCheckout)}
-        onClose={() => setSelectedForCheckout(null)}
-        playbook={selectedForCheckout}
+        isOpen={selectedForCheckout.length > 0}
+        onClose={() => setSelectedForCheckout([])}
+        items={selectedForCheckout}
+        playbook={selectedForCheckout[0] || null}
       />
     </div>
   );

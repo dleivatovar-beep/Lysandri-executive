@@ -142,16 +142,10 @@ export const AdminInformationRequests:
           setRequests(response);
           setErrorMessage('');
         } catch (error) {
-          const fallback = informationRequestService.getLocalRequests();
-          if (fallback.length > 0) {
-            setRequests(fallback);
-            setErrorMessage('');
-          } else {
-            setRequests([]);
-            setErrorMessage(
-              getApiErrorMessage(error),
-            );
-          }
+          setRequests([]);
+          setErrorMessage(
+            getApiErrorMessage(error),
+          );
         } finally {
           setIsLoading(false);
         }
@@ -197,6 +191,8 @@ export const AdminInformationRequests:
               request.nombreCompleto,
               request.email,
               request.telefono,
+              request.cargo,
+              request.mensaje,
             ]
               .join(' ')
               .toLowerCase();
@@ -336,13 +332,12 @@ export const AdminInformationRequests:
           <div className="lx-admin-pagehead-copy">
             <div>
               <h1>
-                Solicitudes de información
+                Solicitudes y registros
               </h1>
 
               <p>
                 Revisa y administra las
-                solicitudes enviadas por
-                nuevos estudiantes.
+                solicitudes de acceso por área. Después de validarlas, crea las cuentas autorizadas desde Usuarios.
               </p>
             </div>
           </div>
@@ -430,7 +425,7 @@ export const AdminInformationRequests:
                     event.target.value,
                   )
                 }
-                placeholder="Buscar por nombre, correo o teléfono..."
+                placeholder="Buscar por nombre, correo, área o teléfono..."
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               />
             </div>
@@ -507,10 +502,16 @@ export const AdminInformationRequests:
                   </div>
 
                   <div className="lx-admin-request-details">
+                    {request.cargo && (
+                      <p><Building2 aria-hidden="true" /> Área solicitada: {request.cargo}</p>
+                    )}
                     {request.telefono ? (
                       <a href={`tel:${request.telefono}`}><Phone aria-hidden="true" /> <span>{request.telefono}</span></a>
                     ) : (
                       <span className="is-muted"><Phone aria-hidden="true" /> Sin teléfono registrado</span>
+                    )}
+                    {request.mensaje && (
+                      <p className="lx-request-message">{request.mensaje}</p>
                     )}
                     <p><Clock3 aria-hidden="true" /> Recibida {formatDate(request.fechaSolicitud)}</p>
                   </div>

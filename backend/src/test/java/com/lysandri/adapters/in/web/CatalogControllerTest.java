@@ -53,6 +53,16 @@ class CatalogControllerTest {
     }
 
     @Test
+    void informacion_consultaCatalogoAcademico() {
+        when(catalogUseCase.listarProgramasInformativos()).thenReturn(List.of(progActivo));
+        var respuesta = catalogController.listarInformacion();
+        assertEquals(HttpStatus.OK, respuesta.getStatusCode());
+        assertEquals(1, respuesta.getBody().size());
+        verify(catalogUseCase).listarProgramasInformativos();
+        verify(catalogUseCase, never()).listarTodosAdmin();
+    }
+
+    @Test
     void listarProgramas_debeRetornarSoloActivosYAprobados() {
         when(catalogUseCase.listarProgramasActivos()).thenReturn(List.of(progActivo));
 
@@ -63,6 +73,18 @@ class CatalogControllerTest {
         assertEquals(1, res.getBody().size());
         assertEquals("finops-empresarial", res.getBody().get(0).getSlug());
         verify(catalogUseCase).listarProgramasActivos();
+    }
+
+    @Test
+    void consultarDisponibilidadCompra_debeConsultarElConjuntoExactoDeIds() {
+        progActivo.setDisponibleParaCompra(true);
+        when(catalogUseCase.consultarDisponibilidadCompra(List.of(1L, 2L))).thenReturn(List.of(progActivo));
+
+        ResponseEntity<List<Programa>> response = catalogController.consultarDisponibilidadCompra(List.of(1L, 2L));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(Boolean.TRUE, response.getBody().get(0).getDisponibleParaCompra());
+        verify(catalogUseCase).consultarDisponibilidadCompra(List.of(1L, 2L));
     }
 
     @Test

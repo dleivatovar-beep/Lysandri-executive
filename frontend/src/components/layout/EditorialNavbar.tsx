@@ -3,6 +3,7 @@ import { ArrowUpRight, Menu, Moon, ShoppingBag, Sun, X } from 'lucide-react';
 import companyLogo from '../../assets/mi-logo.png';
 import { useCart } from '../../context/CartContext';
 import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
+import { authService } from '../../services/authService';
 import { UserProfile } from '../../types';
 import './editorial-navbar.css';
 
@@ -29,6 +30,18 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+  const [registroDisponible, setRegistroDisponible] = useState(false);
+  useEffect(() => {
+    if (user) return;
+    const controller = new AbortController();
+    void authService.condicionesRegistro(controller.signal).then(() => {
+      if (!controller.signal.aborted) setRegistroDisponible(true);
+    }).catch(() => {
+      if (!controller.signal.aborted) setRegistroDisponible(false);
+    });
+    return () => controller.abort();
+  }, [user]);
+
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -92,6 +105,7 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
               {section.label}
             </a>
           ))}
+          {!user && registroDisponible && <a href="/registro-cliente">Crear cuenta</a>}
         </nav>
 
         <div className="lx-editorial-actions">
@@ -103,6 +117,11 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
             {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
           </button>
 
+          {!user && (
+            <a className="lx-editorial-account-trigger" href="/intranet">
+              Mi cuenta <ArrowUpRight aria-hidden="true" />
+            </a>
+          )}
           {user && (
             <div className="lx-editorial-account">
               <button type="button" className="lx-editorial-account-trigger" onClick={() => setAccountOpen((open) => !open)} aria-expanded={accountOpen} aria-haspopup="menu">
@@ -110,6 +129,7 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
               </button>
               {accountOpen && (
                 <div className="lx-editorial-account-menu" role="menu">
+                  <a role="menuitem" href="/cuenta" onClick={() => setAccountOpen(false)}>Mi cuenta</a>
                   <span>{user.name}</span>
                   <a role="menuitem" href={getRoleHomePath(user.role)} onClick={() => setAccountOpen(false)}>Ir a mi panel</a>
                   <button type="button" role="menuitem" onClick={() => { setAccountOpen(false); onLogoutClick(); }}>Cerrar sesión</button>
@@ -130,6 +150,11 @@ export const EditorialNavbar: React.FC<EditorialNavbarProps> = ({
             <span>{section.label}</span><ArrowUpRight aria-hidden="true" />
           </a>
         ))}
+        {!user && registroDisponible && (
+          <a href="/registro-cliente" tabIndex={mobileOpen ? 0 : -1} onClick={() => setMobileOpen(false)}>
+            <span>Crear cuenta</span><ArrowUpRight aria-hidden="true" />
+          </a>
+        )}
         <button type="button" className="lx-editorial-mobile-theme" tabIndex={mobileOpen ? 0 : -1} onClick={onThemeToggle}>
           {theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           {theme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}

@@ -68,13 +68,15 @@ globalThis.__mockAuthModule = {
 
 const componentPath = path.resolve(import.meta.dirname, 'src/components/marketplace/CheckoutModal.tsx');
 const compiledPath = path.resolve(import.meta.dirname, '.test-compiled-CheckoutModal-lifecycle.mjs');
+const sdkPath = path.resolve(import.meta.dirname, 'src/components/marketplace/checkoutSdk.ts');
+const compiledSdkPath = path.resolve(import.meta.dirname, '.test-compiled-checkoutSdk-lifecycle.mjs');
 const compiled = esbuild.buildSync({
   entryPoints: [componentPath],
   bundle: true,
   format: 'esm',
   platform: 'node',
   write: false,
-  external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext'],
+  external: ['react', 'react-dom', 'axios', 'lucide-react', 'react-router-dom', '../../context/AuthContext', './checkoutSdk'],
   loader: { '.svg': 'text', '.png': 'dataurl', '.css': 'empty' },
 });
 const source = compiled.outputFiles[0].text
@@ -85,15 +87,27 @@ const source = compiled.outputFiles[0].text
   .replace(
     /window\.location\.href\s*=\s*([^;]+);/g,
     '((val) => { window.__mockLocationHref = val; })( $1 );',
+  )
+  .replace(
+    /from\s+['"]\.\/checkoutSdk['"]/g,
+    `from '${pathToFileURL(compiledSdkPath).href}'`,
   );
 fs.writeFileSync(compiledPath, source, 'utf8');
+const compiledSdk = esbuild.buildSync({
+  entryPoints: [sdkPath],
+  bundle: true,
+  format: 'esm',
+  platform: 'node',
+  write: false,
+});
+fs.writeFileSync(compiledSdkPath, compiledSdk.outputFiles[0].text, 'utf8');
+const { CheckoutModal } = await import(pathToFileURL(compiledPath).href);
 const {
-  CheckoutModal,
   resetKryptonScriptLoader,
   getKryptonScriptStatus,
   getGlobalSdkOwnership,
   resetGlobalSdkOwnership,
-} = await import(pathToFileURL(compiledPath).href);
+} = await import(pathToFileURL(compiledSdkPath).href);
 
 const createUrl = '/api/v1/orders/create-checkout-session';
 const guestUrl = '/api/v1/orders/guest-session';
@@ -1657,4 +1671,5 @@ try {
   axios.get = originalGet;
   dom.window.close();
   if (fs.existsSync(compiledPath)) fs.unlinkSync(compiledPath);
+  if (fs.existsSync(compiledSdkPath)) fs.unlinkSync(compiledSdkPath);
 }

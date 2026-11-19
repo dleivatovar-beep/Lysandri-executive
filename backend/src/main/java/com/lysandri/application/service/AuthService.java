@@ -4,6 +4,7 @@ import com.lysandri.domain.model.RolUsuario;
 import com.lysandri.domain.model.Usuario;
 import com.lysandri.domain.model.UsuarioActivacionToken;
 import com.lysandri.domain.ports.in.AuthUseCase;
+import com.lysandri.domain.ports.out.ConsentimientoPort;
 import com.lysandri.domain.ports.out.NotificationPort;
 import com.lysandri.domain.ports.out.UserActivationPort;
 import com.lysandri.domain.ports.out.UserRepositoryPort;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ public class AuthService implements AuthUseCase {
     private final NotificationPort notificationPort;
     private final ActivationOutboxService activationOutboxService;
     private final String frontendUrl;
+    private final ConsentimientoPort consentimientos;
+    public static final String VERSION_CONDICIONES = "2026-11-pruebas";
 
     public static final String MENSAJE_ERROR_LOGIN = "No se pudo iniciar sesión con los datos proporcionados";
     private static final String DUMMY_BCRYPT_HASH = "$2a$10$wK1nK8v6eE89P4l0F5B7nOBK.wD8vJtLkWsR82e.k1P3F4x5r1y8e";
@@ -75,7 +79,6 @@ public class AuthService implements AuthUseCase {
         this(userRepository, passwordEncoder, jwtService, authenticationManager, userDetailsService, userActivationPort, notificationPort, null, frontendUrl);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
     public AuthService(
             UserRepositoryPort userRepository,
             PasswordEncoder passwordEncoder,
@@ -87,6 +90,14 @@ public class AuthService implements AuthUseCase {
             ActivationOutboxService activationOutboxService,
             @Value("${app.frontend.url:http://localhost:5173}") String frontendUrl
     ) {
+        this(userRepository,passwordEncoder,jwtService,authenticationManager,userDetailsService,userActivationPort,notificationPort,activationOutboxService,frontendUrl,null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthService(UserRepositoryPort userRepository,PasswordEncoder passwordEncoder,JwtService jwtService,
+            AuthenticationManager authenticationManager,UserDetailsService userDetailsService,UserActivationPort userActivationPort,
+            NotificationPort notificationPort,ActivationOutboxService activationOutboxService,
+            @Value("${app.frontend.url:http://127.0.0.1:3000}") String frontendUrl,ConsentimientoPort consentimientos) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -96,6 +107,7 @@ public class AuthService implements AuthUseCase {
         this.notificationPort = notificationPort;
         this.activationOutboxService = activationOutboxService;
         this.frontendUrl = frontendUrl != null && !frontendUrl.isBlank() ? frontendUrl.replaceAll("/+$", "") : "http://localhost:5173";
+        this.consentimientos = consentimientos;
     }
 
     @Override
@@ -103,26 +115,71 @@ public class AuthService implements AuthUseCase {
     public AuthResponse register(RegisterCommand command) {
         log.info("Registrando nuevo cliente ejecutivo (solicitud recibida)");
 
-        if (userRepository.existePorEmail(command.email())) {
-            throw new IllegalArgumentException("Ya existe una cuenta registrada con el correo: " + command.email());
+        if (command == null || !command.aceptaTerminos() || !command.aceptaPrivacidad()
+                || !VERSION_CONDICIONES.equals(command.version())) {
+            throw new IllegalArgumentException("Revisa y acepta las condiciones vigentes de registro y privacidad.");
+        }
+        validarPassword(command.password(), 10);
+        if (consentimientos == null || activationOutboxService == null) {
+            throw new IllegalStateException("No está disponible el registro con verificación de correo.");
+        }
+        Usuario usuario = crearCuenta(command, RolUsuario.CLIENTE);
+        consentimientos.registrar(usuario.getIdUser(), VERSION_CONDICIONES);
+        var token = userActivationPort.crearTokenActivacion(usuario.getIdUser());
+        activationOutboxService.crearTareaActivacion(
+                null, null, usuario.getIdUser(), token.getIdToken(), token.getToken(),
+                usuario.getEmail(), usuario.getNombres(),
+                "REGISTRO_USER_" + usuario.getIdUser() + "_" + token.getIdToken()
+        );
+        return new AuthResponse(null, usuario.getIdUser(), usuario.getEmail(), usuario.getNombreCompleto(),
+                usuario.getRol().name(), null, true,
+                "Revisa el buzón de prueba. Abre el enlace y establece tu contraseña para activar la cuenta.");
+    }
+
+    private void validarPassword(String password, int minimo) {
+        if (password == null || password.length() < minimo || password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("Usa una contraseña de al menos " + minimo + " caracteres y hasta 72 bytes.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse registerInternal(RegisterCommand command, RolUsuario role) {
+        if (role == null || !java.util.Set.of(RolUsuario.ADMIN, RolUsuario.CONTABILIDAD,
+                RolUsuario.INSTRUCTOR, RolUsuario.ESTUDIANTE).contains(role)) {
+            throw new IllegalArgumentException("El área seleccionada no está habilitada para el registro interno.");
+        }
+
+        Usuario usuario = crearCuenta(command, role);
+        log.info("Se creó una cuenta interna con rol {}", role.name());
+        return emitirSesion(usuario);
+    }
+
+    private Usuario crearCuenta(RegisterCommand command, RolUsuario role) {
+        String email = command.email() != null ? command.email().trim().toLowerCase() : "";
+
+        if (userRepository.existePorEmail(email)) {
+            throw new IllegalArgumentException("Ya existe una cuenta registrada con ese correo.");
         }
 
         Usuario usuario = Usuario.builder()
                 .nombres(command.nombres())
                 .apellidos(command.apellidos())
-                .email(command.email().trim().toLowerCase())
+                .email(email)
                 .passw(passwordEncoder.encode(command.password()))
                 .telefono(command.telefono())
-                .rol(RolUsuario.CLIENTE)
-                .activo(true)
+                .rol(role)
+                .activo(role != RolUsuario.CLIENTE)
                 .bloqueadoAdmin(false)
-                .pendienteActivacion(false)
+                .pendienteActivacion(role == RolUsuario.CLIENTE)
                 .fechaCreacion(OffsetDateTime.now())
                 .fechaActualizacion(OffsetDateTime.now())
                 .build();
 
-        usuario = userRepository.guardar(usuario);
+        return userRepository.guardar(usuario);
+    }
 
+    private AuthResponse emitirSesion(Usuario usuario) {
         var userDetails = userDetailsService.loadUserByUsername(usuario.getEmail());
         String token = jwtService.generateToken(userDetails);
 
@@ -205,9 +262,7 @@ public class AuthService implements AuthUseCase {
         if (command == null || command.token() == null || command.token().isBlank()) {
             throw new IllegalArgumentException("Token de activación inválido o ausente");
         }
-        if (command.nuevaPassword() == null || command.nuevaPassword().length() < 8) {
-            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 8 caracteres");
-        }
+        validarPassword(command.nuevaPassword(), 8);
 
         // 1. Bloqueo pesimista sobre el token de activación en base de datos (SELECT ... FOR UPDATE)
         // Impide estrictamente que dos peticiones concurrentes consuman el mismo token.
@@ -236,6 +291,9 @@ public class AuthService implements AuthUseCase {
         }
 
         // 3. Confirmación atómica conjunta: Contraseña, estado activo y token consumido se comitean juntos
+        if (consentimientos != null && consentimientos.existeParaUsuario(usuario.getIdUser())) {
+            validarPassword(command.nuevaPassword(), 10);
+        }
         usuario.setPassw(passwordEncoder.encode(command.nuevaPassword()));
         usuario.setActivo(true);
         usuario.setPendienteActivacion(false);

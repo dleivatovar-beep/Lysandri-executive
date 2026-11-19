@@ -176,6 +176,11 @@ Invoke-TestCase -Name "14. Servidor accesible pero identidad ajena" -Setup {
     $env:TEST_MOCK_PSQL_BEHAVIOR = "DIFFERENT_SERVER"
 } -AdditionalArgs "-SoloVerificar -ClonePort 15434 -HttpPort 18088" -ListenPorts @(15434) -ExpectedExitCode 4
 
+Invoke-TestCase -Name "PostgreSQL iniciando con TCP abierto permite reintento" -Setup {
+    $env:TEST_PSQL_MOCK_PATH = $mockPsqlPath
+    $env:TEST_MOCK_PSQL_BEHAVIOR = "STARTING"
+} -AdditionalArgs "-SoloVerificarBaseDatos -ClonePort 15434" -ListenPorts @(15434) -ExpectedExitCode 2
+
 # 15. Credenciales incorrectas de aplicacion (lysandri_app) (Exit 4)
 Invoke-TestCase -Name "15. Credenciales incorrectas para usuario lysandri_app" -Setup {
     Remove-Item env:MOODLE_URL -ErrorAction SilentlyContinue

@@ -38,6 +38,8 @@ public class Programa {
     private boolean activo;
     private boolean precioAprobado;
     private boolean esGratuito;
+    private Boolean disponibleParaCompra;
+    private String motivoNoDisponible;
     private OffsetDateTime fechaCreacion;
 
     public boolean isVerificacionVigente(java.time.Clock clock, long ttlHours) {

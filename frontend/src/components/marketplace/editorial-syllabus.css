@@ -27,6 +27,15 @@
 .lx-syllabus-primary:hover { background: #087ca6; }
 .lx-syllabus-secondary { padding: .75rem 0; color: #0b1d2d; }
 .lx-syllabus-secondary:hover { color: #087ca6; }
+.lx-syllabus-review, .lx-syllabus-description { margin-top: .75rem; color: #536779; font-size: .84rem; line-height: 1.65; }
+.lx-syllabus-modules { display: grid; gap: .85rem; margin-top: 1.1rem; }
+.lx-syllabus-module { padding: 1rem; border: 1px solid #cadbe3; border-radius: .45rem; }
+.lx-syllabus-module > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.lx-syllabus-module h4 { margin: 0; font-size: .91rem; font-weight: 700; line-height: 1.45; }
+.lx-syllabus-module span { flex-shrink: 0; color: #536779; font-size: .74rem; }
+.lx-syllabus-module p { margin-top: .6rem; color: #536779; font-size: .83rem; line-height: 1.65; }
+.dark .lx-syllabus-module { border-color: #284054; }
+.dark .lx-syllabus-review, .dark .lx-syllabus-description, .dark .lx-syllabus-module p, .dark .lx-syllabus-module span { color: #b4c6d2; }
 .lx-syllabus-dialog :is(button, a):focus-visible { outline: 3px solid #009fd0; outline-offset: 3px; }
 .dark .lx-syllabus-dialog { background: #101f30; color: #f2f7fa; }
 .dark .lx-syllabus-close { border-color: #37576b; background: #101f30; color: #f2f7fa; }

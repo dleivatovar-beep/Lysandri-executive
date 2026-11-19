@@ -12,6 +12,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', {
 });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+globalThis.FormData = dom.window.FormData;
 Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: dom.window.localStorage,
@@ -80,8 +81,8 @@ const compiledAcct = esbuild.buildSync({
 });
 
 const sourceAcct = compiledAcct.outputFiles[0].text.replace(
-  /import\s*\{[^}]*useAuth[^}]*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
-  'const useAuth = (...args) => globalThis.__mockAuthModule.useAuth(...args);',
+  /import\s*\{\s*useAuth(?:\s+as\s+(\w+))?\s*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
+  (_, alias) => `const ${alias || 'useAuth'} = () => globalThis.__mockAuthModule.useAuth();`,
 );
 fs.writeFileSync(compiledAcctPath, sourceAcct, 'utf8');
 const { default: AccountingView } = await import(pathToFileURL(compiledAcctPath).href);
@@ -106,8 +107,8 @@ const compiledAdmin = esbuild.buildSync({
   ],
 });
 const sourceAdmin = compiledAdmin.outputFiles[0].text.replace(
-  /import\s*\{[^}]*useAuth[^}]*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
-  'const useAuth = (...args) => globalThis.__mockAuthModule.useAuth(...args);',
+  /import\s*\{\s*useAuth(?:\s+as\s+(\w+))?\s*\}\s*from\s*['"][^'"]*AuthContext['"];?/g,
+  (_, alias) => `const ${alias || 'useAuth'} = () => globalThis.__mockAuthModule.useAuth();`,
 );
 fs.writeFileSync(compiledAdminPath, sourceAdmin, 'utf8');
 const { AdminDashboard } = await import(pathToFileURL(compiledAdminPath).href);
@@ -226,6 +227,8 @@ try {
 
   originalAxiosRequest = axios.Axios.prototype.request;
   axios.Axios.prototype.request = async function (configOrUrl, maybeConfig) {
+    const url = typeof configOrUrl === 'string' ? configOrUrl : configOrUrl.url;
+    if (url === '/internal/operaciones/incidencias') return { status: 200, data: [], headers: {} };
     if (customRequestHandler) {
       return customRequestHandler.call(this, configOrUrl, maybeConfig);
     }
@@ -568,39 +571,33 @@ try {
     window.sessionStorage.clear();
     window.localStorage.removeItem('lysandri_token');
 
-    // Parte A: PIN incorrecto
+    const attemptedPins = [];
     customRequestHandler = async function (configOrUrl) {
-      const url = typeof configOrUrl === 'string' ? configOrUrl : configOrUrl.url;
-      if (url.includes('/internal/accounting/ventas')) {
-        const error = new Error('No autorizado');
-        error.response = { status: 403, data: { message: 'PIN de auditoría no válido' } };
+      const config = typeof configOrUrl === 'string' ? { url: configOrUrl } : configOrUrl;
+      if (config.url.includes('/internal/accounting/ventas')) {
+        const pin = config.headers?.['X-Audit-PIN'];
+        attemptedPins.push(pin);
+        if (pin === 'pin-de-prueba') {
+          return { status: 200, data: mockReporteOctubre, headers: {} };
+        }
+        const error = new Error('PIN inválido');
+        error.response = { status: 401, data: { codigo: 'AUDIT_PIN_INVALID' } };
         throw error;
       }
       return { status: 200, data: {}, headers: {} };
     };
 
-    // Render sin PIN previo (muestra formulario de acceso contable)
     render(React.createElement(AccountingView));
-
-    await waitFor(() => screen.getByPlaceholderText('Usuario'));
-
-    // Ingresar credenciales y disparar login
-    fireEvent.change(screen.getByPlaceholderText('Usuario'), {
-      target: { value: 'contador@lysandri.pe' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('••••••••'), {
-      target: { value: 'password123' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /Iniciar sesión/i }));
-
-    await waitFor(() => {
-      assert.ok(
-        screen.getByText(/Acceso no autorizado \(401\/403\)/i),
-        'Debe mostrar mensaje de rechazo por PIN/credenciales no autorizadas'
-      );
-    });
-
-    assert.equal(window.sessionStorage.getItem('lysandri_audit_pin'), null, 'PIN inválido no debe quedar almacenado');
+    const pinInput = await screen.findByLabelText(/PIN de auditoría/i);
+    assert.deepEqual(attemptedPins, ['']);
+    fireEvent.change(pinInput, { target: { value: 'incorrecto' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Validar PIN' }));
+    const retryInput = await screen.findByLabelText(/PIN de auditoría/i);
+    assert.equal(window.sessionStorage.getItem('lysandri_audit_pin'), null);
+    fireEvent.change(retryInput, { target: { value: 'pin-de-prueba' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Validar PIN' }));
+    await waitFor(() => assert.equal(window.sessionStorage.getItem('lysandri_audit_pin'), 'pin-de-prueba'));
+    assert.deepEqual(attemptedPins, ['', 'incorrecto', 'pin-de-prueba']);
 
     // Parte B: Usuario con rol no autorizado (ej. ESTUDIANTE)
     cleanup();
@@ -617,12 +614,9 @@ try {
 
     render(React.createElement(AccountingView));
 
-    await waitFor(() => {
-      assert.ok(
-        screen.getByText(/Acceso denegado.*no tiene permisos/i),
-        'Rol ESTUDIANTE debe ser denegado para el área contable'
-      );
-    });
+    await screen.findByPlaceholderText('Usuario');
+    assert.equal(screen.queryByText('Contabilidad y facturación'), null);
+    assert.deepEqual(attemptedPins, ['', 'incorrecto', 'pin-de-prueba']);
 
     // Restaurar mockUser
     globalThis.__mockAuthModule.useAuth = () => ({

@@ -183,6 +183,14 @@ const PRESENTATION_BY_TITLE: Record<
   },
 };
 
+const COURSE_COVERS: Record<string, string> = {
+  'gobierno de datos y cumplimiento regulatorio': '/courses/gobierno.jpg',
+  'estrategia de plataformas cloud & eks': '/courses/cloud.jpg',
+  'devops ejecutivo y confiabilidad de sistemas (sre)': '/courses/devops.jpg',
+  'gestion de riesgos tecnologicos y resiliencia': '/courses/riesgos.jpg',
+  'estrategia de producto digital e innovacion c-suite': '/courses/producto.jpg',
+};
+
 const resolveTier = (
   level?: string,
 ): TierLevel => {
@@ -235,7 +243,7 @@ export const toCatalogCourse = (
     title,
     price: program.precio,
     currency: program.moneda,
-    coverUrl: program.imagenPortadaUrl || presentation?.coverUrl,
+    coverUrl: program.imagenPortadaUrl || getCourseCover(title),
     slug: program.slug || slugify(title),
 
     description:
@@ -258,6 +266,17 @@ export const toCatalogCourse = (
       ? `${program.duracionHoras} horas`
       : program.duracionPrograma,
     instructor: program.instructorNombre || program.nombreInstructor,
+    origin: 'BACKEND',
+    isSample: false,
+    isDemo: false,
+    activo: program.activo === true,
+    precioAprobado: program.precioAprobado === true,
+    moodleVerificado: program.moodleVerificado === true,
+    moodleCourseId: program.moodleCourseId,
+    esGratuito: program.esGratuito === true,
+    disponibleParaCompra: program.disponibleParaCompra === true,
+    disponibilidadVerificada: typeof program.disponibleParaCompra === 'boolean',
+    motivoNoDisponible: program.motivoNoDisponible,
   };
 };
 
@@ -295,6 +314,115 @@ export const buildCategories = (
 export const getCourseCover = (
   title: string,
 ): string | undefined =>
-  PRESENTATION_BY_TITLE[
-    normalize(title)
-  ]?.coverUrl;
+  COURSE_COVERS[normalize(title)] ?? PRESENTATION_BY_TITLE[normalize(title)]?.coverUrl;
+
+export const FALLBACK_PLAYBOOKS: Playbook[] = [
+  {
+    id: 'sample-1',
+    programId: 1001,
+    title: 'Inteligencia Artificial para Directivos & C-Suite',
+    coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+    slug: 'ia-para-ejecutivos',
+    description:
+      'Aprende a integrar asistentes inteligentes, automatizar la atención y ventas, y tomar decisiones estratégicas basadas en datos sin necesidad de saber programar.',
+    category: 'Inteligencia Artificial',
+    tier: 'ENTERPRISE',
+    tags: ['Inteligencia Artificial', 'Estrategia', 'Decisiones', 'Productividad'],
+    duration: '6 Semanas',
+    instructor: 'Dr. Marcos Sotomayor (Consultor de Estrategia e Innovación)',
+    price: 89,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+  {
+    id: 'sample-2',
+    programId: 1002,
+    title: 'Ciberseguridad & Protección Antifraude para Empresas',
+    coverUrl: '/courses/curso2.png',
+    slug: 'ciberseguridad-corporativa',
+    description:
+      'Protege a tu organización contra estafas digitales, ransomware, robo de información confidencial y fraudes bancarios. Diseñado para directivos y líderes de negocio.',
+    category: 'Seguridad y Riesgos',
+    tier: 'ADVANCED',
+    tags: ['Ciberseguridad', 'Protección de Datos', 'Antifraude', 'Gestión de Riesgos'],
+    duration: '8 Semanas',
+    instructor: 'Dra. Elena Alarcón (Especialista en Seguridad Corporativa)',
+    price: 109,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+  {
+    id: 'sample-3',
+    programId: 1003,
+    title: 'Gestión Financiera Estratégica & Optimización de Costos',
+    coverUrl: '/courses/curso1.png',
+    slug: 'finops-empresarial',
+    description:
+      'Aprende a auditar y reducir hasta un 40% en gastos de tecnología, servicios en la nube y licencias operativas, maximizando el margen de rentabilidad y retorno de inversión (ROI).',
+    category: 'Finanzas y Gestión',
+    tier: 'ENTERPRISE',
+    tags: ['Finanzas', 'Reducción de Costos', 'ROI', 'Presupuestos'],
+    duration: '8 Semanas',
+    instructor: 'Mg. Roberto Valenzuela (Asesor Financiero y de Eficiencia Operativa)',
+    price: 99,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+  {
+    id: 'sample-4',
+    programId: 1004,
+    title: 'Automatización de Procesos con Herramientas No-Code',
+    coverUrl: '/courses/curso4.png',
+    slug: 'automatizacion-procesos-no-code',
+    description:
+      'Automatiza flujos de ventas, cobranzas, reportes y atención al cliente conectando sistemas empresariales fácilmente sin contratar programadores ni escribir código.',
+    category: 'Automatización y Procesos',
+    tier: 'ESSENTIAL',
+    tags: ['Automatización', 'No-Code', 'Productividad', 'Ventas'],
+    duration: '6 Semanas',
+    instructor: 'Lic. Carlos Mendoza (Especialista en Productividad y Procesos)',
+    price: 59,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+  {
+    id: 'sample-5',
+    programId: 1005,
+    title: 'Transformación Digital & Liderazgo de Negocios',
+    coverUrl: '/courses/curso3.png',
+    slug: 'transformacion-digital-liderazgo',
+    description:
+      'Cómo liderar la modernización de empresas tradicionales hacia modelos digitales rentables, gestionando el cambio organizacional y alineando equipos sin fricción.',
+    category: 'Liderazgo y Estrategia',
+    tier: 'ADVANCED',
+    tags: ['Liderazgo', 'Transformación Digital', 'Gestión del Cambio', 'Estrategia'],
+    duration: '8 Semanas',
+    instructor: 'MSc. Patricia Arana (Coach Ejecutiva de Alta Dirección)',
+    price: 119,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+  {
+    id: 'sample-6',
+    programId: 1006,
+    title: 'Dirección Estratégica & Negociación para Alta Gerencia',
+    coverUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+    slug: 'direccion-estrategica-negociacion',
+    description:
+      'Desarrolla habilidades de comunicación con comités de directorio, negociación de contratos corporativos de alto valor y toma de decisiones ágiles en momentos clave.',
+    category: 'Liderazgo y Estrategia',
+    tier: 'ESSENTIAL',
+    tags: ['Negociación', 'Alta Dirección', 'Comités', 'Decisiones'],
+    duration: '6 Semanas',
+    instructor: 'Dr. Fernando Benavides (Consultor Senior en Gobierno Corporativo)',
+    price: 79,
+    currency: 'USD',
+    isDemo: true,
+    isSample: true,
+  },
+];

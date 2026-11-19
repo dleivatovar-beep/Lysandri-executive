@@ -22,6 +22,7 @@ import companyLogo from './assets/lysandri-logo.png';
 
 import { LoginView } from './components/auth/LoginView';
 import { ChatContainer } from './components/chat/ChatContainer';
+import { ExecutiveChatDrawer } from './components/chat/ExecutiveChatDrawer';
 import { Footer } from './components/layout/Footer';
 import { EditorialNavbar } from './components/layout/EditorialNavbar';
 import { Navbar } from './components/layout/Navbar';
@@ -30,6 +31,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { useAuth } from './context/AuthContext';
 
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminIa } from './pages/admin/AdminIa';
 import { AdminEnrollments } from './pages/admin/AdminEnrollments';
 import { AdminInformationRequests } from './pages/admin/AdminInformationRequests';
 import { AdminManualPayments } from './pages/admin/AdminManualPayments';
@@ -43,6 +45,9 @@ import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 import { PaymentSuccessView } from './pages/PaymentSuccessView';
 import { ActivarCuentaView } from './pages/ActivarCuentaView';
 import { AccountingView } from './pages/AccountingView';
+import { CuentaView } from './pages/CuentaView';
+import { RegistroCliente } from './pages/RegistroCliente';
+import { PruebasView } from './pages/PruebasView';
 import './admin-workspace.css';
 
 import { academicService } from './services/academicService';
@@ -51,7 +56,7 @@ import { enviarMensajeChat } from './services/api';
 import {
   buildCategories,
   toCatalogCourse,
-  } from './services/courseCatalog';
+} from './services/courseCatalog';
 
 import {
   ActiveView,
@@ -172,6 +177,9 @@ const VIEW_PATHS: Record<
   },
 
   ADMIN: {
+    ADMIN_IA:
+      '/admin/ia',
+
     ADMIN_DASHBOARD:
       '/admin/cursos',
 
@@ -198,6 +206,11 @@ const VIEW_PATHS: Record<
 
     ACCOUNTING:
       '/admin/contabilidad',
+  },
+
+  CONTABILIDAD: {
+    ACCOUNTING:
+      '/contabilidad',
   },
 };
 
@@ -234,6 +247,12 @@ const PATH_VIEWS: Record<
 
   '/admin/dashboard':
     'ADMIN_DASHBOARD',
+
+  '/admin/ia':
+    'ADMIN_IA',
+
+  '/admin/ia/chat':
+    'ADMIN_IA',
 
   '/admin/usuarios':
     'USERS',
@@ -273,6 +292,8 @@ const toNavbarUser = (
   jobTitle:
     user.rol === 'ADMIN'
       ? 'Administrador'
+      : user.rol === 'CONTABILIDAD'
+        ? 'Contabilidad'
       : user.rol === 'INSTRUCTOR'
         ? 'Profesor'
         : 'Ejecutivo',
@@ -352,22 +373,12 @@ const MarketplacePage: React.FC = () => {
   const loadPrograms = async () => {
     setIsLoading(true);
     setErrorMessage('');
-
     try {
-      const programs = await academicService.getPrograms();
-
-      if (programs && programs.length > 0) {
-        setPlaybooks(programs.map(toCatalogCourse));
-      } else {
-        setPlaybooks([]);
-      }
-    } catch (err: any) {
+      const programs = await academicService.getProgramInformation();
+      setPlaybooks(programs.map(toCatalogCourse));
+    } catch {
       setPlaybooks([]);
-      setErrorMessage(
-        err?.response?.data?.message ||
-          err?.message ||
-          'No se pudo conectar con el catálogo oficial del backend.'
-      );
+      setErrorMessage('No pudimos cargar los cursos. Inténtalo de nuevo en un momento.');
     } finally {
       setIsLoading(false);
     }
@@ -449,7 +460,16 @@ const ChatPage: React.FC = () => {
         response.content ||
         'Consulta procesada exitosamente.';
 
-      const fuentes = response.fuentes || response.sources || [];
+      const fuentes = (response.fuentes || response.sources || [])
+        .filter(fuente => typeof fuente === 'string' || (!fuente.url && fuente.seccion !== 'Web'))
+        .map((fuente) =>
+        typeof fuente === 'string' ? fuente : [
+          fuente.titulo || `Documento ${fuente.idDocumento ?? ''}`,
+          fuente.seccion,
+          fuente.version ? `Versión ${fuente.version}` : '',
+          fuente.estado === 'PROPUESTA' ? 'Propuesta académica' : '',
+        ].filter(Boolean).join(' · ')
+      );
 
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -569,7 +589,7 @@ const ProtectedLayout:
       };
 
     return (
-      <div className={`min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100${user.rol === 'ADMIN' ? ' lx-admin-workspace' : ` lx-learning-workspace lx-${user.rol === 'INSTRUCTOR' ? 'instructor' : 'student'}-workspace`}`}>
+      <div className={`min-h-screen bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-[#06090f] dark:text-slate-100${user.rol === 'ADMIN' ? ' lx-admin-workspace' : ` lx-learning-workspace lx-${user.rol === 'INSTRUCTOR' ? 'instructor' : user.rol === 'CONTABILIDAD' ? 'accounting' : 'student'}-workspace`}`}>
         <Navbar
           user={
             toNavbarUser(user)
@@ -778,15 +798,6 @@ const App: React.FC =
           }
         />
         <Route
-          path="/contabilidad"
-          element={<AccountingView />}
-        />
-        <Route
-          path="/gestion-contable"
-          element={<AccountingView />}
-        />
-
-        <Route
           element={
             <PublicLayout
               {...layoutProps}
@@ -799,6 +810,8 @@ const App: React.FC =
               <MarketplacePage />
             }
           />
+          <Route path="/registro-cliente" element={<RegistroCliente />} />
+          <Route path="/cuenta" element={<CuentaView />} />
           <Route
             path="pago-exitoso"
             element={
@@ -819,7 +832,7 @@ const App: React.FC =
           />
         </Route>
         
-        {/* Redirección de la antigua URL a la plataforma integrada de Contabilidad & SUNAT */}
+        {/* Redirección de la antigua URL a Contabilidad */}
         <Route
           path="/gestion-contable"
           element={
@@ -829,6 +842,32 @@ const App: React.FC =
             />
           }
         />
+
+        {/* Administración y Contabilidad pueden abrir este módulo. */}
+        <Route
+          element={
+            <RoleProtectedRoute
+              allowedRoles={[
+                'ADMIN',
+                'CONTABILIDAD',
+              ]}
+            />
+          }
+        >
+          <Route
+            element={
+              <ProtectedLayout
+                {...layoutProps}
+              />
+            }
+          >
+            <Route
+              path="/contabilidad"
+              element={<AccountingView />}
+            />
+            <Route path="/pruebas" element={<PruebasView />} />
+          </Route>
+        </Route>
 
         {/* Rutas del estudiante */}
         <Route
@@ -991,6 +1030,9 @@ const App: React.FC =
                 />
               }
             />
+
+            <Route path="/admin/ia" element={<AdminIa><ExecutiveChatDrawer integrado /></AdminIa>} />
+            <Route path="/admin/ia/chat" element={<Navigate to="/admin/ia" replace />} />
 
             <Route
               path="/admin/usuarios"

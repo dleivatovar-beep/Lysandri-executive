@@ -19,12 +19,12 @@ import java.util.Arrays;
 
 /**
  * Adaptador de producción para Stripe.
- * Solo activo en perfiles no-test (@Profile("!test")).
+ * Activo fuera de pruebas automatizadas; las credenciales de clon deben estar configuradas.
  * Prohíbe terminantemente confirmaciones simuladas automáticas.
  */
 @Slf4j
 @Component("stripePaymentAdapter")
-@Profile("!test & !clone")
+@Profile("!test")
 public class StripePaymentAdapter implements PaymentPort {
 
     private final String apiKey;

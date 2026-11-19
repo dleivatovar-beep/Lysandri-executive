@@ -54,6 +54,14 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
+    const requestPath = (config.url || '').split('?')[0].replace(/\/+$/, '');
+    const isPublicAuthRequest = /(?:^|\/)auth\/(?:condiciones-registro|login|register|register-interno|activar-cuenta|solicitar-activacion|recuperar-contrasena|restablecer-contrasena)$/.test(requestPath);
+
+    if (isPublicAuthRequest) {
+      if (config.headers) delete config.headers.Authorization;
+      return config;
+    }
+
     const token = localStorage.getItem(TOKEN_KEY);
 
     if (token) {
@@ -81,8 +89,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     const status = error.response?.status;
+    const responseData = error.response?.data as { codigo?: string } | undefined;
+    const auditPinRejected = status === 401 && responseData?.codigo === 'AUDIT_PIN_INVALID';
 
-    if (status === 401) {
+    if (status === 401 && !auditPinRejected) {
       clearStoredSession();
 
       window.dispatchEvent(
@@ -123,7 +133,7 @@ export const enviarMensajeChat = async (
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        timeout: 30000,
+        timeout: 180000,
       },
     );
 
@@ -148,6 +158,9 @@ export const enviarMensajeChat = async (
         );
       }
 
+      if (status === 503) {
+        throw new Error(error.response?.data?.message || 'El servicio de IA no está disponible.');
+      }
       if (status && status >= 500) {
         throw new Error(
           '500 Internal Error: Error interno del servidor al procesar la consulta con el asistente.',

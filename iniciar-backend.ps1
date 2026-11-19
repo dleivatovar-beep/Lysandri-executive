@@ -9,6 +9,7 @@ param(
     [string]$CloneHost = "127.0.0.1",
     [int]$ClonePort = 5434,
     [string]$CloneDatabase = "lysandri_clone_db",
+    [switch]$UsarBaseOriginal,
     [switch]$SoloVerificar,
     [switch]$SoloVerificarBaseDatos,
     [switch]$ForzarHerramientaAusente
@@ -35,6 +36,9 @@ if ($SoloVerificarBaseDatos) {
 }
 if ($ForzarHerramientaAusente) {
     $params["ForzarHerramientaAusente"] = $true
+}
+if ($UsarBaseOriginal) {
+    $params["UsarBaseOriginal"] = $true
 }
 
 & $backendScript @params

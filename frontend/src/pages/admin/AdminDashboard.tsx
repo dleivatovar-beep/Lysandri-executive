@@ -32,6 +32,7 @@ import {
 import { getApiErrorMessage } from '../../services/authService';
 import { academicService } from '../../services/academicService';
 import { ProgramEditorModal } from '../../components/admin/ProgramEditorModal';
+import { NeutralCover } from '../../components/common/NeutralCover';
 import {
   generateUniqueUsername,
   generateSecurePassword,
@@ -61,6 +62,7 @@ const ROLE_LABELS: Record<UserRole | string, string> = {
   INSTRUCTOR: 'Profesor',
   DOCENTE: 'Profesor',
   ADMIN: 'Administrador',
+  CONTABILIDAD: 'Contabilidad',
 };
 
 const formatDate = (date?: string): string => {
@@ -78,6 +80,30 @@ const formatDate = (date?: string): string => {
   } catch {
     return date;
   }
+};
+
+
+const AdminProgramCover: React.FC<{
+  coverUrl?: string;
+  title: string;
+  category?: string;
+  level?: string;
+  priority?: boolean;
+}> = ({ coverUrl, title, category, level, priority }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (!coverUrl || hasError) {
+    return <NeutralCover title={title} category={category} level={level} />;
+  }
+
+  return (
+    <img
+      src={coverUrl}
+      alt={title || 'Portada del programa'}
+      loading={priority ? 'eager' : 'lazy'}
+      onError={() => setHasError(true)}
+    />
+  );
 };
 
 export const AdminDashboard: React.FC<
@@ -673,7 +699,7 @@ const REGISTRATION_AREAS: CorporateAreaConfig[] = [
   {
     id: 'CONTABILIDAD',
     label: 'Contabilidad',
-    role: 'ADMIN',
+    role: 'CONTABILIDAD',
     desc: 'Facturación electrónica, liquidación tributaria SUNAT e informes SIRE.',
   },
   {
@@ -1242,6 +1268,7 @@ Revisa tu bandeja de entrada y cualquier duda que tengas nos avisas por aquí. �
                   <option value="ESTUDIANTE">Ejecutivo / Alumno</option>
                   <option value="INSTRUCTOR">Profesor / Docente</option>
                   <option value="ADMIN">Administrador</option>
+                  <option value="CONTABILIDAD">Contabilidad</option>
                 </select>
               </div>
             )}
@@ -1387,28 +1414,14 @@ const ProgramsTable: React.FC<ProgramsTableProps> = ({
                 role="listitem"
               >
                 <div className="lx-program-artwork">
-                  {program.coverUrl ? (
-                    <img
-                      src={program.coverUrl}
-                      alt={program.titulo || 'Portada del programa'}
-                      loading={index > 3 ? 'lazy' : 'eager'}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const parent = e.currentTarget.parentElement;
-                        if (parent && !parent.querySelector('.lx-program-placeholder')) {
-                          const placeholder = document.createElement('div');
-                          placeholder.className = 'lx-program-placeholder';
-                          placeholder.innerHTML = '<span>Portada no disponible</span>';
-                          parent.appendChild(placeholder);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="lx-program-placeholder">
-                      <BookOpen aria-hidden="true" />
-                      <span>Portada no disponible</span>
-                    </div>
-                  )}
+                  <AdminProgramCover
+                    key={program.coverUrl}
+                    coverUrl={program.coverUrl}
+                    title={program.titulo || 'Programa Ejecutivo'}
+                    category={program.tipoPrograma}
+                    level={level}
+                    priority={index <= 3}
+                  />
                 </div>
 
                 <div className="lx-program-card-content">

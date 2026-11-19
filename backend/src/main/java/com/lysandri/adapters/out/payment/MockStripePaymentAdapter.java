@@ -15,12 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Adaptador simulado de Stripe para pruebas automatizadas e integración controlada.
- * Activo EXCLUSIVAMENTE bajo el perfil @Profile("test").
+ * Activo exclusivamente bajo el perfil @Profile("test").
  * Impide bajo cualquier circunstancia su activación o uso en perfiles productivos (prod/production).
  */
 @Slf4j
 @Component("stripePaymentAdapter")
-@Profile({"test", "clone"})
+@Profile("test")
 public class MockStripePaymentAdapter implements PaymentPort {
 
     private final String successUrl;

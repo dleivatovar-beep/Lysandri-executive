@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { X, Send, FileText, LoaderCircle, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { X, ArrowUp, FileText, RefreshCw } from 'lucide-react';
 import { Playbook } from '../../types';
 import { storeService, RagCitation } from '../../services/storeService';
 import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
+import thinkingRobot from '../../assets/robot-pensando.png';
 import '../marketplace/editorial-overlays.css';
 
 interface ChatMessage {
@@ -15,15 +16,28 @@ interface ChatMessage {
   latenciaMs?: number;
 }
 
-interface ExecutiveChatDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
+type ExecutiveChatDrawerProps = {
   activePlaybook?: Playbook | null;
   onClearContext?: () => void;
+} & (
+  | { integrado: true; isOpen?: never; onClose?: never }
+  | { integrado?: false; isOpen: boolean; onClose: () => void }
+);
+
+function ChatRobot({ state }: { state: 'idle' | 'reading' | 'answered' }) {
+  return (
+    <div className="lx-chat-robot" data-state={state} aria-hidden="true">
+      <div className="lx-chat-robot-head">
+        <div className="lx-chat-robot-visor"><span /><span /></div>
+      </div>
+      <div className="lx-chat-robot-light" />
+    </div>
+  );
 }
 
 export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
-  isOpen,
+  integrado = false,
+  isOpen = true,
   onClose,
   activePlaybook = null,
   onClearContext,
@@ -39,13 +53,12 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'ia',
-      text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Lysandri. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
+      text: 'Hola. ¿Qué te gustaría saber de nuestros cursos?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
 
   const handleNewConversation = () => {
     const newSession = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -54,18 +67,20 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     setSesionId(newSession);
     setSessionToken(null);
     setLastFailedQuestion(null);
+    setInputQuestion('');
     setMessages([
       {
         id: 'welcome',
         sender: 'ia',
-        text: '¡Bienvenido(a) a Lysandri Executive! Soy tu asesor directivo de Lysandri. Nuestros programas están diseñados para líderes, gerentes y dueños de empresas que desean aplicar Inteligencia Artificial, ciberseguridad práctica y optimización de costos sin necesidad de saber programar. ¿En qué temática o programa te gustaría profundizar hoy?',
+        text: 'Hola. ¿Qué te gustaría saber de nuestros cursos?',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
   };
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const panelMensajes = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const dialogRef = useDialogAccessibility<HTMLDivElement>(isOpen, onClose);
+  const dialogRef = useDialogAccessibility<HTMLDivElement>(isOpen && !integrado, () => onClose?.());
 
   // Reiniciar la conversación de forma segura si cambia el usuario o el estado de autenticación
   const currentAuthToken = typeof window !== 'undefined' ? localStorage.getItem('lysandri_token') : null;
@@ -92,8 +107,14 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
   }, [activePlaybook]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (integrado) {
+      const panel = panelMensajes.current;
+      if (panel) panel.scrollTop = panel.scrollHeight;
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+    }
+  }, [messages, isLoading, integrado]);
 
   if (!isOpen) return null;
 
@@ -153,215 +174,187 @@ export const ExecutiveChatDrawer: React.FC<ExecutiveChatDrawerProps> = ({
     }
   };
 
-  const toggleSources = (msgId: string) => {
-    setExpandedSources((prev) => ({
-      ...prev,
-      [msgId]: !prev[msgId],
-    }));
-  };
 
-  const samplePrompts = [
-    '¿Necesito saber programar para llevar los cursos?',
-    '¿Cuál es la duración y modalidad de estudio?',
-    '¿Qué certificación oficial obtendré y cómo se verifica?',
-  ];
+  const samplePrompts = activePlaybook
+    ? [
+        { label: 'Precio', question: '¿Cuánto cuesta este curso?' },
+        { label: 'Duración', question: '¿Cuánto dura?' },
+        { label: 'Contenido', question: '¿Qué voy a aprender?' },
+      ]
+    : [
+        { label: 'Cursos', question: '¿Qué cursos tienen?' },
+        { label: 'Precios', question: '¿Cuánto cuestan los cursos?' },
+        { label: 'Duración', question: '¿Cuánto duran los cursos?' },
+      ];
+  const lastMessage = messages[messages.length - 1];
+  const robotState = isLoading ? 'reading' : lastMessage?.id.startsWith('ia-') ? 'answered' : 'idle';
+
+  const panel = (
+    <div
+      ref={integrado ? undefined : dialogRef}
+      role={integrado ? undefined : 'dialog'}
+      aria-modal={integrado ? undefined : true}
+      aria-labelledby={integrado ? undefined : titleId}
+      tabIndex={integrado ? undefined : -1}
+      className={integrado ? 'lx-chat lx-chat-integrado' : 'lx-drawer lx-chat flex w-screen max-w-lg flex-col'}
+    >
+      {/* Header */}
+      <div className="lx-overlay-header lx-chat-header">
+        <div className="lx-chat-identity">
+          <ChatRobot state={robotState} />
+          <div>
+            <h2 id={titleId}>Asistente Lysandri</h2>
+            <p>Consulta sobre programas</p>
+          </div>
+        </div>
+
+        <div className="lx-chat-header-actions">
+          <button
+            type="button"
+            onClick={handleNewConversation}
+            className="lx-chat-reset"
+            disabled={isLoading}
+            aria-label="Nueva conversación"
+            title="Iniciar una nueva conversación independiente"
+          >
+            <RefreshCw className="h-3 w-3" />
+            <span>Nueva conversación</span>
+          </button>
+          {!integrado && <button
+            type="button"
+            onClick={onClose}
+            data-dialog-close
+            aria-label="Cerrar asistente"
+            className="lx-overlay-close flex h-11 w-11 items-center justify-center"
+          >
+            <X className="h-5 w-5" />
+          </button>}
+        </div>
+      </div>
+
+      {/* Active Context Banner */}
+      {activePlaybook && (
+        <div className="lx-chat-context flex items-center justify-between border-b px-6 py-2.5 text-xs">
+          <div className="flex items-center gap-2 text-cyan-300 truncate">
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Contexto: {activePlaybook.title}</span>
+          </div>
+          {onClearContext && (
+            <button
+              type="button"
+              onClick={onClearContext}
+              className="text-[10px] text-slate-400 hover:text-white underline ml-2 shrink-0"
+            >
+              Quitar
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Messages Area */}
+      <div ref={panelMensajes} role="log" aria-label="Mensajes del asistente" aria-live="polite" aria-relevant="additions" aria-busy={isLoading} className="lx-chat-messages">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`lx-chat-message lx-chat-message-${msg.sender}`}
+          >
+            <div
+              className="lx-chat-bubble"
+            >
+              <p className="whitespace-pre-wrap">{msg.text}</p>
+              {msg.fuentes?.some(fuente => !fuente.url && fuente.seccion !== 'Web') && (
+                <details className="lx-chat-sources mt-3 border-t pt-2">
+                  <summary className="lx-chat-sources-toggle cursor-pointer text-xs font-semibold">
+                    Fuentes consultadas
+                  </summary>
+                  <div className="mt-2 space-y-1.5 pl-2 border-l border-cyan-800/60">
+                    {msg.fuentes.filter(fuente => !fuente.url && fuente.seccion !== 'Web').map((fuente, indice) => (
+                      <div key={indice} className="text-[10px] text-slate-400">
+                        <span className="font-mono text-cyan-300 font-bold">
+                          {fuente.titulo || `Documento ${fuente.idDocumento}`}
+                          {fuente.seccion ? ` · ${fuente.seccion}` : ''}
+                          {fuente.version ? ` · Versión ${fuente.version}` : ''}
+                        </span>
+                        <p>{fuente.extracto}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {msg.id.startsWith('error-') && lastFailedQuestion && (
+                <div className="mt-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => handleSend(lastFailedQuestion)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-rose-500/20 px-2.5 py-1 text-[10px] font-bold text-rose-300 hover:bg-rose-500/30 transition"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span>Reintentar</span>
+                  </button>
+                </div>
+              )}
+              <time className="lx-chat-time">{msg.timestamp}</time>
+            </div>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="lx-chat-loading">
+            <span className="lx-thinking-robot" aria-hidden="true">
+              <img src={thinkingRobot} alt="" width={36} height={36} />
+            </span>
+            <span>Pensando…</span>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Quick Prompts */}
+      <div className="lx-chat-quick" role="group" aria-label="Consultas sugeridas">
+        {samplePrompts.map(({ label, question }) => (
+          <button key={label} type="button" disabled={isLoading} onClick={() => handleSend(question)}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Input Box */}
+      <div className="lx-chat-composer">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={inputQuestion}
+            onChange={(e) => setInputQuestion(e.target.value)}
+            aria-label="Consulta para el asistente"
+            placeholder="Escribe tu consulta…"
+          />
+          <button
+            type="submit"
+            disabled={!inputQuestion.trim() || isLoading}
+            aria-label="Enviar consulta"
+            className="lx-chat-send"
+          >
+            <ArrowUp className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  if (integrado) return panel;
 
   return (
     <div className="lx-overlay lx-chat-overlay fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
-      <div
-        className="lx-overlay-backdrop absolute inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
+      <div className="lx-overlay-backdrop absolute inset-0" onClick={onClose} aria-hidden="true" />
       <div className="fixed inset-y-0 right-0 flex max-w-full pl-10">
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-          tabIndex={-1}
-          className="lx-drawer lx-chat flex w-screen max-w-lg flex-col"
-        >
-          {/* Header */}
-          <div className="lx-overlay-header flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div>
-                <h2 id={titleId}>Consulta sobre programas</h2>
-                <p>Asistente de Lysandri Executive</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleNewConversation}
-                className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800/80 px-2.5 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition"
-                title="Iniciar una nueva conversación independiente"
-              >
-                <RefreshCw className="h-3 w-3" />
-                <span>Nueva conversación</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                data-dialog-close
-                aria-label="Cerrar asistente"
-                className="lx-overlay-close flex h-11 w-11 items-center justify-center"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Active Context Banner */}
-          {activePlaybook && (
-            <div className="lx-chat-context flex items-center justify-between border-b px-6 py-2.5 text-xs">
-              <div className="flex items-center gap-2 text-cyan-300 truncate">
-                <FileText className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Contexto: {activePlaybook.title}</span>
-              </div>
-              {onClearContext && (
-                <button
-                  type="button"
-                  onClick={onClearContext}
-                  className="text-[10px] text-slate-400 hover:text-white underline ml-2 shrink-0"
-                >
-                  Quitar
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Messages Area */}
-          <div role="log" aria-label="Mensajes del asistente" aria-live="polite" aria-relevant="additions" aria-busy={isLoading} className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white rounded-tr-none'
-                      : 'border border-slate-800 bg-slate-950/80 text-slate-200 rounded-tl-none'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
-
-                  {/* Sources Grounding */}
-                  {msg.fuentes && msg.fuentes.length > 0 && (
-                    <div className="mt-3 border-t border-slate-800 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleSources(msg.id)}
-                        className="flex items-center gap-1.5 text-[10px] font-semibold text-cyan-400 hover:text-cyan-300"
-                      >
-                        <FileText className="h-3 w-3" />
-                        <span>
-                          {msg.fuentes.length} fragmento{msg.fuentes.length !== 1 ? 's' : ''} citado{msg.fuentes.length !== 1 ? 's' : ''} de la Malla Curricular
-                        </span>
-                        {expandedSources[msg.id] ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
-                      </button>
-
-                      {expandedSources[msg.id] && (
-                        <div className="mt-2 space-y-1.5 pl-2 border-l border-cyan-800/60">
-                          {msg.fuentes.map((f, fIdx) => (
-                            <div key={fIdx} className="text-[10px] text-slate-400">
-                              <span className="font-mono text-cyan-300 font-bold">
-                                [Pág. {f.pagina || 'S/N'}]:
-                              </span>{' '}
-                              "{f.extracto}"
-                              <span className="text-slate-500 ml-1">
-                                ({(f.similitud * 100).toFixed(0)}% relevancia)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {msg.id.startsWith('error-') && lastFailedQuestion && (
-                    <div className="mt-2 pt-2 border-t border-slate-800">
-                      <button
-                        type="button"
-                        onClick={() => handleSend(lastFailedQuestion)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-rose-500/20 px-2.5 py-1 text-[10px] font-bold text-rose-300 hover:bg-rose-500/30 transition"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        <span>Reintentar</span>
-                      </button>
-                    </div>
-                  )}
-                  <div className="mt-1 flex items-center justify-end gap-2 text-[9px] text-slate-500">
-                    {msg.fuentes && msg.fuentes.length > 0 && (
-                      <span className="text-cyan-400 font-medium">Contenido oficial verificado</span>
-                    )}
-                    <span>{msg.timestamp}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {isLoading && (
-              <div className="flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/80 p-3 text-xs text-cyan-400 w-fit">
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                <span>Consultando información del programa académico...</span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Prompts */}
-          <div className="px-6 py-2 border-t border-slate-800 bg-slate-950/40">
-            <div className="flex flex-wrap gap-1.5">
-              {samplePrompts.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSend(prompt)}
-                  className="min-h-11 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-400 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Input Box */}
-          <div className="border-t border-slate-800 bg-slate-950/90 p-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="text"
-                value={inputQuestion}
-                onChange={(e) => setInputQuestion(e.target.value)}
-                aria-label="Consulta para el asistente"
-                placeholder="Escribe tu consulta sobre los programas o sílabos..."
-                className="min-w-0 flex-1 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={!inputQuestion.trim() || isLoading}
-                aria-label="Enviar consulta"
-                className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500 text-slate-950 hover:bg-cyan-400 disabled:opacity-40 transition-colors"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-          </div>
-        </div>
+        {panel}
       </div>
     </div>
   );

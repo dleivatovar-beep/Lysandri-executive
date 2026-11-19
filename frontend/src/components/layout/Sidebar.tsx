@@ -45,6 +45,7 @@ const ROLE_LABELS: Record<
   ESTUDIANTE: 'Espacio ejecutivo',
   INSTRUCTOR: 'Espacio docente',
   ADMIN: 'Administración',
+  CONTABILIDAD: 'Contabilidad',
 };
 
 const ROLE_NAVIGATION: Record<
@@ -109,6 +110,11 @@ const ROLE_NAVIGATION: Record<
       icon: GraduationCap,
     },
     {
+      label: 'IA',
+      view: 'ADMIN_IA',
+      icon: Bot,
+    },
+    {
       label: 'Usuarios',
       view: 'USERS',
       icon: Users,
@@ -132,6 +138,19 @@ const ROLE_NAVIGATION: Record<
       label: 'In-Company',
       view: 'IN_COMPANY',
       icon: Building2,
+    },
+    {
+      label: 'Área Contable',
+      view: 'ACCOUNTING',
+      icon: ChartNoAxesColumnIncreasing,
+    },
+  ],
+
+  CONTABILIDAD: [
+    {
+      label: 'Área contable',
+      view: 'ACCOUNTING',
+      icon: ChartNoAxesColumnIncreasing,
     },
   ],
 };
@@ -192,7 +211,7 @@ export const Sidebar:
 
                       {role === 'ADMIN' ? (
                         <span className="lx-admin-nav-icon" aria-hidden="true">
-                          <LysandriAdminMark view={item.view} />
+                          {item.view === 'ADMIN_IA' ? <Icon /> : <LysandriAdminMark view={item.view} />}
                         </span>
                       ) : (
                         <span
@@ -216,6 +235,8 @@ export const Sidebar:
             </nav>
           </div>
 
+          {(role === 'ADMIN' || role === 'CONTABILIDAD') && <a href="/pruebas" className="block rounded px-3 py-3 text-sm font-semibold hover:text-cyan-500">Pruebas comerciales</a>}
+          <a href="/cuenta" className="block rounded px-3 py-3 text-sm font-semibold hover:text-cyan-500">Mi cuenta</a>
           {onLogout && (
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800/80">
               <button

@@ -101,6 +101,24 @@ class ChatControllerTest {
     }
 
     @Test
+    void consultar_conPrecioSinAprobar_permiteInformacionSinHabilitarCompra() {
+        programaActivo.setPrecioAprobado(false);
+        ChatRequest req = new ChatRequest();
+        req.setPregunta("¿Cuánto cuesta FinOps?");
+        req.setIdPrograma(101L);
+        when(programRepository.buscarPorId(101L)).thenReturn(Optional.of(programaActivo));
+        when(chatRagUseCase.procesarConsulta(any())).thenReturn(
+                new ChatRagUseCase.ChatRagResponse("USD 89.00", List.of(), 0, 1L));
+
+        var respuesta = chatController.consultar(usuarioMock, null, req);
+
+        assertEquals(HttpStatus.OK, respuesta.getStatusCode());
+        assertEquals("USD 89.00", respuesta.getBody().get("respuesta"));
+        assertFalse(programaActivo.isPrecioAprobado());
+        verify(programRepository, never()).guardar(any());
+    }
+
+    @Test
     void consultar_conPreguntaValida_debeRetornar200ConRespuestaYFuentes() {
         ChatRequest req = new ChatRequest();
         req.setPregunta("¿Cuáles son los requisitos de admisión?");

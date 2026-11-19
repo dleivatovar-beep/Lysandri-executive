@@ -45,12 +45,13 @@ import java.security.MessageDigest;
 @RequestMapping("/api/v1/internal/accounting")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN', 'CONTABILIDAD', 'FINANZAS', 'AUDITOR')")
-@Tag(name = "Contabilidad Interna y Auditoría", description = "Endpoints de auditoría contable y reporte tributario protegidos por PIN interno")
+@Tag(name = "Contabilidad Interna y Auditoría", description = "Endpoints internos protegidos por sesión y rol autorizado; admiten PIN adicional si se configura")
 public class InternalAccountingController {
 
     private final BillingPort billingPort;
     private final OrderRepositoryPort orderRepository;
     private final AccountingAuditPort accountingAuditPort;
+    private final org.springframework.core.env.Environment environment;
 
     @Value("${accounting.audit-pin:}")
     private String auditPin;
@@ -62,14 +63,8 @@ public class InternalAccountingController {
     @GetMapping("/ventas")
     @Operation(
             summary = "Reporte consolidado de ventas, base imponible e IGV tributario",
-            description = "Endpoint contable interno protegido mediante sesión autorizada y cabecera X-Audit-PIN",
+            description = "Endpoint contable interno protegido mediante sesión y rol autorizados; el PIN adicional es opcional según configuración",
             parameters = {
-                    @Parameter(
-                            name = "X-Audit-PIN",
-                            in = ParameterIn.HEADER,
-                            required = true,
-                            description = "PIN de auditoría interna contable"
-                    ),
                     @Parameter(
                             name = "periodo",
                             in = ParameterIn.QUERY,
@@ -568,7 +563,11 @@ public class InternalAccountingController {
     }
 
     private boolean validarPin(String pinHeader) {
-        if (pinHeader == null || pinHeader.isBlank() || auditPin == null || auditPin.isBlank()) {
+        if (auditPin == null || auditPin.isBlank()) {
+            return environment.acceptsProfiles(org.springframework.core.env.Profiles.of(
+                    "sandbox & (original-dev | clone | test) & !prod & !production"));
+        }
+        if (pinHeader == null || pinHeader.isBlank()) {
             return false;
         }
         return MessageDigest.isEqual(

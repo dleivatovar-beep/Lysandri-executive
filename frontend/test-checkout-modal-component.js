@@ -72,6 +72,7 @@ const source = compiled.outputFiles[0].text.replace(
 );
 fs.writeFileSync(compiledPath, source, 'utf8');
 const { CheckoutModal } = await import(pathToFileURL(compiledPath).href);
+const { storeService } = await import(pathToFileURL(path.resolve(import.meta.dirname, 'src/services/storeService.ts')).href);
 
 const playbook = {
   id: 1,
@@ -104,11 +105,11 @@ function resetStorage() {
   window.open = () => {};
 }
 
-function renderModal() {
+function renderModal(items) {
   return render(React.createElement(CheckoutModal, {
     isOpen: true,
     onClose: () => {},
-    playbook,
+    ...(items ? { items } : { playbook }),
   }));
 }
 
@@ -402,7 +403,7 @@ try {
   render(React.createElement(CheckoutModal, {
     isOpen: true,
     onClose: () => {},
-    playbook: { ...playbook, id: '-1' },
+    playbook: { ...playbook, programId: -1 },
   }));
   await selectTransferAndFill('invalido@test.pe');
   const invalidButton = screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i });
@@ -519,7 +520,48 @@ try {
   assertions += 2;
   console.log('PASS UI m & n: errores del SDK muestran reintento y reinicio de orden invoca KR.removeForms().');
 
-  console.log(`RESULTADO UI: ${assertions}/14 escenarios aprobados (interacciones DOM reales).`);
+  // o. El carrito completo llega al resumen, al payload y a la clave canónica.
+  resetStorage();
+  calls = { guest: [], create: [] };
+  successfulAccountRequest();
+  const secondPlaybook = {
+    ...playbook,
+    id: '202',
+    programId: 202,
+    title: 'Liderazgo Estratégico',
+    price: 299,
+  };
+  const selectedItems = [playbook, secondPlaybook];
+  postHandler = createRequestCall(calls, async (_url, data) => ({
+    data: { codigoOrden: 'ORD-MULTI-001', guestSessionToken: 'guest-token-test-101' },
+  }));
+  const multiModal = renderModal(selectedItems);
+  await selectTransferAndFill('multi@empresa.pe');
+  assert.ok(screen.getByText('FinOps y Transformación Digital Cloud'));
+  assert.ok(screen.getByText('Liderazgo Estratégico'));
+  assert.ok(screen.getByText(/Programas incluidos \(2\)/));
+  fireEvent.click(screen.getByRole('button', { name: /Registrar Orden y Coordinar Transferencia/i }));
+  await screen.findByText('ORD-MULTI-001');
+  assert.deepEqual(calls.create[0].data.programaIds, [101, 202]);
+  assert.equal(new Set(calls.create[0].data.programaIds).size, 2);
+  assert.ok(calls.create[0].data.programaTitulo.includes(playbook.title));
+  assert.ok(calls.create[0].data.programaTitulo.includes(secondPlaybook.title));
+  const multiKey = calls.create[0].config.headers['X-Idempotency-Key'];
+  assert.equal(storeService.resolveTargetKey([202, 101]), '101-202');
+  assert.equal(storeService.resolveTargetKey([101, 202]), '101-202');
+  assert.notEqual(storeService.resolveTargetKey([101, 203]), '101-202');
+  multiModal.rerender(React.createElement(CheckoutModal, {
+    isOpen: true,
+    onClose: () => {},
+    items: [secondPlaybook, playbook],
+  }));
+  assert.equal(storeService.getCheckoutIntent('guest_multi@empresa.pe', [202, 101])?.claveIdempotencia, multiKey);
+  assert.equal(storeService.getCheckoutIntent('guest_multi@empresa.pe', [101, 203]), null);
+  cleanup();
+  assertions++;
+  console.log('PASS UI o: todos los programas/precios se muestran y la petición y clave corresponden al conjunto completo.');
+
+  console.log(`RESULTADO UI: ${assertions}/15 escenarios aprobados (interacciones DOM reales).`);
 } finally {
   cleanup();
   axios.post = originalPost;

@@ -5,7 +5,6 @@ import React, {
 
 import {
   ArrowLeft,
-  CheckCircle2,
   LoaderCircle,
   ShieldAlert,
 } from 'lucide-react';
@@ -16,8 +15,8 @@ import animatedLogo from '../../assets/logo-animado.gif';
 import companyLogo from '../../assets/mi-logo.png';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
-import { getApiErrorMessage } from '../../services/authService';
-import { informationRequestService } from '../../services/informationRequestService';
+import { authService, getApiErrorMessage } from '../../services/authService';
+import { RecuperarCuenta } from './RecuperarCuenta';
 import './login-editorial.css';
 
 interface LoginViewProps {
@@ -29,14 +28,21 @@ export const LoginView:
     onBack,
   }) => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, setSessionUser, logout } = useAuth();
+    const [tokenRecuperacion, setTokenRecuperacion] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('recuperar') || '');
+    const [recuperando, setRecuperando] = useState(() => window.location.hash.includes('recuperar=') || new URLSearchParams(window.location.search).get('modo') === 'recuperar');
+    useEffect(() => {
+      if (tokenRecuperacion) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }, [tokenRecuperacion]);
 
     const [
       activeTab,
       setActiveTab,
-    ] = useState<
-      'login' | 'request'
-    >('login');
+    ] = useState<'login' | 'register'>(() =>
+      new URLSearchParams(window.location.search).get('modo') === 'registro'
+        ? 'register'
+        : 'login',
+    );
 
     const [
       typedText,
@@ -58,11 +64,6 @@ export const LoginView:
       setErrorMessage,
     ] = useState('');
 
-    const [
-      successMessage,
-      setSuccessMessage,
-    ] = useState('');
-
     // Inicio de sesión
     const [
       email,
@@ -74,10 +75,15 @@ export const LoginView:
       setPassword,
     ] = useState('');
 
-    // Solicitud de información
+    // Registro de acceso interno
     const [
       fullName,
       setFullName,
+    ] = useState('');
+
+    const [
+      lastName,
+      setLastName,
     ] = useState('');
 
     const [
@@ -89,6 +95,10 @@ export const LoginView:
       phone,
       setPhone,
     ] = useState('');
+
+    const [registrationArea, setRegistrationArea] = useState('ADMINISTRACION');
+    const [registrationPassword, setRegistrationPassword] = useState('');
+    const [registrationPasswordAgain, setRegistrationPasswordAgain] = useState('');
 
     const fullText =
       'Eleva tu flujo de trabajo';
@@ -155,39 +165,42 @@ export const LoginView:
       };
     }, []);
 
-    const changeTab = (
-      tab:
-        | 'login'
-        | 'request',
-    ) => {
+    const changeTab = (tab: 'login' | 'register') => {
       setActiveTab(tab);
+      setRegistrationPassword('');
+      setRegistrationPasswordAgain('');
       setErrorMessage('');
-      setSuccessMessage('');
     };
 
-    const submitInformationRequest =
+    const submitRegistration =
       async () => {
-        await informationRequestService
-          .create({
-            nombreCompleto:
-              fullName.trim(),
+        if (!fullName.trim() || !lastName.trim()) {
+          throw new Error('Ingresa nombres y apellidos completos.');
+        }
+        if (registrationPassword.length < 10) {
+          throw new Error('La contraseña debe tener al menos 10 caracteres.');
+        }
+        if (registrationPassword !== registrationPasswordAgain) {
+          throw new Error('Las contraseñas no coinciden.');
+        }
 
-            email:
-              requestEmail
-                .trim()
-                .toLowerCase(),
+        const registro = await authService.registerInternal({
+          nombres: fullName.trim(),
+          apellidos: lastName.trim(),
+          email: requestEmail.trim().toLowerCase(),
+          password: registrationPassword,
+          telefono: phone.trim(),
+          area: registrationArea,
+        });
 
-            telefono:
-              phone.trim(),
-          });
-
-        setFullName('');
-        setRequestEmail('');
-        setPhone('');
-
-        setSuccessMessage(
-          'Recibimos tu solicitud. Nos pondremos en contacto contigo.',
-        );
+        const authenticatedUser = {
+          id: registro.id,
+          nombre: registro.nombre,
+          email: registro.email,
+          rol: registro.rol,
+        };
+        setSessionUser(authenticatedUser, registro.token);
+        navigate(getRoleHomePath(registro.rol), { replace: true });
       };
 
     const submitLogin =
@@ -224,17 +237,13 @@ export const LoginView:
         }
 
         setErrorMessage('');
-        setSuccessMessage('');
         setIsSubmitting(true);
 
         try {
-          if (
-            activeTab ===
-            'request'
-          ) {
-            await submitInformationRequest();
-          } else {
+          if (activeTab === 'login') {
             await submitLogin();
+          } else {
+            await submitRegistration();
           }
         } catch (error) {
           setErrorMessage(
@@ -295,20 +304,22 @@ export const LoginView:
             <div className="lx-login-mobile-brand lg:hidden"><img src={companyLogo} alt="" /><span>LYSANDRI <small>EXECUTIVE</small></span></div>
             <div className="lx-login-intro mb-7">
               <h2 className="lx-login-heading mb-2">
-                {activeTab ===
+                {recuperando ? (tokenRecuperacion ? 'Cambia tu contraseña.' : 'Recupera tu acceso.') : activeTab ===
                 'login'
                   ? 'Accede a tu cuenta.'
-                  : 'Hablemos de formación.'}
+                  : 'Crea tu acceso interno.'}
               </h2>
 
               <p>
-                {activeTab ===
+                {recuperando ? (tokenRecuperacion ? 'Elige una contraseña nueva para tu cuenta.' : 'Te enviaremos un enlace al correo de tu cuenta.') : activeTab ===
                 'login'
                   ? 'Ingresa tus credenciales para continuar con tus programas.'
-                  : 'Déjanos tus datos para recibir información sobre los programas.'}
+                  : 'Regístrate desde la red privada de Lysandri para entrar al módulo de tu área.'}
               </p>
             </div>
 
+            {recuperando ? <RecuperarCuenta token={tokenRecuperacion} emailInicial={email} onCambio={logout}
+              onBack={() => { setRecuperando(false); setTokenRecuperacion(''); setActiveTab('login'); setErrorMessage(''); window.history.replaceState(null, '', window.location.pathname); }} /> : <>
             {/* Pestañas */}
             <div className="lx-login-tabs mb-7 flex" aria-label="Tipo de acceso">
               <button
@@ -328,13 +339,13 @@ export const LoginView:
                 type="button"
                 onClick={() =>
                   changeTab(
-                    'request',
+                    'register',
                   )
                 }
-                aria-pressed={activeTab === 'request'}
-                className={`lx-login-tab ${activeTab === 'request' ? 'is-active' : ''}`}
+                aria-pressed={activeTab === 'register'}
+                className={`lx-login-tab ${activeTab === 'register' ? 'is-active' : ''}`}
               >
-                Solicitar información
+                Personal
               </button>
             </div>
 
@@ -344,16 +355,6 @@ export const LoginView:
 
                 <span>
                   {errorMessage}
-                </span>
-              </div>
-            )}
-
-            {successMessage && (
-              <div role="status" className="lx-login-alert is-success mb-5 flex items-start gap-3 px-4 py-3 text-sm">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-
-                <span>
-                  {successMessage}
                 </span>
               </div>
             )}
@@ -413,6 +414,7 @@ export const LoginView:
                     <button
                       type="button"
                       className="lx-login-link text-xs font-medium"
+                      onClick={() => { setRecuperando(true); setErrorMessage(''); }}
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -422,16 +424,26 @@ export const LoginView:
                 <>
                   <InputField
                     id="fullName"
-                    label="Nombre completo"
+                    label="Nombres"
                     type="text"
                     value={
                       fullName
                     }
-                    placeholder="Ej. Juan Pérez"
-                    autoComplete="name"
+                    placeholder="Ej. Carlos Alberto"
+                    autoComplete="given-name"
                     onChange={
                       setFullName
                     }
+                  />
+
+                  <InputField
+                    id="lastName"
+                    label="Apellidos"
+                    type="text"
+                    value={lastName}
+                    placeholder="Ej. Mendoza Alarcón"
+                    autoComplete="family-name"
+                    onChange={setLastName}
                   />
 
                   <InputField
@@ -455,19 +467,48 @@ export const LoginView:
                     value={phone}
                     placeholder="+51 999 999 999"
                     autoComplete="tel"
-                    onChange={
-                      setPhone
-                    }
+                    onChange={setPhone}
+                    required
                   />
 
-                  <p className="lx-login-consent text-xs leading-relaxed">
-                    Al enviar este formulario
-                    autorizas a Lysandri a
-                    comunicarse contigo para
-                    proporcionarte información
-                    sobre sus programas de
-                    capacitación.
-                  </p>
+                  <div className="lx-login-field">
+                    <label htmlFor="registrationArea" className="mb-1.5 block text-xs font-semibold">
+                      Área de acceso
+                    </label>
+                    <select
+                      id="registrationArea"
+                      value={registrationArea}
+                      onChange={(event) => setRegistrationArea(event.target.value)}
+                      className="h-12 w-full px-4 text-sm"
+                      required
+                    >
+                      <option value="ADMINISTRACION">Administración</option>
+                      <option value="CONTABILIDAD">Contabilidad</option>
+                      <option value="DOCENCIA">Docencia</option>
+                      <option value="ESTUDIANTE">Ejecutivo / Estudiante</option>
+                    </select>
+                  </div>
+
+                  <InputField
+                    id="registrationPassword"
+                    label="Contraseña (mínimo 10 caracteres)"
+                    type="password"
+                    value={registrationPassword}
+                    placeholder="Crea una contraseña segura"
+                    autoComplete="new-password"
+                    onChange={setRegistrationPassword}
+                  />
+
+                  <InputField
+                    id="registrationPasswordAgain"
+                    label="Confirma tu contraseña"
+                    type="password"
+                    value={registrationPasswordAgain}
+                    placeholder="Repite la contraseña"
+                    autoComplete="new-password"
+                    onChange={setRegistrationPasswordAgain}
+                  />
+
                 </>
               )}
 
@@ -486,13 +527,14 @@ export const LoginView:
                   ? activeTab ===
                     'login'
                     ? 'Iniciando sesión...'
-                    : 'Enviando solicitud...'
+                    : 'Creando cuenta...'
                   : activeTab ===
                       'login'
                     ? 'Ingresar a la plataforma'
-                    : 'Solicitar información'}
+                    : 'Crear cuenta y entrar'}
               </button>
             </form>
+            </>}
           </div>
         </div>
       </div>
@@ -506,6 +548,7 @@ interface InputFieldProps {
   value: string;
   placeholder: string;
   autoComplete: string;
+  required?: boolean;
   onChange: (
     value: string,
   ) => void;
@@ -519,6 +562,7 @@ const InputField:
     value,
     placeholder,
     autoComplete,
+    required = true,
     onChange,
   }) => {
     return (
@@ -540,7 +584,7 @@ const InputField:
           autoComplete={
             autoComplete
           }
-          required
+          required={required}
           onChange={(event) =>
             onChange(
               event.target.value,

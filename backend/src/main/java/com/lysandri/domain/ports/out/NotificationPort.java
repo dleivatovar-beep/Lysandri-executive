@@ -76,4 +76,10 @@ public interface NotificationPort {
     default void abortarEnvio(String idIntento) {
         // Implementación por defecto no-op para adaptadores o pruebas que no gestionen sockets reales
     }
+    default void enviarRecuperacion(String email, String nombre, String enlace) {
+        throw new UnsupportedOperationException("El adaptador no permite enviar correos de recuperación.");
+    }
+    default void enviarAvisoCuenta(String email, String tipo) {
+        throw new UnsupportedOperationException("El adaptador no permite avisos de seguridad.");
+    }
 }

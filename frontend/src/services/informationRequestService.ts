@@ -98,30 +98,30 @@ export const informationRequestService = {
     }
   },
 
+  async createAccessRequest(
+    data: SolicitudInformacionRequest,
+  ): Promise<SolicitudInformacionResponse> {
+    const response = await apiClient.post<SolicitudInformacionResponse>(
+      '/solicitudes-informacion',
+      data,
+    );
+    return response.data;
+  },
+
   async getAll(
     estado?: SolicitudInformacionEstado,
   ): Promise<SolicitudInformacionResponse[]> {
-    let list = getStoredRequests();
+    const response = await apiClient.get<
+      SolicitudInformacionResponse[]
+    >('/admin/solicitudes-informacion', {
+      params: estado ? { estado } : undefined,
+    });
 
-    try {
-      const response = await apiClient.get<
-        SolicitudInformacionResponse[]
-      >('/admin/solicitudes-informacion', {
-        params: estado ? { estado } : undefined,
-      });
+    const list = Array.isArray(response.data)
+      ? response.data
+      : [];
 
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        list = response.data;
-        saveStoredRequests(list);
-      }
-    } catch {
-      // Backend offline o sin endpoint: usamos almacenamiento local resiliente
-    }
-
-    if (estado) {
-      return list.filter((item) => item.estado === estado);
-    }
-
+    saveStoredRequests(list);
     return list;
   },
 

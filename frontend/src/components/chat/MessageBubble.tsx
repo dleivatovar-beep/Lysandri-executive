@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { 
   Bot, 
   User, 
-  FileText, 
   Copy, 
   Check, 
   ShieldCheck 
@@ -20,9 +19,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName 
   const [copied, setCopied] = useState<boolean>(false);
 
   const isUser = message.sender === 'USER';
-  const fuentesList = message.fuentes && message.fuentes.length > 0 
-    ? message.fuentes 
-    : message.sources || [];
+  const fuentes = (message.fuentes?.length ? message.fuentes : message.sources) || [];
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -70,25 +67,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName 
             <FormattedText content={message.content} />
           )}
 
-          {/* Badges de Fuentes y Referencias Técnicas al pie de la burbuja */}
-          {!isUser && fuentesList.length > 0 && (
-            <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-col space-y-1.5">
-              <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1.5">
-                <FileText className="w-3 h-3 text-cyan-400" />
-                <span>Fuentes y referencias técnicas:</span>
-              </span>
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {fuentesList.map((fuente, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs bg-slate-800 text-slate-300 rounded px-2 py-0.5 border border-slate-700/60 inline-flex items-center gap-1.5 shadow-sm hover:border-cyan-500/40 transition-colors"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-                    {fuente}
-                  </span>
-                ))}
-              </div>
-            </div>
+          {!isUser && fuentes.length > 0 && (
+            <details className="mt-3 pt-2.5 border-t border-slate-800/80">
+              <summary className="cursor-pointer text-xs text-cyan-400">Fuentes consultadas</summary>
+              <ul className="mt-2 space-y-1 text-xs text-slate-400">
+                {fuentes.map((fuente, indice) => <li key={indice}>{fuente}</li>)}
+              </ul>
+            </details>
           )}
 
           {/* Footer Status & Copy Bar for Assistant */}
@@ -96,7 +81,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, userName 
             <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 font-mono">
               <span className="flex items-center space-x-1.5 text-emerald-400/90">
                 <ShieldCheck className="w-3 h-3" />
-                <span>Respuesta Verificada</span>
+                <span>Respuesta del asistente</span>
               </span>
 
               <button

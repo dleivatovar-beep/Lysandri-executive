@@ -476,3 +476,13 @@ html:not(.dark) .text-slate-500 {
 html:not(.dark) .text-slate-400 {
   color: #7790aa !important;
 }
+
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

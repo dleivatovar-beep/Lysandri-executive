@@ -21,6 +21,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(RagUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleRagUnavailable(RagUnavailableException ex) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {
         String msg = com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage());
@@ -92,6 +97,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
         log.warn("Cuerpo de solicitud mal formado o campo con formato inválido: {}", com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage()));
         return buildResponse(HttpStatus.BAD_REQUEST, "Solicitud mal formada o campo con formato inválido");
+    }
+
+    @ExceptionHandler(org.springframework.web.client.RestClientException.class)
+    public ResponseEntity<Map<String, Object>> handleRestClientException(org.springframework.web.client.RestClientException ex) {
+        log.error("Fallo de comunicación con pasarela o servicio externo: {}", com.lysandri.security.SanitizerUtils.sanitizeMessage(ex.getMessage()));
+        return buildResponse(HttpStatus.BAD_GATEWAY, "No se pudo conectar con la pasarela de pagos externa. Por favor verifique su conexión e intente nuevamente.");
     }
 
     @ExceptionHandler(Exception.class)

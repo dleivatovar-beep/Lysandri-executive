@@ -38,12 +38,12 @@
 .lx-login-tab.is-active::after { transform: scaleX(1); }
 .lx-login-form { animation: lx-auth-form-in 240ms cubic-bezier(.16, 1, .3, 1) both; }
 .lx-login-field label { color: var(--auth-ink); }
-.lx-login-field input { border: 1px solid var(--auth-line); border-radius: 0; background: var(--auth-paper); color: var(--auth-ink); caret-color: var(--auth-accent); transition: border-color 160ms ease, background 160ms ease; }
+.lx-login-field input, .lx-login-field select { border: 1px solid var(--auth-line); border-radius: 0; background: var(--auth-paper); color: var(--auth-ink); caret-color: var(--auth-accent); transition: border-color 160ms ease, background 160ms ease; }
 .lx-login-field input::placeholder { color: var(--auth-muted); opacity: 1; }
-.lx-login-field input:hover { border-color: var(--auth-accent); }
-.lx-login-field input:focus { border-color: var(--auth-accent); outline: none; }
-html:not(.dark) .lx-login-field input { border-color: var(--auth-line) !important; background: var(--auth-paper) !important; color: var(--auth-ink) !important; box-shadow: none !important; }
-html:not(.dark) .lx-login-field input:hover, html:not(.dark) .lx-login-field input:focus { border-color: var(--auth-accent) !important; }
+.lx-login-field input:hover, .lx-login-field select:hover { border-color: var(--auth-accent); }
+.lx-login-field input:focus, .lx-login-field select:focus { border-color: var(--auth-accent); outline: none; }
+html:not(.dark) .lx-login-field input, html:not(.dark) .lx-login-field select { border-color: var(--auth-line) !important; background: var(--auth-paper) !important; color: var(--auth-ink) !important; box-shadow: none !important; }
+html:not(.dark) .lx-login-field input:hover, html:not(.dark) .lx-login-field input:focus, html:not(.dark) .lx-login-field select:hover, html:not(.dark) .lx-login-field select:focus { border-color: var(--auth-accent) !important; }
 .lx-login-subtle, .lx-login-consent { color: var(--auth-muted); }
 .lx-login-consent { max-width: 53ch; }
 .lx-login-remember { border: 1px solid var(--auth-line); border-radius: 0; accent-color: var(--auth-accent); }

@@ -96,7 +96,7 @@ class MoodleFailureAndRecoveryIntegrationTest extends PostgresTestDatabase {
                 } else if (body.contains("wsfunction=core_enrol_get_users_courses")) {
                     jsonResponse = "[{\"id\": 1}]";
                 } else if (body.contains("wsfunction=core_course_get_courses_by_field")) {
-                    jsonResponse = "{\"courses\": [{\"id\": 101, \"fullname\": \"FinOps Empresarial\", \"shortname\": \"FE\"}]}";
+                    jsonResponse = "{\"courses\": [{\"id\": 90101, \"fullname\": \"FinOps recuperación de prueba\", \"shortname\": \"FE-REC\"}]}";
                 } else {
                     jsonResponse = "[]";
                 }
@@ -168,7 +168,7 @@ class MoodleFailureAndRecoveryIntegrationTest extends PostgresTestDatabase {
                 """);
         jdbcTemplate.update("""
                 INSERT INTO programa (id_programa, id_instructor_dni, titulo, precio, moneda, activo, moodle_course_id, slug, duracion_programa, tipo_programa, nivel, precio_aprobado, moodle_verificado, moodle_verificado_en, moodle_estado_verificacion)
-                VALUES (101, 'DNI88888888', 'FinOps Empresarial', 499.00, 'USD', true, 101, 'finops-empresarial', '40 horas', 'DIPLOMADO', 'EJECUTIVO', true, true, NOW(), 'VERIFICADO')
+                VALUES (101, 'DNI88888888', 'FinOps recuperación de prueba', 499.00, 'USD', true, 90101, 'finops-recuperacion-prueba', '40 horas', 'DIPLOMADO', 'EJECUTIVO', true, true, NOW(), 'VERIFICADO')
                 ON CONFLICT (id_programa) DO UPDATE SET precio_aprobado = true, moodle_verificado = true, moodle_verificado_en = NOW(), moodle_estado_verificacion = 'VERIFICADO'
                 """);
 

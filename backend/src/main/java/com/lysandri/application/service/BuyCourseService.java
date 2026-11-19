@@ -161,6 +161,9 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
         if (command.programaIds() == null || command.programaIds().isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un programa para comprar");
         }
+        if (command.programaIds().stream().anyMatch(id -> id == null || id <= 0)) {
+            throw new IllegalArgumentException("Todos los IDs de programa deben ser enteros positivos.");
+        }
 
         // Validar que no existan IDs de programas duplicados
         Set<Long> uniqueProgramIds = new HashSet<>(command.programaIds());
@@ -182,7 +185,9 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
             if (!prog.isPrecioAprobado()) {
                 throw new IllegalArgumentException("El programa '" + prog.getTitulo() + "' (ID: " + prog.getIdPrograma() + ") tiene un precio provisional no aprobado comercialmente");
             }
-            if (prog.getPrecio() == null || prog.getPrecio().compareTo(BigDecimal.ZERO) < 0) {
+            if (prog.getPrecio() == null || prog.getPrecio().compareTo(BigDecimal.ZERO) < 0
+                    || (prog.getPrecio().compareTo(BigDecimal.ZERO) == 0 && !prog.isEsGratuito())
+                    || (prog.getPrecio().compareTo(BigDecimal.ZERO) > 0 && prog.isEsGratuito())) {
                 throw new IllegalArgumentException("El precio del programa '" + prog.getTitulo() + "' no es válido");
             }
             if (prog.getMoodleCourseId() == null || !prog.isMoodleVerificado() || prog.getMoodleVerificadoEn() == null) {
@@ -194,7 +199,10 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
                 throw new IllegalArgumentException("La verificación del curso Moodle para el programa '" + prog.getTitulo()
                         + "' (ID: " + prog.getIdPrograma() + ") ha expirado. Requiere revalidación antes de permitir compras.");
             }
-            String mon = (prog.getMoneda() != null && !prog.getMoneda().isBlank()) ? prog.getMoneda().trim().toUpperCase() : "USD";
+            if (prog.getMoneda() == null || !Set.of("PEN", "USD").contains(prog.getMoneda().trim().toUpperCase())) {
+                throw new IllegalArgumentException("La moneda del programa '" + prog.getTitulo() + "' no es válida o no está admitida");
+            }
+            String mon = prog.getMoneda().trim().toUpperCase();
             monedas.add(mon);
         }
 
@@ -346,7 +354,9 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
         String docCliente = command.numeroDocumento() != null ? command.numeroDocumento().trim() : null;
         String razonSocial = (command.nombreFacturacion() != null && !command.nombreFacturacion().isBlank())
                 ? command.nombreFacturacion().trim()
-                : usuario.getNombreCompleto();
+                : (usuario != null && usuario.getNombreCompleto() != null && !usuario.getNombreCompleto().isBlank()
+                        ? usuario.getNombreCompleto()
+                        : "Cliente");
 
         Orden orden = Orden.builder()
                 .idUser(usuario.getIdUser())
@@ -415,7 +425,7 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
         PaymentPort selectedPaymentPort = isStripe ? stripePaymentPort : izipayPaymentPort;
         PaymentPort.PaymentSessionResult sessionResult = selectedPaymentPort.crearSesionPago(
                 orden,
-                usuario.getEmail(),
+                usuario != null && usuario.getEmail() != null ? usuario.getEmail().trim() : (command.guestEmail() != null ? command.guestEmail().trim() : ""),
                 razonSocial
         );
 
@@ -721,7 +731,9 @@ public class BuyCourseService implements BuyCourseUseCase, MatriculaUseCase {
         String email = usuario.getEmail();
         String nombre = (orden.getNombreFacturacion() != null && !orden.getNombreFacturacion().isBlank())
                 ? orden.getNombreFacturacion()
-                : usuario.getNombreCompleto();
+                : (usuario != null && usuario.getNombreCompleto() != null && !usuario.getNombreCompleto().isBlank()
+                        ? usuario.getNombreCompleto()
+                        : "Cliente");
 
         log.info("Iniciando aprovisionamiento y facturación para orden ID: {}, código: {}", orden.getIdOrden(), orden.getCodigoOrden());
 

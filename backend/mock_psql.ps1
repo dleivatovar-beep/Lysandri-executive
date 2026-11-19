@@ -3,6 +3,7 @@ param(
     [int]$p,
     [string]$U,
     [string]$d,
+    [switch]$X,
     [switch]$w,
     [switch]$t,
     [switch]$A,
@@ -12,6 +13,11 @@ param(
 $behavior = $env:TEST_MOCK_PSQL_BEHAVIOR
 if (-not $behavior) { $behavior = "OK" }
 $mockDb = if ($env:MOCK_DB) { $env:MOCK_DB } else { "lysandri_clone_db" }
+
+if ($behavior -eq "STARTING") {
+    Write-Error "FATAL: the database system is starting up" -ErrorAction Continue
+    exit 2
+}
 
 if ($behavior -eq "FAIL_APP" -and $U -eq "lysandri_app") {
     [Console]::Error.WriteLine("FATAL: password authentication failed for user lysandri_app")

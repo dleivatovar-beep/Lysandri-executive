@@ -1,0 +1,79 @@
+[
+  {
+    "idPrograma": 1,
+    "titulo": "Sílabo: FinOps Empresarial",
+    "archivo": "FinOps Empresarial.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 2,
+    "titulo": "Sílabo: Ciberseguridad Corporativa",
+    "archivo": "Ciberseguridad Corporativa.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 3,
+    "titulo": "Sílabo: Liderazgo Estratégico",
+    "archivo": "Liderazgo Estratégico.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 4,
+    "titulo": "Sílabo: Metodologías Ágiles",
+    "archivo": "Metodologías Ágiles.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 5,
+    "titulo": "Sílabo: Inteligencia Artificial para Ejecutivos",
+    "archivo": "Inteligencia Artificial para Ejecutivos.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 6,
+    "titulo": "Sílabo: Arquitectura Orientada a Eventos con Kafka",
+    "archivo": "Arquitectura Orientada a Eventos con Kafka.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 7,
+    "titulo": "Sílabo: Gobierno de Datos y Cumplimiento Regulatorio",
+    "archivo": "Gobierno de Datos y Cumplimiento Regulatorio.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 8,
+    "titulo": "Sílabo: Estrategia de Plataformas Cloud & EKS",
+    "archivo": "Estrategia de Plataformas Cloud & EKS.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 9,
+    "titulo": "Sílabo: DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+    "archivo": "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE).md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 10,
+    "titulo": "Sílabo: Gestión de Riesgos Tecnológicos y Resiliencia",
+    "archivo": "Gestión de Riesgos Tecnológicos y Resiliencia.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  },
+  {
+    "idPrograma": 11,
+    "titulo": "Sílabo: Estrategia de Producto Digital e Innovación C-Suite",
+    "archivo": "Estrategia de Producto Digital e Innovación C-Suite.md",
+    "estado": "PROPUESTA",
+    "version": "2"
+  }
+]

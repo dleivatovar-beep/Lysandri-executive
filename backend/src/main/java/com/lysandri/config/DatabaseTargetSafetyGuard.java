@@ -31,6 +31,8 @@ public final class DatabaseTargetSafetyGuard {
 
     public static final String AUTHORIZED_CLONE_DB = "lysandri_clone_db";
     public static final int AUTHORIZED_CLONE_PORT = 5434;
+    public static final String ORIGINAL_DEV_DB = "lysandri_db";
+    public static final int ORIGINAL_DEV_PORT = 5432;
     private static final Set<String> AUTHORIZED_CLONE_HOSTS = Set.of("127.0.0.1", "localhost");
 
     private DatabaseTargetSafetyGuard() {}
@@ -169,6 +171,57 @@ public final class DatabaseTargetSafetyGuard {
         if (parsed.port != AUTHORIZED_CLONE_PORT) {
             throw new SecurityException("SAFETY VIOLATION: Port " + parsed.port + " in " + label
                     + " is not the authorized clone port (" + AUTHORIZED_CLONE_PORT + ")!");
+        }
+    }
+
+    public static void validateOriginalDevJdbcUrl(String jdbcUrl, String label, Environment env) {
+        if (!"true".equalsIgnoreCase(env.getProperty("LYSANDRI_ALLOW_ORIGINAL_DB"))) {
+            throw new SecurityException("Para usar la base original en desarrollo, habilita explícitamente LYSANDRI_ALLOW_ORIGINAL_DB=true.");
+        }
+        ParsedJdbcTarget parsed = parsePostgresUrl(jdbcUrl);
+        if (parsed == null || parsed.isMultiHost
+                || !"127.0.0.1".equalsIgnoreCase(parsed.host)
+                || parsed.port != ORIGINAL_DEV_PORT
+                || !ORIGINAL_DEV_DB.equalsIgnoreCase(parsed.database)) {
+            throw new SecurityException("Destino rechazado para original-dev en " + label + "; se requiere 127.0.0.1:5432/lysandri_db.");
+        }
+    }
+
+    public static void validateOriginalDevDataSource(Environment env, DataSource dataSource) {
+        String dsUrl = env.getProperty("spring.datasource.url");
+        validateOriginalDevJdbcUrl(dsUrl, "spring.datasource.url", env);
+        String flywayUrl = env.getProperty("spring.flyway.url", dsUrl);
+        validateOriginalDevJdbcUrl(flywayUrl, "spring.flyway.url", env);
+        validateOriginalDevConnection(dataSource, env.getProperty("spring.datasource.username"), "DataSource", env);
+    }
+
+    public static void validateOriginalDevFlyway(Environment env, Flyway flyway) {
+        String url = env.getProperty("spring.flyway.url");
+        if (url == null || url.isBlank()) url = env.getProperty("spring.datasource.url");
+        validateOriginalDevJdbcUrl(url, "Flyway target", env);
+        DataSource flywayDataSource = flyway.getConfiguration().getDataSource();
+        if (flywayDataSource != null) {
+            validateOriginalDevConnection(flywayDataSource, env.getProperty("spring.flyway.user"), "Flyway", env);
+        }
+    }
+
+    private static void validateOriginalDevConnection(DataSource dataSource, String expectedUser,
+                                                       String label, Environment env) {
+        if (dataSource == null) throw new SecurityException("No se pudo verificar el destino de " + label + ".");
+        String effectiveUrl = extractJdbcUrl(dataSource);
+        if (effectiveUrl != null) validateOriginalDevJdbcUrl(effectiveUrl, label + " effective URL", env);
+        try (Connection conn = dataSource.getConnection()) {
+            String metadataUrl = conn.getMetaData().getURL();
+            validateOriginalDevJdbcUrl(metadataUrl, label + " metadata URL", env);
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT current_database(), current_user")) {
+                if (!rs.next() || !ORIGINAL_DEV_DB.equalsIgnoreCase(rs.getString(1))
+                        || (expectedUser != null && !expectedUser.equals(rs.getString(2)))) {
+                    throw new SecurityException("La identidad efectiva de " + label + " no coincide con la base y el usuario autorizados.");
+                }
+            }
+        } catch (SQLException e) {
+            throw new SecurityException("No se pudo confirmar en solo lectura la identidad de " + label + ".", e);
         }
     }
 

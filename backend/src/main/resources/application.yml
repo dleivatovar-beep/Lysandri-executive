@@ -32,9 +32,12 @@ spring:
     properties:
       mail:
         smtp:
-          auth: false
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
           starttls:
-            enable: false
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
+            required: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED:false}
+          ssl:
+            checkserveridentity: true
           connectiontimeout: 5000
           timeout: 10000
           writetimeout: 5000
@@ -65,11 +68,22 @@ stripe:
   cancel-url: ${STRIPE_CANCEL_URL:http://localhost:3000/checkout/cancel}
 
 llm:
-  provider: ${LLM_PROVIDER:openai}
+  provider: ${LLM_PROVIDER:ollama}
   api-key: ${OPENAI_API_KEY:mock-key}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   embedding-model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
   mock-allowed: ${LLM_MOCK_ALLOWED:false}
+  ollama:
+    url: ${OLLAMA_URL:http://127.0.0.1:11434}
+    model: ${OLLAMA_MODEL:llama3:latest}
+    embedding-model: ${OLLAMA_EMBEDDING_MODEL:embeddinggemma:latest}
+    dimensions: ${OLLAMA_EMBEDDING_DIMENSIONS:768}
+    gpu-layers: ${OLLAMA_GPU_LAYERS:0}
+    min-similarity: ${OLLAMA_MIN_SIMILARITY:0.35}
+    keep-alive: ${OLLAMA_KEEP_ALIVE:10m}
+
+web-search:
+  brave-api-key: ${BRAVE_SEARCH_API_KEY:}
 
 accounting:
   audit-pin: ${ACCOUNTING_AUDIT_PIN:}
@@ -78,6 +92,9 @@ cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:4173,http://127.0.0.1:3000,http://127.0.0.1:5173}
 
 app:
+  recovery:
+    frontend-url: ${APP_RECOVERY_FRONTEND_URL:http://127.0.0.1:3000}
+    tunnel-state-file: ${APP_RECOVERY_TUNNEL_STATE_FILE:}
   frontend:
     url: ${FRONTEND_URL:http://localhost:5173}
   security:

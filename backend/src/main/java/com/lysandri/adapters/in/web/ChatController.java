@@ -90,7 +90,7 @@ public class ChatController {
             }
 
             Programa programa = programaOpt.get();
-            if (!programa.isActivo() || !programa.isPrecioAprobado()) {
+            if (!programa.isActivo()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "error", "El programa especificado no está activo ni disponible para consultas"
                 ));

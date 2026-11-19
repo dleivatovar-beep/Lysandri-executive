@@ -69,7 +69,8 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // Autenticación pública
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/activar-cuenta", "/api/v1/auth/solicitar-activacion").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/register-interno", "/api/v1/auth/login", "/api/v1/auth/activar-cuenta", "/api/v1/auth/solicitar-activacion", "/api/v1/auth/recuperar-contrasena", "/api/v1/auth/restablecer-contrasena").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/condiciones-registro").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").authenticated()
 
                         // Catálogo público de programas (solo lectura)
@@ -80,7 +81,10 @@ public class SecurityConfig {
 
                         // Checkout y confirmación de pago (permite compra como invitado y confirmación frontend verificada)
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/cuentas-bancarias").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders/metodos-pago").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/guest-session").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/sandbox").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders/sandbox").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/checkout", "/api/v1/orders/create-checkout-session").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/confirm/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/mis-ordenes").authenticated()
@@ -124,6 +128,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "FINANZAS", "CONTABILIDAD", "COORDINADOR_ACADEMICO", "AUDITOR")
 
                         // Cualquier otra petición debe estar autenticada
+                        .requestMatchers(HttpMethod.GET, "/api/v1/pruebas/conversion/disponible").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/pruebas/conversion/visita", "/api/v1/pruebas/conversion/inicio").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/pruebas/conversion/visita/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
@@ -143,7 +150,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Audit-PIN", "Stripe-Signature", "X-Requested-With", "X-Idempotency-Key", "X-Guest-Session-Token"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Audit-PIN", "Stripe-Signature", "X-Requested-With", "X-Idempotency-Key", "X-Guest-Session-Token", "X-Chat-Session-Token"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition", "X-Idempotency-Key", "X-Guest-Session-Token"));
 

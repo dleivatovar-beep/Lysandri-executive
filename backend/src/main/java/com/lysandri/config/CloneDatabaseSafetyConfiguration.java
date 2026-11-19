@@ -16,8 +16,8 @@ import java.util.Arrays;
 /**
  * Configuración de seguridad universal activa en el backend ejecutable para todos los perfiles.
  * Intercepta la inicialización del DataSource y la ejecución de Flyway para
- * validar que los destinos efectivos no apunten a producción original (puerto 5432 o lysandri_db),
- * exige un perfil explícito, y en el perfil 'clone' impone verificación estricta contra el clon autorizado.
+ * validar que los destinos efectivos no apunten a producción original, salvo el perfil original-dev
+ * con opt-in explícito y destino local exacto. En 'clone' exige el clon autorizado.
  */
 @Configuration
 public class CloneDatabaseSafetyConfiguration {
@@ -69,11 +69,19 @@ public class CloneDatabaseSafetyConfiguration {
 
             if (bean instanceof DataSource dataSource) {
                 boolean isClone = Arrays.asList(env.getActiveProfiles()).contains("clone");
+                boolean isOriginalDev = Arrays.asList(env.getActiveProfiles()).contains("original-dev");
                 boolean isProd = Arrays.stream(env.getActiveProfiles())
                         .anyMatch(p -> "prod".equalsIgnoreCase(p) || "production".equalsIgnoreCase(p));
+                boolean isTest = Arrays.asList(env.getActiveProfiles()).contains("test");
+
+                if (isOriginalDev && (isClone || isProd || isTest)) {
+                    throw new SecurityException("El perfil original-dev no se combina con clone, test ni prod.");
+                }
 
                 if (isClone) {
                     DatabaseTargetSafetyGuard.validateCloneDataSource(env, dataSource);
+                } else if (isOriginalDev) {
+                    DatabaseTargetSafetyGuard.validateOriginalDevDataSource(env, dataSource);
                 } else if (!isProd) {
                     String dsUrl = env.getProperty("spring.datasource.url");
                     if (dsUrl != null && !dsUrl.isBlank()) {
@@ -102,11 +110,19 @@ public class CloneDatabaseSafetyConfiguration {
         return flyway -> {
             validateActiveProfile(this.environment);
             boolean isClone = Arrays.asList(this.environment.getActiveProfiles()).contains("clone");
+            boolean isOriginalDev = Arrays.asList(this.environment.getActiveProfiles()).contains("original-dev");
             boolean isProd = Arrays.stream(this.environment.getActiveProfiles())
                     .anyMatch(p -> "prod".equalsIgnoreCase(p) || "production".equalsIgnoreCase(p));
+            boolean isTest = Arrays.asList(this.environment.getActiveProfiles()).contains("test");
+
+            if (isOriginalDev && (isClone || isProd || isTest)) {
+                throw new SecurityException("Perfiles de base de datos incompatibles; original-dev no se combina con clone, test ni prod.");
+            }
 
             if (isClone) {
                 DatabaseTargetSafetyGuard.validateCloneFlyway(this.environment, flyway);
+            } else if (isOriginalDev) {
+                DatabaseTargetSafetyGuard.validateOriginalDevFlyway(this.environment, flyway);
             } else if (!isProd) {
                 String flywayUrl = this.environment.getProperty("spring.flyway.url");
                 if (flywayUrl == null || flywayUrl.isBlank()) {

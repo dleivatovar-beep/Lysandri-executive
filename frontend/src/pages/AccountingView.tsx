@@ -43,6 +43,8 @@ import {
 } from '../services/accountingService';
 import { useAuth } from '../context/AuthContext';
 import { isJwtExpired } from '../services/api';
+import { Tesoreria } from '../components/accounting/Tesoreria';
+import { Operaciones } from '../components/accounting/Operaciones';
 import companyLogo from '../assets/lysandri-logo.png';
 import animatedLogo from '../assets/logo-animado.gif';
 
@@ -73,8 +75,18 @@ const AccountingGlyph: React.FC<{ name: AccountingGlyphName; className?: string 
 );
 
 export const AccountingView: React.FC = () => {
-  const { user, token, login: authLogin, logout: authLogout } = useAuth();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const {
+    user,
+    token,
+    isAuthenticated: hasPlatformSession,
+    login: authLogin,
+    logout: authLogout,
+  } = useAuth();
+  const userRole = (user?.rol || '').toUpperCase();
+  const hasAccountingRole = ['ADMIN', 'CONTABILIDAD', 'FINANZAS', 'AUDITOR'].includes(userRole);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
+    () => hasPlatformSession && hasAccountingRole,
+  );
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -82,11 +94,11 @@ export const AccountingView: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
 
-  const userRole = (user?.rol || '').toUpperCase();
   const canAnular = userRole === 'ADMIN' || userRole === 'CONTABILIDAD';
   const canExportSire = userRole === 'ADMIN' || userRole === 'CONTABILIDAD' || userRole === 'FINANZAS';
 
   const [typedText, setTypedText] = useState('');
+  const [pinRequerido, setPinRequerido] = useState(false);
   const [isTyping, setIsTyping] = useState(true);
   const fullText = 'Eleva tu flujo de trabajo';
 
@@ -177,11 +189,14 @@ export const AccountingView: React.FC = () => {
 
   useEffect(() => {
     const activeToken = token || localStorage.getItem('lysandri_token');
-    const storedPin = accountingService.getStoredAuditPin();
-    if (activeToken && !isJwtExpired(activeToken) && storedPin) {
-      void cargarDatosContables(storedPin);
+    const pin = accountingService.getStoredAuditPin() || '';
+    if (hasPlatformSession && hasAccountingRole && activeToken && !isJwtExpired(activeToken)) {
+      setIsAuthenticated(true);
+      void cargarDatosContables(pin);
+    } else {
+      setIsAuthenticated(false);
     }
-  }, [token]);
+  }, [token, user?.id, user?.rol, hasPlatformSession, hasAccountingRole]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -235,6 +250,7 @@ export const AccountingView: React.FC = () => {
       }
 
       accountingService.setStoredAuditPin(pin);
+      setPinRequerido(false);
       setIsAuthenticated(true);
       setData(response);
       return true;
@@ -247,7 +263,13 @@ export const AccountingView: React.FC = () => {
         return false;
       }
 
-      if (err.response?.status === 401 || err.response?.status === 403) {
+      if (err.response?.status === 401 && err.response?.data?.codigo === 'AUDIT_PIN_INVALID') {
+        accountingService.clearStoredAuditPin();
+        setIsAuthenticated(true);
+        setData(null);
+        setPinRequerido(true);
+        setDataError('Ingresa el PIN de auditoría asignado para consultar el reporte.');
+      } else if (err.response?.status === 401 || err.response?.status === 403) {
         setAuthError('Acceso no autorizado (401/403). Credenciales, rol o PIN de auditoría no válidos.');
         accountingService.clearStoredAuditPin();
         setIsAuthenticated(false);
@@ -293,7 +315,7 @@ export const AccountingView: React.FC = () => {
         return;
       }
 
-      const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+      const pin = accountingService.getStoredAuditPin() || '';
       await cargarDatosContables(pin, selectedPeriodo);
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || 'Error de autenticación. Verifica tus credenciales.';
@@ -314,6 +336,7 @@ export const AccountingView: React.FC = () => {
     accountingService.clearStoredAuditPin();
     setIsAuthenticated(false);
     setData(null);
+    setPinRequerido(false);
     setUsername('');
     setPassword('');
     setAuthError('');
@@ -324,10 +347,8 @@ export const AccountingView: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
-    if (pin) {
-      void cargarDatosContables(pin, selectedPeriodo);
-    }
+    const pin = accountingService.getStoredAuditPin() || '';
+    void cargarDatosContables(pin, selectedPeriodo);
   };
 
   const clasificarCanal = (medio?: string | null): 'IZIPAY' | 'STRIPE' | 'TELECREDITO' | 'INTERBANK' | 'SIN_CLASIFICAR' => {
@@ -342,10 +363,8 @@ export const AccountingView: React.FC = () => {
 
   const handlePeriodoChange = (newPeriodo: string) => {
     setSelectedPeriodo(newPeriodo);
-    // Limpiar cifras previas para no dejar datos obsoletos presentados como vigentes si la petición no prospera
-    setData(null);
     setDataError('');
-    const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+    const pin = accountingService.getStoredAuditPin() || '';
     void cargarDatosContables(pin, newPeriodo);
   };
 
@@ -810,7 +829,7 @@ export const AccountingView: React.FC = () => {
       alert('Para generar el libro electrónico SIRE 14.1 para SUNAT, debe seleccionar un período mensual tributario válido (ej. 2026-10). La exportación oficial no admite "Todos los períodos" ni valores vacíos.');
       return;
     }
-    const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+    const pin = accountingService.getStoredAuditPin() || '';
     setIsExportingSire(true);
     try {
       await accountingService.descargarSireTxt(pin, selectedPeriodo.trim());
@@ -843,7 +862,7 @@ export const AccountingView: React.FC = () => {
 
     if (!motivo || !motivo.trim()) return;
 
-    const pin = accountingService.getStoredAuditPin() || 'LYS-AUDIT-2026-SECURE';
+    const pin = accountingService.getStoredAuditPin() || '';
     try {
       await accountingService.anularComprobante(venta.idComprobante, motivo.trim(), pin);
       alert(`Comprobante ${venta.serieNumero || venta.idComprobante} anulado con éxito en el servidor.`);
@@ -1071,7 +1090,7 @@ export const AccountingView: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => alert('Por favor contacte al administrador de sistemas para restablecer sus credenciales.')}
+                  onClick={() => { window.location.href = '/intranet?modo=recuperar'; }}
                   className="text-[11px] font-medium text-cyan-600 transition-colors hover:text-cyan-500 hover:underline dark:text-cyan-400"
                 >
                   ¿Olvidaste tu contraseña?
@@ -1228,16 +1247,31 @@ export const AccountingView: React.FC = () => {
               <p className="mt-1 text-xs text-rose-800 dark:text-rose-300">{dataError}</p>
             </div>
           </div>
-          <button
+          {pinRequerido ? (
+            <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
+              event.preventDefault();
+              const pin = String(new FormData(event.currentTarget).get('pinAuditoria') ?? '').trim();
+              if (pin && !isVerifying) void cargarDatosContables(pin, selectedPeriodo);
+            }}>
+              <label className="grid gap-1 font-semibold">
+                PIN de auditoría
+                <input name="pinAuditoria" type="password" required autoComplete="off"
+                  className="rounded border border-current bg-transparent px-3 py-2" />
+              </label>
+              <button type="submit" disabled={isVerifying} className="rounded bg-cyan-400 px-3 py-2 font-bold text-slate-950">
+                Validar PIN
+              </button>
+            </form>
+          ) : <button
             type="button"
             onClick={handleRefresh}
             className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition shadow-sm shrink-0"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             <span>Reintentar conexión</span>
-          </button>
+          </button>}
         </div>
-      ) : isLoadingData ? (
+      ) : (isLoadingData && !data) ? (
         <div className="flex items-center justify-center gap-3 p-12 text-slate-500 dark:text-slate-400">
           <RefreshCw className="h-5 w-5 animate-spin text-cyan-600" />
           <span className="text-sm font-semibold">Cargando reporte contable oficial...</span>
@@ -2813,6 +2847,8 @@ export const AccountingView: React.FC = () => {
         </section>
       )}
 
+      {activeTab === 'medios_pago' && <Tesoreria />}
+      {activeTab === 'graficos' && <Operaciones />}
       {/* TAB 3: MEDIOS DE PAGO, PASARELAS Y TESORERÍA B2B (COMPREHENSIVE LEDGER & RECONCILIATION) */}
       {activeTab === 'medios_pago' && (
         <section className="space-y-6">

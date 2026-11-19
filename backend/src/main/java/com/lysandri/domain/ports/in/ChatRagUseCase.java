@@ -15,8 +15,17 @@ public interface ChatRagUseCase {
             Long idDocumento,
             Integer pagina,
             String extracto,
-            Double similitud
-    ) {}
+            Double similitud,
+            String titulo,
+            String seccion,
+            String version,
+            String estado,
+            String url
+    ) {
+        public SourceCitation(Long idDocumento, Integer pagina, String extracto, Double similitud) {
+            this(idDocumento, pagina, extracto, similitud, null, null, null, null, null);
+        }
+    }
 
     record ChatRagResponse(
             String respuesta,

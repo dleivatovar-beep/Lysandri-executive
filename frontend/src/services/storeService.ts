@@ -1,4 +1,4 @@
-import { apiClient, API_BASE_URL, API_V1_URL, isJwtExpired } from './api.ts';
+import { API_BASE_URL, API_V1_URL, isJwtExpired } from './api.ts';
 import axios from 'axios';
 
 export interface CheckoutResponse {
@@ -11,6 +11,20 @@ export interface CheckoutResponse {
   stripeCheckoutUrl?: string;
   stripeSessionId?: string;
   guestSessionToken?: string;
+}
+
+export interface SandboxOrderResponse {
+  codigoOrden: string;
+  nombre: string;
+  email: string;
+  telefono?: string | null;
+  programaIds: number[];
+  programas: Array<{ id: number; titulo: string; precio: number; moneda: string }>;
+  total: number;
+  moneda: string;
+  estado: 'PRACTICA' | string;
+  fecha: string;
+  claveIdempotencia: string;
 }
 
 export interface DirectCheckoutPayload {
@@ -29,10 +43,15 @@ export interface DirectCheckoutPayload {
 }
 
 export interface RagCitation {
-  idDocumento: number;
-  pagina: number;
+  idDocumento: number | null;
+  url?: string;
+  pagina: number | null;
+  titulo?: string;
+  seccion?: string;
+  version?: string;
+  estado?: string;
   extracto: string;
-  similitud: number;
+  similitud: number | null;
 }
 
 export interface RagResponse {
@@ -201,9 +220,12 @@ export interface OrderConfirmation {
 
 export interface CheckoutIntent {
   claveIdempotencia: string;
-  programId: number;
+  programId?: number;
+  targetKey?: string;
+  programaIds?: number[];
   buyerScope: string;
   email: string;
+  telefono?: string;
   nombreCompleto: string;
   tipoComprobante: 'BOLETA' | 'FACTURA';
   numeroDocumento: string;
@@ -216,6 +238,47 @@ export interface CheckoutIntent {
 }
 
 export const storeService = {
+  async crearOrdenPractica(payload: {
+    claveIdempotencia: string;
+    nombre: string;
+    email: string;
+    telefono?: string;
+    programas: Array<{ id: number; titulo: string }>;
+  }): Promise<SandboxOrderResponse> {
+    const response = await axios.post<SandboxOrderResponse>(
+      `${API_V1_URL}/orders/sandbox`,
+      payload,
+      { timeout: 12000 },
+    );
+    return response.data;
+  },
+
+  async listarOrdenesPractica(): Promise<SandboxOrderResponse[]> {
+    const token = localStorage.getItem('lysandri_token');
+    if (!token || isJwtExpired(token)) throw new Error('Inicia sesión como administrador para consultar las órdenes de práctica.');
+    const response = await axios.get<SandboxOrderResponse[]>(`${API_V1_URL}/orders/sandbox`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10000,
+    });
+    return response.data;
+  },
+  /**
+   * Resuelve una clave única representativa para un programa o conjunto de programas seleccionados.
+   * Ordena numéricamente los identificadores de un arreglo (ej. [3, 1] => '1-3') para garantizar
+   * consistencia e idempotencia independiente del orden de selección.
+   */
+  resolveTargetKey(target: number | string | number[]): string {
+    if (Array.isArray(target)) {
+      const sorted = [...target]
+        .map((n) => Number(n))
+        .filter((n) => !isNaN(n) && n > 0)
+        .filter((n, index, values) => values.indexOf(n) === index)
+        .sort((a, b) => a - b);
+      return sorted.join('-');
+    }
+    return String(target);
+  },
+
   /**
    * Obtiene el ámbito del comprador para aislar la clave de idempotencia
    * evitando colisiones entre distintos usuarios en navegadores compartidos.
@@ -235,10 +298,11 @@ export const storeService = {
   /**
    * Recupera el estado de un intento de checkout desde sessionStorage.
    */
-  getCheckoutIntent(buyerScope: string, programId: number): CheckoutIntent | null {
+  getCheckoutIntent(buyerScope: string, target: number | string | number[]): CheckoutIntent | null {
     if (typeof window === 'undefined' || !window.sessionStorage) return null;
     try {
-      const key = `lysandri_checkout_intent_${buyerScope}_${programId}`;
+      const targetKey = this.resolveTargetKey(target);
+      const key = `lysandri_checkout_intent_${buyerScope}_${targetKey}`;
       const raw = window.sessionStorage.getItem(key);
       if (!raw) return null;
       return JSON.parse(raw) as CheckoutIntent;
@@ -247,14 +311,31 @@ export const storeService = {
     }
   },
 
+  clearSandboxCheckoutIntents(): void {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    try {
+      const legacyPrefix = 'lysandri_checkout_intent_sandbox_';
+      const legacyKeys = Array.from({ length: window.sessionStorage.length }, (_, index) =>
+        window.sessionStorage.key(index)
+      ).filter((key): key is string => key !== null && key.startsWith(legacyPrefix));
+      legacyKeys.forEach((key) => window.sessionStorage.removeItem(key));
+    } catch (e) {
+      console.warn('No se pudieron limpiar intentos simulados antiguos de sessionStorage', e);
+    }
+  },
+
   /**
    * Persiste el estado de un intento de checkout en sessionStorage.
    */
-  saveCheckoutIntent(intent: CheckoutIntent): void {
+  saveCheckoutIntent(intent: CheckoutIntent, target?: number | string | number[]): void {
     if (typeof window === 'undefined' || !window.sessionStorage) return;
     try {
-      const key = `lysandri_checkout_intent_${intent.buyerScope}_${intent.programId}`;
-      window.sessionStorage.setItem(key, JSON.stringify(intent));
+      const targetKey = intent.targetKey
+        || (target !== undefined ? this.resolveTargetKey(target) : undefined)
+        || (intent.programaIds && intent.programaIds.length > 0 ? this.resolveTargetKey(intent.programaIds) : undefined)
+        || (intent.programId !== undefined ? String(intent.programId) : 'default');
+      const key = `lysandri_checkout_intent_${intent.buyerScope}_${targetKey}`;
+      window.sessionStorage.setItem(key, JSON.stringify({ ...intent, targetKey }));
     } catch (e) {
       console.warn('No se pudo guardar el intento de checkout en sessionStorage', e);
     }
@@ -263,10 +344,11 @@ export const storeService = {
   /**
    * Limpia el estado de un intento de checkout en sessionStorage.
    */
-  clearCheckoutIntent(buyerScope: string, programId: number): void {
+  clearCheckoutIntent(buyerScope: string, target: number | string | number[]): void {
     if (typeof window === 'undefined' || !window.sessionStorage) return;
     try {
-      const key = `lysandri_checkout_intent_${buyerScope}_${programId}`;
+      const targetKey = this.resolveTargetKey(target);
+      const key = `lysandri_checkout_intent_${buyerScope}_${targetKey}`;
       window.sessionStorage.removeItem(key);
     } catch (e) {
       console.warn('No se pudo limpiar el intento de checkout en sessionStorage', e);
@@ -274,16 +356,17 @@ export const storeService = {
   },
 
   /**
-   * Obtiene o genera una clave de idempotencia vinculada al comprador y programa.
+   * Obtiene o genera una clave de idempotencia vinculada al comprador y programa(s).
    */
-  getOrCreateIdempotencyKey(buyerScope: string, programId: number): string {
-    const existing = this.getCheckoutIntent(buyerScope, programId);
+  getOrCreateIdempotencyKey(buyerScope: string, target: number | string | number[]): string {
+    const existing = this.getCheckoutIntent(buyerScope, target);
     if (existing && existing.claveIdempotencia) {
       return existing.claveIdempotencia;
     }
+    const targetKey = this.resolveTargetKey(target);
     const newKey = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
-      : `ord-${buyerScope}-${programId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      : `ord-${buyerScope}-${targetKey}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     return newKey;
   },
 
@@ -291,8 +374,8 @@ export const storeService = {
    * Obtiene o establece un token seguro de sesión de compra para invitados antes de enviar la compra al backend.
    * No silencia errores ni devuelve cadenas vacías; arroja un error descriptivo si no es posible autenticar la sesión.
    */
-  async getOrCreateGuestSession(email: string, buyerScope: string, programId: number): Promise<string> {
-    const existing = this.getCheckoutIntent(buyerScope, programId);
+  async getOrCreateGuestSession(email: string, buyerScope: string, target: number | string | number[]): Promise<string> {
+    const existing = this.getCheckoutIntent(buyerScope, target);
     if (existing && existing.guestSessionToken) {
       return existing.guestSessionToken;
     }
@@ -325,9 +408,13 @@ export const storeService = {
    * No fabrica respuestas ficticias ante errores de red.
    */
   async createCheckoutSession(payload: DirectCheckoutPayload): Promise<CheckoutResponse> {
-    if (!payload.programaIds || payload.programaIds.length === 0 || payload.programaIds.some((id) => !id || id <= 0 || isNaN(id) || !Number.isInteger(id))) {
+    if (
+      !payload.programaIds ||
+      payload.programaIds.length === 0 ||
+      payload.programaIds.some((id) => !id || id <= 0 || isNaN(id) || !Number.isInteger(id))
+    ) {
       throw new Error(
-        'El programa solicitado no es válido o no está disponible para compra.'
+        'El programa solicitado no es válido o no cuenta con identificador numérico comercial válido.'
       );
     }
     try {
@@ -373,28 +460,6 @@ export const storeService = {
   },
 
   /**
-   * Inicia el checkout desde el carrito de compras.
-   */
-  async checkout(programaIds: number[]): Promise<CheckoutResponse> {
-    try {
-      const res = await apiClient.post<CheckoutResponse>(
-        '/orders/checkout',
-        { programaIds },
-        { timeout: 10000 }
-      );
-      return res.data;
-    } catch (err: any) {
-      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        throw new Error('Tiempo de espera agotado al procesar el checkout en el servidor.');
-      }
-      if (!err.response) {
-        throw new Error('No se pudo conectar con el servidor para iniciar el checkout.');
-      }
-      throw err;
-    }
-  },
-
-  /**
    * Confirma el pago de una orden online mediante el identificador de sesión.
    * Refleja el estado real devuelto por el backend sin simular matrículas exitosas.
    */
@@ -430,6 +495,11 @@ export const storeService = {
   /**
    * Consulta las cuentas bancarias oficiales configuradas en el backend.
    */
+  async obtenerMetodosPago(): Promise<{ izipayDisponible: boolean }> {
+    const response = await axios.get(`${API_V1_URL}/orders/metodos-pago`, { timeout: 10000 });
+    return { izipayDisponible: response.data?.izipayDisponible === true };
+  },
+
   async obtenerCuentasBancarias(): Promise<CuentaBancariaAprobada[]> {
     const token = localStorage.getItem('lysandri_token');
     const headers: Record<string, string> = {};
@@ -511,7 +581,7 @@ export const storeService = {
         },
         {
           headers,
-          timeout: 15000,
+          timeout: 180000,
         }
       );
       return res.data;

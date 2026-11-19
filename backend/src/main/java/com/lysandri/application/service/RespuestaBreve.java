@@ -1,0 +1,161 @@
+package com.lysandri.application.service;
+
+import com.lysandri.domain.model.DocumentoChunk;
+import com.lysandri.domain.model.Programa;
+import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.util.*;
+import java.util.regex.Pattern;
+
+final class RespuestaBreve {
+    private RespuestaBreve() {}
+
+    record Modulo(String titulo, String detalle, String linea) {
+        String normalizado() {
+            return normalizar(titulo + " " + detalle);
+        }
+    }
+
+    static List<Modulo> modulos(String contenido) {
+        var fila = Pattern.compile("(?m)^([1-9][0-9]*)\\.\\h+([^:\\n]+):\\h*(.+)$").matcher(contenido);
+        List<Modulo> modulos = new ArrayList<>();
+        while (fila.find()) {
+            if (!fila.group(1).equals(Integer.toString(modulos.size() + 1))) return List.of();
+            modulos.add(new Modulo(fila.group(2).strip(), fila.group(3).strip(), fila.group().strip()));
+        }
+        return modulos.size() >= 2 ? modulos : List.of();
+    }
+
+    static String malla(String nombre, String contenido, boolean pideAplicacion) {
+        var modulos = modulos(contenido);
+        if (modulos.isEmpty()) return null;
+        String moduloPlan = null;
+        if (pideAplicacion) {
+            for (Modulo modulo : modulos) {
+                if (modulo.titulo().toLowerCase(Locale.ROOT).startsWith("plan de ")) moduloPlan = modulo.titulo();
+            }
+            if (moduloPlan == null) return null;
+        }
+        String respuesta = "En " + nombre + " verás estos módulos:\n\n" + String.join("\n", modulos.stream().map(Modulo::linea).toList());
+        if (pideAplicacion) {
+            respuesta += "\n\nPara ponerlo en práctica, elijan en equipo una situación real"
+                    + " y elaboren un plan siguiendo el módulo «" + moduloPlan + "».";
+        }
+        return respuesta;
+    }
+
+    static String obtener(String pregunta, Long programa, List<DocumentoChunk> fuentes) {
+        String consulta = normalizar(pregunta);
+        if (programa != null && Set.of("cuanto dura", "cuanto cuesta", "cuanto vale").contains(consulta)) consulta += " este curso";
+        if (programa != null && Set.of("que voy a aprender", "que temas tiene este curso", "que temas ofrece este curso", "cuales son los modulos", "que temas incluye", "que temas incluye este curso", "cual es el temario", "cual es el temario de este curso").contains(consulta)) {
+            Set<String> temarios = new LinkedHashSet<>();
+            for (var fuente : fuentes) {
+                var datos = fuente.getMetadata();
+                if (!programa.equals(fuente.getIdPrograma()) || datos == null
+                        || !Set.of("PROPUESTA", "VIGENTE").contains(datos.get("estado"))
+                        || !"Temario propuesto".equals(datos.get("seccion"))) continue;
+                var lineas = Pattern.compile("(?m)^([1-4])\\. +([^:\\n]+):").matcher(fuente.getContenido());
+                Map<Integer, String> modulos = new LinkedHashMap<>();
+                while (lineas.find()) modulos.put(Integer.parseInt(lineas.group(1)), lineas.group(2).strip());
+                if (modulos.keySet().equals(Set.of(1,2,3,4))) {
+                    temarios.add("Los módulos son:\n" + modulos.entrySet().stream()
+                            .map(m -> m.getKey() + ". " + m.getValue())
+                            .collect(java.util.stream.Collectors.joining("\n")));
+                }
+            }
+            return temarios.size() == 1 ? temarios.iterator().next() : null;
+        }
+        var intencion = Pattern.compile("^(cuanto cuesta|cuanto vale|cual es el precio de|precio de|cuanto dura|cuantas horas dura|cual es la duracion de) (.+)$").matcher(consulta);
+        if (!intencion.matches()) return null;
+        boolean precio = intencion.group(1).contains("cuesta") || intencion.group(1).contains("vale") || intencion.group(1).contains("precio");
+        String objeto = intencion.group(2).replaceFirst("^(el curso|el programa) ", "");
+        Set<String> respuestas = new LinkedHashSet<>();
+        for (var fuente : fuentes) {
+            var datos = fuente.getMetadata();
+            if (datos == null || !"VIGENTE".equals(datos.get("estado"))) continue;
+            if (programa != null && !programa.equals(fuente.getIdPrograma())) continue;
+            String titulo = String.valueOf(datos.getOrDefault("titulo", ""));
+            if (!titulo.startsWith("Curso: ")) continue;
+            String nombre = titulo.substring(7).strip();
+            boolean seleccionado = programa != null && Set.of("este curso", "el curso", "este programa", "el programa").contains(objeto);
+            if (!seleccionado && !normalizar(nombre).equals(objeto)) continue;
+            String contenido = normalizarDatos(fuente.getContenido());
+            var patron = precio
+                    ? Pattern.compile("precio registrado (?:de|es) (USD|PEN) ([0-9]+\\.[0-9]{2})(?![0-9])")
+                    : Pattern.compile("duracion registrada (?:de|es) ([0-9]+) horas\\b", Pattern.CASE_INSENSITIVE);
+            var coincidencia = patron.matcher(contenido);
+            while (coincidencia.find()) respuestas.add(precio
+                    ? nombre + " cuesta " + coincidencia.group(1) + " " + coincidencia.group(2) + "."
+                    : nombre + " dura " + coincidencia.group(1) + " horas.");
+        }
+        // Ante discrepancias se conserva la respuesta contextual del modelo.
+        return respuestas.size() == 1 ? respuestas.iterator().next() : null;
+    }
+
+    static boolean esConsultaCatalogo(String pregunta) {
+        return Set.of("que cursos tienen", "que cursos hay", "que cursos ofrecen", "que cursos tienen disponibles",
+                "cuales son los cursos", "que programas tienen", "que programas ofrecen", "cuales son los programas",
+                "que temas ofrecen", "cuanto cuestan los cursos", "cuanto cuestan los programas",
+                "cuales son los precios", "cuanto duran los cursos", "cuanto duran los programas")
+                .contains(normalizar(pregunta));
+    }
+
+    private record DatoCurso(String nombre, String moneda, BigDecimal precio, int horas) {}
+
+    static String catalogo(String pregunta, List<DocumentoChunk> fuentes, List<Programa> programas) {
+        if (!esConsultaCatalogo(pregunta) || programas.isEmpty()) return null;
+        Map<String, DatoCurso> datos = new LinkedHashMap<>();
+        Set<Long> documentos = new HashSet<>();
+        Pattern fila = Pattern.compile("(?m)^- (.+): (USD|PEN) ([0-9]+\\.[0-9]{2})(?:, |\\. Duracion registrada: )([0-9]{1,6}) horas\\.\\s*$");
+        for (var fuente : fuentes) {
+            var metadata = fuente.getMetadata();
+            if (fuente.getIdPrograma() != null || metadata == null
+                    || !"VIGENTE".equals(metadata.get("estado"))
+                    || !"catalogo de lysandri executive".equals(normalizar(String.valueOf(metadata.get("titulo"))))) continue;
+            documentos.add(fuente.getIdDocumento());
+            var lineas = fila.matcher(fuente.getContenido());
+            while (lineas.find()) {
+                var dato = new DatoCurso(lineas.group(1), lineas.group(2), new BigDecimal(lineas.group(3)),
+                        Integer.parseInt(lineas.group(4)));
+                var anterior = datos.putIfAbsent(normalizar(dato.nombre()), dato);
+                if (anterior != null && !anterior.equals(dato)) return null;
+            }
+        }
+        if (documentos.size() != 1 || datos.size() != programas.size()) return null;
+        for (var programa : programas) {
+            var dato = datos.get(normalizar(programa.getTitulo()));
+            if (dato == null || programa.getPrecio() == null || programa.getDuracionHoras() == null
+                    || dato.precio().compareTo(programa.getPrecio()) != 0
+                    || !dato.moneda().equals(programa.getMoneda())
+                    || dato.horas() != programa.getDuracionHoras()) return null;
+        }
+        String consulta = normalizar(pregunta);
+        boolean precios = consulta.contains("cuestan") || consulta.contains("precios");
+        boolean duracion = consulta.contains("duran");
+        List<String> lineas = new ArrayList<>();
+        for (var dato : datos.values()) {
+            String detalle = "";
+            if (precios) {
+                detalle = ": " + dato.moneda() + " " + dato.precio().toPlainString();
+            } else if (duracion) {
+                detalle = ": " + dato.horas() + " horas";
+            }
+            lineas.add("- " + dato.nombre() + detalle);
+        }
+        String inicio = "Estos son los cursos que tenemos:";
+        if (precios) {
+            inicio = "Estos son los precios:";
+        } else if (duracion) {
+            inicio = "La duración de los cursos es:";
+        }
+        return inicio + "\n\n" + String.join("\n", lineas);
+    }
+
+    static String normalizar(String texto) {
+        return normalizarDatos(texto).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").strip().replaceAll("\\s+", " ");
+    }
+
+    private static String normalizarDatos(String texto) {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+    }
+}

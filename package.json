@@ -5,7 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev --prefix frontend",
+    "dev:clone": "npm run dev:clone --prefix frontend",
+    "dev:original": "npm run dev --prefix frontend",
+    "dev:original:check": "npm run dev:original:check --prefix frontend",
     "build": "npm run build --prefix frontend",
-    "tunnel": "node scripts/tunnel.js"
+    "tunnel": "node scripts/tunnel.js",
+    "test:tunnel": "node scripts/test-tunnel.js",
+    "mail": "node scripts/buzon.js",
+    "medicion": "node scripts/medicion.js"
   }
 }

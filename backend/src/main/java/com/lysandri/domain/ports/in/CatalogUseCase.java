@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface CatalogUseCase {
     List<Programa> listarProgramasActivos();
+    List<Programa> listarProgramasInformativos();
+    List<Programa> consultarDisponibilidadCompra(List<Long> idsPrograma);
     List<Programa> listarTodosAdmin();
     Programa obtenerProgramaPorSlug(String slug);
     Programa obtenerProgramaPorId(Long idPrograma);

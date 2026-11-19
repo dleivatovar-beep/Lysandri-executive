@@ -419,9 +419,47 @@ public class EmailNotificationAdapter implements NotificationPort {
                 </body>
                 </html>
                 """.formatted(
-                nombre != null && !nombre.isBlank() ? nombre : "Cliente",
-                enlaceActivacion,
-                enlaceActivacion
+                org.springframework.web.util.HtmlUtils.htmlEscape(nombre != null && !nombre.isBlank() ? nombre : "Cliente"),
+                org.springframework.web.util.HtmlUtils.htmlEscape(enlaceActivacion),
+                org.springframework.web.util.HtmlUtils.htmlEscape(enlaceActivacion)
         );
+    }
+    @Override
+    public void enviarRecuperacion(String email, String nombre, String enlace) {
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper correo = new MimeMessageHelper(mensaje, true, "UTF-8");
+            correo.setFrom(fromEmail, "Lysandri Executive");
+            correo.setTo(email);
+            correo.setSubject("Recupera tu acceso a Lysandri Executive");
+            String saludo = org.springframework.web.util.HtmlUtils.htmlEscape(nombre == null ? "" : nombre);
+            String url = org.springframework.web.util.HtmlUtils.htmlEscape(enlace);
+            correo.setText("Hola " + (nombre == null ? "" : nombre) + ".\nAbre este enlace para cambiar tu contraseña: " + enlace
+                    + "\nEl enlace vence en 30 minutos y solo puede usarse una vez. Si no lo solicitaste, ignora este correo.",
+                    "<html lang=\"es\"><body style=\"font:16px Arial;color:#102234;line-height:1.6\">"
+                    + "<h2>Lysandri Executive</h2><p>Hola " + saludo + ",</p>"
+                    + "<p>Recibimos una solicitud para cambiar tu contraseña.</p>"
+                    + "<p><a style=\"background:#49c9e8;padding:12px 18px;color:#071827;text-decoration:none\" href=\"" + url + "\">Cambiar mi contraseña</a></p>"
+                    + "<p>El enlace vence en 30 minutos y solo puede usarse una vez. Usa el correo más reciente.</p>"
+                    + "<p>Si no solicitaste el cambio, puedes ignorar este correo.</p></body></html>");
+            mailSender.send(mensaje);
+        } catch (Exception error) {
+            throw new IllegalStateException("No se confirmó la entrega del correo de recuperación.");
+        }
+    }
+    @Override
+    public void enviarAvisoCuenta(String email, String tipo) {
+        try {
+            var mensaje = mailSender.createMimeMessage();
+            var correo = new MimeMessageHelper(mensaje, false, "UTF-8");
+            correo.setFrom(fromEmail, "Lysandri Executive");
+            correo.setTo(email);
+            correo.setSubject("Cambio de seguridad en tu cuenta de Lysandri Executive");
+            String accion = "CUENTA_RECUPERADA".equals(tipo) ? "Se completó una recuperación de tu cuenta" : "Se cambió la contraseña de tu cuenta";
+            correo.setText(accion + ". Las sesiones anteriores han sido invalidadas. Si no realizaste esta acción, contacta con el administrador de la plataforma.");
+            mailSender.send(mensaje);
+        } catch (Exception error) {
+            throw new IllegalStateException("No se confirmó la entrega del aviso de seguridad.");
+        }
     }
 }

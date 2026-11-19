@@ -20,12 +20,12 @@ import java.util.*;
 /**
  * Adaptador de producción para la pasarela de pagos izipay Online (Lyra Network).
  * Implementa PaymentPort bajo Arquitectura Hexagonal.
- * Activo exclusivamente en perfiles no-test (@Profile("!test & !clone")).
+ * Activo fuera de pruebas automatizadas; el perfil clone usa las credenciales Izipay configuradas.
  * Prohíbe terminantemente confirmaciones simuladas automáticas.
  */
 @Slf4j
 @Component("izipayPaymentAdapter")
-@Profile("!test & !clone")
+@Profile("!test")
 public class IzipayPaymentAdapter implements PaymentPort {
 
     private final String shopId;

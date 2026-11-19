@@ -1,3 +1,4 @@
+import axios from 'axios';
 import {
   MoodleCourseVerification,
   EstudianteInscritoResponse,
@@ -54,11 +55,14 @@ export function normalizeProgram(raw: any): ProgramaResponse {
     descripcionDetallada: raw.descripcionDetallada ?? descripcion,
     nivel,
     level: nivel,
-    precio: raw.precio !== undefined && raw.precio !== null ? Number(raw.precio) : 0,
-    moneda: raw.moneda || 'USD',
-    activo: Boolean(raw.activo),
-    precioAprobado: Boolean(raw.precioAprobado),
-    esGratuito: Boolean(raw.esGratuito),
+    precio: raw.precio !== undefined && raw.precio !== null && Number.isFinite(Number(raw.precio)) ? Number(raw.precio) : undefined,
+    origin: 'BACKEND',
+    moneda: raw.moneda,
+    activo: raw.activo === true,
+    precioAprobado: raw.precioAprobado === true,
+    esGratuito: raw.esGratuito === true,
+    disponibleParaCompra: raw.disponibleParaCompra,
+    motivoNoDisponible: raw.motivoNoDisponible,
     moodleCourseId: raw.moodleCourseId !== undefined ? raw.moodleCourseId : null,
     moodleCourseNombre: raw.moodleCourseNombre,
     moodleVerificado: Boolean(raw.moodleVerificado),
@@ -156,6 +160,11 @@ export const academicService = {
   /**
    * Obtiene la lista oficial de programas académicos comerciales desde el backend.
    */
+  async getProgramInformation(): Promise<ProgramaResponse[]> {
+    const response = await apiClient.get<ProgramaResponse[]>('/programas/informacion');
+    return (response.data || []).map(normalizeProgram);
+  },
+
   async getPrograms(): Promise<ProgramaResponse[]> {
     const response = await apiClient.get<ProgramaResponse[]>('/programas');
     return (response.data || []).map(normalizeProgram);
@@ -167,6 +176,33 @@ export const academicService = {
   async getProgram(id: number): Promise<ProgramaResponse> {
     const response = await apiClient.get<ProgramaResponse>(`/programas/id/${id}`);
     return normalizeProgram(response.data);
+  },
+
+  async getPurchaseAvailability(ids: number[]): Promise<ProgramaResponse[]> {
+    if (ids.length === 0 || ids.some((id) => !Number.isInteger(id) || id <= 0) || new Set(ids).size !== ids.length) {
+      throw new Error('La verificación de compra requiere IDs de programa positivos y únicos.');
+    }
+    const params = new URLSearchParams();
+    ids.forEach((id) => params.append('ids', String(id)));
+    try {
+      const response = await apiClient.get<ProgramaResponse[]>(`/programas/disponibilidad-compra?${params.toString()}`);
+      if (!Array.isArray(response.data)) {
+        throw new Error('El servidor devolvió una respuesta de disponibilidad inválida.');
+      }
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new Error(
+          'El backend no reconoce la verificación de compra (404). Actualízalo y reinícialo para habilitar GET /api/v1/programas/disponibilidad-compra; después, reintenta. Tus artículos siguen guardados.'
+        );
+      }
+      if (axios.isAxiosError(error) && !error.response) {
+        throw new Error(
+          'No se pudo conectar con el servidor para confirmar los programas. Revisa la conexión e inténtalo de nuevo.'
+        );
+      }
+      throw error;
+    }
   },
 
   /**

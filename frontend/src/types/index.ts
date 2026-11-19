@@ -1,6 +1,6 @@
 export type TierLevel = 'ESSENTIAL' | 'ADVANCED' | 'ENTERPRISE';
 
-export type UserRole = 'ESTUDIANTE' | 'INSTRUCTOR' | 'ADMIN';
+export type UserRole = 'ESTUDIANTE' | 'INSTRUCTOR' | 'ADMIN' | 'CONTABILIDAD';
 
 export type ActiveView =
   | 'MARKETPLACE'
@@ -13,6 +13,7 @@ export type ActiveView =
   | 'CONTENT'
   | 'STUDENTS'
   | 'ADMIN_DASHBOARD'
+  | 'ADMIN_IA'
   | 'USERS'
   | 'ENROLLMENTS'
   | 'INFORMATION_REQUESTS'
@@ -46,6 +47,18 @@ export interface ProgramaEjecutivo {
   instructor?: string;
   modalidad?: string;
   syllabus?: CourseModule[];
+  isDemo?: boolean;
+  isSample?: boolean;
+  origin?: 'BACKEND' | 'SAMPLE';
+  activo?: boolean;
+  precioAprobado?: boolean;
+  esGratuito?: boolean;
+  moodleVerificado?: boolean;
+  disponibleParaCompra?: boolean;
+  disponibilidadVerificada?: boolean;
+  moodleCourseId?: number | null;
+  noDisponible?: boolean;
+  motivoNoDisponible?: string;
 }
 
 // Alias de compatibilidad arquitectónica
@@ -89,7 +102,9 @@ export interface RegisterRequest {
   email: string;
   password: string;
   telefono?: string;
-  rol: UserRole;
+  aceptaTerminos: boolean;
+  aceptaPrivacidad: boolean;
+  version: string;
 }
 
 export interface ApiErrorResponse {
@@ -98,6 +113,7 @@ export interface ApiErrorResponse {
   error?: string;
   message?: string;
   errors?: Record<string, string>;
+  details?: Record<string, string>;
 }
 
 export interface UsuarioResponse {
@@ -146,6 +162,8 @@ export interface ProgramaResponse {
   activo?: boolean;
   precioAprobado?: boolean;
   esGratuito?: boolean;
+  disponibleParaCompra?: boolean;
+  motivoNoDisponible?: string;
   duracionPrograma?: string;
   tipoPrograma?: string;
   level?: string;
@@ -157,6 +175,10 @@ export interface ProgramaResponse {
   coverUrl?: string;
   modalidad?: string;
   syllabus?: CourseModule[];
+  isDemo?: boolean;
+  isSample?: boolean;
+  origin?: 'BACKEND' | 'SAMPLE';
+  noDisponible?: boolean;
 }
 
 export interface InscripcionRequest {
@@ -250,8 +272,8 @@ export interface ChatResponse {
   mensaje?: string;
   response?: string;
   content?: string;
-  fuentes?: string[];
-  sources?: string[];
+  fuentes?: Array<string | { titulo?: string; seccion?: string; version?: string; estado?: string; idDocumento?: number; url?: string }>;
+  sources?: Array<string | { titulo?: string; seccion?: string; version?: string; estado?: string; idDocumento?: number; url?: string }>;
 }
 
 

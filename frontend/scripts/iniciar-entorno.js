@@ -4,16 +4,14 @@
  * Coordinador de inicio único del entorno de desarrollo de Lysandri Executive.
  *
  * Comprueba e inicia en orden estricto (o reutiliza instancias existentes válidas):
- * 1. Docker Desktop (motor Linux).
- * 2. Contenedor existente lysandri-postgres-clone (127.0.0.1:5434).
- * 3. PostgreSQL del clon mediante bucle de disponibilidad y verificación autenticada estricta.
- * 4. Backend local con perfil clone en el puerto 8080 (o reutiliza instancia verificada).
- * 5. Servidor Vite en el puerto 3000 con validación estricta de identidad de proyecto.
- * 6. Navegador en http://127.0.0.1:3000 (abierto una sola vez).
+ * npm run dev selecciona original-dev: PostgreSQL original en 127.0.0.1:5432.
+ * npm run dev:clone selecciona el clon persistente en 127.0.0.1:5434.
+ * El coordinador verifica PostgreSQL, inicia/reutiliza backend y Vite, y abre el navegador.
+ * Vite se valida en el puerto 3000 y el backend en el 8080.
  *
  * Restricciones obligatorias:
- * - Sin conexión ni modificación de la base original (puerto 5432).
- * - No crea clones nuevos ni borra volúmenes ni modifica contenedores.
+ * - El perfil original-dev requiere opt-in explícito, destino exacto y variables de entorno autorizadas.
+ * - No crea, elimina ni recrea contenedores o volúmenes; puede iniciar el contenedor persistente existente.
  * - Modo --solo-verificar es estrictamente de solo lectura (cero procesos dejados).
  * - Limpieza limpia en Ctrl+C (únicamente de procesos iniciados por esta ejecución).
  */
@@ -337,6 +335,43 @@ export function validarMapeoPuertosClon(inspectData) {
   return { valido: true };
 }
 
+export function validarMapeoPuertosOriginal(inspectData) {
+  if (!inspectData || typeof inspectData !== 'object') {
+    return { valido: false, razon: 'Datos de inspección de Docker inválidos o vacíos.' };
+  }
+
+  const name = String(inspectData.Name || '').replace(/^\//, '');
+  if (name && name !== 'lysandri-postgres') {
+    return { valido: false, razon: `El contenedor inspeccionado es '${name}', no 'lysandri-postgres'.` };
+  }
+
+  const portBindings = inspectData.HostConfig?.PortBindings;
+  if (!portBindings || typeof portBindings !== 'object') {
+    return { valido: false, razon: "No se encontró 'HostConfig.PortBindings' en la configuración del contenedor." };
+  }
+  const keys = Object.keys(portBindings);
+  if (keys.length !== 1 || keys[0] !== '5432/tcp') {
+    return { valido: false, razon: `La base original debe publicar únicamente 5432/tcp; se encontró [${keys.join(', ') || 'ninguno'}].` };
+  }
+  const bindings = portBindings['5432/tcp'];
+  if (!Array.isArray(bindings) || bindings.length !== 1) {
+    return { valido: false, razon: `Se requiere exactamente una publicación de 5432/tcp; se encontraron ${bindings?.length ?? 0}.` };
+  }
+  const binding = bindings[0];
+  if (String(binding.HostPort || '').trim() !== '5432' || String(binding.HostIp || '').trim() !== '127.0.0.1') {
+    return { valido: false, razon: `La base original debe estar enlazada solo a 127.0.0.1:5432; se encontró ${binding.HostIp || '0.0.0.0'}:${binding.HostPort || 'sin puerto'}.` };
+  }
+  if (inspectData.State?.Status === 'running') {
+    const effective = inspectData.NetworkSettings?.Ports?.['5432/tcp'];
+    if (!Array.isArray(effective) || effective.length !== 1
+      || String(effective[0].HostIp || '').trim() !== '127.0.0.1'
+      || String(effective[0].HostPort || '').trim() !== '5432') {
+      return { valido: false, razon: 'La publicación activa no coincide exactamente con 127.0.0.1:5432.' };
+    }
+  }
+  return { valido: true };
+}
+
 // -----------------------------------------------------------------------------
 // PUNTO 1: ESPERAR LA DISPONIBILIDAD REAL DE POSTGRESQL
 // -----------------------------------------------------------------------------
@@ -344,6 +379,7 @@ export async function esperarDisponibilidadPostgres({
   cloneHost = '127.0.0.1',
   clonePort = 5434,
   cloneDatabase = 'lysandri_clone_db',
+  originalDev = false,
   timeoutMs = 45000,
   probeIntervalMs = 1500,
   tcpProbeTimeoutMs = 1200,
@@ -371,7 +407,9 @@ export async function esperarDisponibilidadPostgres({
 
     // 2. Ejecutar verificación autenticada de iniciar-backend.ps1
     const psScript = scriptPath.replace(/\\/g, '/');
-    const verifyCmd = `powershell -ExecutionPolicy Bypass -File "${psScript}" -SoloVerificarBaseDatos -CloneHost "${cloneHost}" -ClonePort ${clonePort} -CloneDatabase "${cloneDatabase}"`;
+    const originalArg = originalDev ? ' -UsarBaseOriginal' : '';
+    const profileArg = originalDev ? ' -Perfil original-dev,sandbox' : '';
+    const verifyCmd = `powershell -ExecutionPolicy Bypass -File "${psScript}" -SoloVerificarBaseDatos${originalArg}${profileArg} -CloneHost "${cloneHost}" -ClonePort ${clonePort} -CloneDatabase "${cloneDatabase}"`;
 
     const remainingMs = timeoutMs - (Date.now() - startTime);
     const thisTimeout = Math.min(commandTimeoutMs, Math.max(2000, remainingMs));
@@ -570,13 +608,21 @@ export function analizarCommandLineBackend(cmdLine, {
   expectedPort = 5434,
   expectedDb = 'lysandri_clone_db',
   expectedProfile = 'clone',
+  requiredProfiles = [],
+  allowOriginalDatabase = false,
 } = {}) {
   if (!cmdLine || typeof cmdLine !== 'string') {
     return { valido: false, razon: 'Línea de comandos no disponible o vacía.' };
   }
 
-  // 1. Violación de seguridad global: rechazar puerto 5432 como destino en cualquier propiedad
-  if (/(?:jdbc:postgresql:\/\/[^\s"',;]*:5432(?:\/|\b)|:5432\/)/i.test(cmdLine)) {
+  // 1. El puerto original solo se acepta bajo el perfil original-dev y con opt-in explícito.
+  const originalTarget = allowOriginalDatabase
+    && expectedProfile === 'original-dev'
+    && expectedHost === '127.0.0.1'
+    && expectedPort === 5432
+    && expectedDb === 'lysandri_db';
+  if (/(?:jdbc:postgresql:\/\/[^\s"',;]*:5432(?:\/|\b)|:5432\/)/i.test(cmdLine)
+      && (!originalTarget || !/(?:^|\s)-DLYSANDRI_ALLOW_ORIGINAL_DB=true(?:\s|$)/i.test(cmdLine))) {
     return {
       valido: false,
       razon: 'Violación de seguridad: El proceso hace referencia al puerto 5432 (reservado para la base original).',
@@ -640,11 +686,16 @@ export function analizarCommandLineBackend(cmdLine, {
     };
   }
   const activeProfiles = uniqueProfiles[0].split(',').map((p) => p.trim());
-  if (!activeProfiles.includes(expectedProfile)) {
+  const missingProfiles = [expectedProfile, ...requiredProfiles].filter((profile) => !activeProfiles.includes(profile));
+  if (missingProfiles.length > 0) {
     return {
       valido: false,
-      razon: `Perfil de Spring '${uniqueProfiles[0]}' no incluye el perfil requerido '${expectedProfile}'.`,
+      razon: `Perfil de Spring '${uniqueProfiles[0]}' no incluye los perfiles requeridos: ${missingProfiles.join(', ')}.`,
     };
+  }
+
+  if (originalTarget && !activeProfiles.includes('original-dev')) {
+    return { valido: false, razon: 'El destino original exige el perfil original-dev.' };
   }
 
   // 4. Validar artefacto JAR
@@ -689,7 +740,7 @@ export function analizarCommandLineBackend(cmdLine, {
   const port = match[2] ? parseInt(match[2], 10) : 5432;
   const db = match[3];
 
-  if (port === 5432) {
+  if (port === 5432 && !originalTarget) {
     return {
       valido: false,
       razon: 'Violación de seguridad: El proceso apunta al puerto 5432 (reservado para la base original).',
@@ -735,7 +786,7 @@ export function analizarCommandLineBackend(cmdLine, {
     const fwPort = fwMatch[2] ? parseInt(fwMatch[2], 10) : 5432;
     const fwDb = fwMatch[3];
 
-    if (fwPort === 5432) {
+    if (fwPort === 5432 && !originalTarget) {
       return {
         valido: false,
         razon: 'Violación de seguridad: spring.flyway.url apunta al puerto 5432 (reservado para la base original).',
@@ -762,6 +813,12 @@ export function analizarCommandLineBackend(cmdLine, {
 export async function verificarIdentidadBackend({
   port = 8080,
   expectedJarPath = JAR_PATH,
+  expectedHost = '127.0.0.1',
+  expectedPort = 5434,
+  expectedDb = 'lysandri_clone_db',
+  expectedProfile = 'clone',
+  requiredProfiles = ['sandbox'],
+  allowOriginalDatabase = false,
   httpGetFn = httpGet,
   processInfoFn = obtenerDetallesProcesoEnPuerto,
 } = {}) {
@@ -771,7 +828,9 @@ export async function verificarIdentidadBackend({
   }
 
   const cmdLine = procInfo.cmdLine || '';
-  const analisis = analizarCommandLineBackend(cmdLine, { expectedJarPath });
+  const analisis = analizarCommandLineBackend(cmdLine, {
+    expectedJarPath, expectedHost, expectedPort, expectedDb, expectedProfile, requiredProfiles, allowOriginalDatabase,
+  });
 
   if (!analisis.valido) {
     return {
@@ -841,7 +900,7 @@ export function verificarManifiestoJar(jarPath = JAR_PATH, runCmdFn = runCmd) {
 
 export function compilarBackendJar({ backendDir = BACKEND_DIR, runCmdFn = runCmd } = {}) {
   const mvnCmd = process.platform === 'win32' ? '.\\mvnw.cmd' : './mvnw';
-  const compileCmd = `${mvnCmd} package -DskipTests`;
+  const compileCmd = `${mvnCmd} clean package -DskipTests`;
   return runCmdFn(compileCmd, { cwd: backendDir, timeout: 180000 });
 }
 
@@ -918,6 +977,7 @@ export function comprobarJarActualizado({
 // -----------------------------------------------------------------------------
 export async function ejecutarSoloVerificar({
   permitirJarDesactualizado = false,
+  originalDev = false,
   runCmdFn = runCmd,
   httpGetFn = httpGet,
   tcpProbeFn = checkTcpPort,
@@ -928,19 +988,26 @@ export async function ejecutarSoloVerificar({
 
   const faltantes = [];
 
-  // 1. Motor Docker
-  const dockerVer = runCmdFn('docker version --format "{{.Server.Os}}"');
-  if (!dockerVer.success || !dockerVer.stdout.toLowerCase().includes('linux')) {
-    faltantes.push('Docker Desktop: Motor Linux no está en ejecución. Inicie Docker Desktop manualmente.');
-  } else {
-    logOk('Docker Desktop: Motor Linux activo y respondiendo.');
-  }
+  const dbTarget = originalDev
+    ? { host: '127.0.0.1', port: 5432, database: 'lysandri_db', profile: 'original-dev' }
+    : { host: '127.0.0.1', port: 5434, database: 'lysandri_clone_db', profile: 'clone' };
 
-  // 2. Contenedor lysandri-postgres-clone
-  const inspectRes = runCmdFn('docker inspect lysandri-postgres-clone');
-  if (!inspectRes.success || !inspectRes.stdout) {
-    faltantes.push("Contenedor 'lysandri-postgres-clone': No existe.");
-  } else {
+  // 1. Inspección de Docker y del contenedor persistente; este modo nunca lo inicia.
+  {
+    const dockerVer = runCmdFn('docker version --format "{{.Server.Os}}"');
+    if (!dockerVer.success || !dockerVer.stdout.toLowerCase().includes('linux')) {
+      faltantes.push('Docker Desktop: Motor Linux no está en ejecución. Inicie Docker Desktop manualmente.');
+    } else {
+      logOk('Docker Desktop: Motor Linux activo y respondiendo.');
+    }
+
+    const containerName = originalDev ? 'lysandri-postgres' : 'lysandri-postgres-clone';
+    const validator = originalDev ? validarMapeoPuertosOriginal : validarMapeoPuertosClon;
+    const portText = originalDev ? '127.0.0.1:5432' : '127.0.0.1:5434';
+    const inspectRes = runCmdFn(`docker inspect ${containerName}`);
+    if (!inspectRes.success || !inspectRes.stdout) {
+      faltantes.push(`Contenedor '${containerName}': No existe.`);
+    } else {
     let inspectObj = null;
     try {
       const parsed = JSON.parse(inspectRes.stdout);
@@ -948,37 +1015,39 @@ export async function ejecutarSoloVerificar({
     } catch (_) { }
 
     if (!inspectObj) {
-      faltantes.push("Contenedor 'lysandri-postgres-clone': No se pudo interpretar la respuesta JSON de docker inspect.");
+      faltantes.push(`Contenedor '${containerName}': No se pudo interpretar la respuesta JSON de docker inspect.`);
     } else {
       const status = inspectObj.State?.Status || '';
       if (status !== 'running') {
-        faltantes.push(`Contenedor 'lysandri-postgres-clone': Está detenido (Estado: '${status}').`);
+        faltantes.push(`Contenedor '${containerName}': Está detenido (Estado: '${status}').`);
       } else {
-        logOk("Contenedor 'lysandri-postgres-clone': En ejecución.");
+        logOk(`Contenedor '${containerName}': En ejecución.`);
       }
 
-      // Validar mapeo de puertos estricto
-      const valMapeo = validarMapeoPuertosClon(inspectObj);
+      const valMapeo = validator(inspectObj);
       if (!valMapeo.valido) {
         faltantes.push(`Mapeo de puertos del contenedor inválido: ${valMapeo.razon}`);
       } else {
-        logOk('Mapeo de puertos del clon verificado exactamente en 127.0.0.1:5434.');
+        logOk(`Mapeo de puertos verificado exactamente en ${portText}.`);
       }
+    }
     }
   }
 
-  // 3. PostgreSQL TCP y autenticación
-  const pgTcp = await tcpProbeFn('127.0.0.1', 5434, 1500);
+  // 2. PostgreSQL TCP y autenticación
+  const pgTcp = await tcpProbeFn(dbTarget.host, dbTarget.port, 1500);
   if (!pgTcp) {
-    faltantes.push('PostgreSQL: Puerto TCP 127.0.0.1:5434 cerrado o inaccesible.');
+    faltantes.push(`PostgreSQL: Puerto TCP ${dbTarget.host}:${dbTarget.port} cerrado o inaccesible.`);
   } else {
     const psScript = INICIAR_BACKEND_SCRIPT.replace(/\\/g, '/');
-    const verifyCmd = `powershell -ExecutionPolicy Bypass -File "${psScript}" -SoloVerificarBaseDatos`;
+    const originalArg = originalDev ? ' -UsarBaseOriginal' : '';
+    const profileArg = originalDev ? ' -Perfil original-dev,sandbox' : '';
+    const verifyCmd = `powershell -ExecutionPolicy Bypass -File "${psScript}" -SoloVerificarBaseDatos${originalArg}${profileArg}`;
     const verifyRes = runCmdFn(verifyCmd, { timeout: 10000 });
     if (!verifyRes.success) {
-      faltantes.push(`PostgreSQL: Fallo de autenticación en 127.0.0.1:5434:\n${sanitizarSalida(verifyRes.stderr || verifyRes.stdout)}`);
+      faltantes.push(`PostgreSQL: Fallo de autenticación en ${dbTarget.host}:${dbTarget.port}:\n${sanitizarSalida(verifyRes.stderr || verifyRes.stdout)}`);
     } else {
-      logOk('PostgreSQL: Conexión TCP e identidades autenticadas confirmadas en 127.0.0.1:5434.');
+      logOk(`PostgreSQL: Conexión TCP e identidades autenticadas confirmadas en ${dbTarget.host}:${dbTarget.port}/${dbTarget.database}.`);
     }
   }
 
@@ -995,7 +1064,11 @@ export async function ejecutarSoloVerificar({
   }
 
   // 5. Backend en puerto 8080
-  const backendIdent = await verificarIdentidadBackend({ port: 8080, httpGetFn, processInfoFn });
+  const backendIdent = await verificarIdentidadBackend({
+    port: 8080, httpGetFn, processInfoFn,
+    expectedHost: dbTarget.host, expectedPort: dbTarget.port, expectedDb: dbTarget.database,
+    expectedProfile: dbTarget.profile, allowOriginalDatabase: originalDev,
+  });
   if (!backendIdent.activo) {
     faltantes.push('Backend HTTP: Puerto 8080 no está en escucha.');
   } else if (!backendIdent.esNuestro) {
@@ -1020,7 +1093,7 @@ export async function ejecutarSoloVerificar({
     for (const f of faltantes) {
       console.error(`  - ${f}`);
     }
-    console.error(`\n${colors.gray}Nota: --solo-verificar no inicia servicios ni cambia configuraciones.${colors.reset}\n`);
+    console.error(`\n${colors.gray}Nota: --solo-verificar inspecciona servicios sin iniciarlos ni cambiar configuraciones.${colors.reset}\n`);
     return { exito: false, faltantes };
   }
 
@@ -1651,6 +1724,7 @@ let startedFrontendPid = null;
 
 let backendReused = false;
 let frontendReused = false;
+let activeDatabaseDescription = 'PostgreSQL Clone (127.0.0.1:5434)';
 let isShuttingDown = false;
 
 export function setStartedBackendRecord(record) {
@@ -2058,7 +2132,7 @@ export async function ejecutarLimpieza({
 
   const serviciosReusados = [];
   serviciosReusados.push('Docker Desktop');
-  serviciosReusados.push('PostgreSQL Clone (127.0.0.1:5434)');
+  serviciosReusados.push(activeDatabaseDescription);
   if (backendReused) serviciosReusados.push('Backend local (reutilizado)');
   if (frontendReused) serviciosReusados.push('Frontend Vite (reutilizado)');
 
@@ -2108,6 +2182,7 @@ export function cleanupAndExit(code = 0) {
 export async function iniciarEntorno({
   permitirJarDesactualizado = false,
   noAbrirNavegador = false,
+  originalDev = false,
   lockPath = LOCK_FILE,
 } = {}) {
   console.log(`\n${colors.cyan}${colors.bold}================================================================================${colors.reset}`);
@@ -2122,8 +2197,15 @@ export async function iniciarEntorno({
     process.exit(0);
   }
   activeOwnerToken = lockResult.ownerToken;
+  activeDatabaseDescription = originalDev
+    ? 'PostgreSQL original (127.0.0.1:5432)'
+    : 'PostgreSQL Clone (127.0.0.1:5434)';
 
-  // 1. Asegurar Docker Desktop
+  const dbTarget = originalDev
+    ? { host: '127.0.0.1', port: 5432, database: 'lysandri_db', profile: 'original-dev' }
+    : { host: '127.0.0.1', port: 5434, database: 'lysandri_clone_db', profile: 'clone' };
+
+  // 1. Asegurar Docker Desktop para poder levantar el contenedor PostgreSQL elegido.
   logStep('1/6', 'Comprobando Docker Desktop...');
   const checkDocker = () => {
     const res = runCmd('docker version --format "{{.Server.Os}}"');
@@ -2173,11 +2255,14 @@ export async function iniciarEntorno({
   }
   logOk('Motor Docker Linux disponible.');
 
-  // 2. Asegurar Contenedor lysandri-postgres-clone
-  logStep('2/6', 'Iniciando y verificando contenedor lysandri-postgres-clone...');
-  const inspectRes = runCmd('docker inspect lysandri-postgres-clone');
+  // 2. Iniciar únicamente el contenedor persistente que ya existe.
+  const containerName = originalDev ? 'lysandri-postgres' : 'lysandri-postgres-clone';
+  const validator = originalDev ? validarMapeoPuertosOriginal : validarMapeoPuertosClon;
+  const expectedPort = originalDev ? '127.0.0.1:5432' : '127.0.0.1:5434';
+  logStep('2/6', `Iniciando y verificando el contenedor existente ${containerName} (${expectedPort})...`);
+  const inspectRes = runCmd(`docker inspect ${containerName}`);
   if (!inspectRes.success || !inspectRes.stdout) {
-    console.error(`\n${colors.red}${colors.bold}[FATAL] El contenedor 'lysandri-postgres-clone' no existe. Por restricciones de seguridad, no se crean contenedores automáticamente.${colors.reset}\n`);
+    console.error(`\n${colors.red}${colors.bold}[FATAL] El contenedor existente '${containerName}' no existe. No se crean ni recrean contenedores automáticamente.${colors.reset}\n`);
     cleanupAndExit(1);
   }
 
@@ -2191,7 +2276,7 @@ export async function iniciarEntorno({
   }
 
   // Validar configuración de puertos inicial
-  const valMapeoInicial = validarMapeoPuertosClon(inspectObj);
+  const valMapeoInicial = validator(inspectObj);
   if (!valMapeoInicial.valido) {
     console.error(`\n${colors.red}${colors.bold}[FATAL] Mapeo de puertos inválido en el contenedor: ${valMapeoInicial.razon}${colors.reset}\n`);
     cleanupAndExit(1);
@@ -2199,48 +2284,49 @@ export async function iniciarEntorno({
 
   // Si está detenido, iniciarlo
   if (inspectObj.State?.Status !== 'running') {
-    logInfo("El contenedor 'lysandri-postgres-clone' está detenido. Iniciando...");
-    const startRes = runCmd('docker start lysandri-postgres-clone');
+    logInfo(`El contenedor '${containerName}' está detenido. Iniciando el contenedor persistente existente...`);
+    const startRes = runCmd(`docker start ${containerName}`);
     if (!startRes.success) {
-      console.error(`\n${colors.red}${colors.bold}[FATAL] No se pudo iniciar el contenedor 'lysandri-postgres-clone': ${startRes.stderr}${colors.reset}\n`);
+      console.error(`\n${colors.red}${colors.bold}[FATAL] No se pudo iniciar el contenedor '${containerName}': ${startRes.stderr}${colors.reset}\n`);
       cleanupAndExit(1);
     }
 
     let running = false;
     for (let i = 0; i < 15; i++) {
       await sleep(1000);
-      const s = runCmd('docker inspect lysandri-postgres-clone --format "{{.State.Status}}"');
+      const s = runCmd(`docker inspect ${containerName} --format "{{.State.Status}}"`);
       if (s.success && s.stdout === 'running') {
         running = true;
         break;
       }
     }
     if (!running) {
-      console.error(`\n${colors.red}${colors.bold}[FATAL] El contenedor 'lysandri-postgres-clone' no alcanzó el estado 'running'.${colors.reset}\n`);
+      console.error(`\n${colors.red}${colors.bold}[FATAL] El contenedor '${containerName}' no alcanzó el estado 'running'.${colors.reset}\n`);
       cleanupAndExit(1);
     }
-    logOk("Contenedor 'lysandri-postgres-clone' iniciado correctamente.");
+    logOk(`Contenedor '${containerName}' iniciado correctamente.`);
 
     // Re-validar puertos en ejecución
-    const inspectRunning = runCmd('docker inspect lysandri-postgres-clone');
+    const inspectRunning = runCmd(`docker inspect ${containerName}`);
     if (inspectRunning.success) {
       const parsedR = JSON.parse(inspectRunning.stdout);
-      const valRunning = validarMapeoPuertosClon(Array.isArray(parsedR) ? parsedR[0] : parsedR);
+      const valRunning = validator(Array.isArray(parsedR) ? parsedR[0] : parsedR);
       if (!valRunning.valido) {
         console.error(`\n${colors.red}${colors.bold}[FATAL] Verificación de puertos en ejecución falló: ${valRunning.razon}${colors.reset}\n`);
         cleanupAndExit(1);
       }
     }
   } else {
-    logOk("Contenedor 'lysandri-postgres-clone' ya se encontraba en ejecución.");
+    logOk(`Contenedor '${containerName}' ya se encontraba en ejecución.`);
   }
 
   // 3. Esperar disponibilidad real y autenticación de PostgreSQL (Punto 1)
-  logStep('3/6', 'Esperando disponibilidad y autenticación de PostgreSQL en 127.0.0.1:5434...');
+  logStep('3/6', `Esperando disponibilidad y autenticación de PostgreSQL en ${dbTarget.host}:${dbTarget.port}/${dbTarget.database}...`);
   const pgResult = await esperarDisponibilidadPostgres({
-    cloneHost: '127.0.0.1',
-    clonePort: 5434,
-    cloneDatabase: 'lysandri_clone_db',
+    cloneHost: dbTarget.host,
+    clonePort: dbTarget.port,
+    cloneDatabase: dbTarget.database,
+    originalDev,
     timeoutMs: 45000,
     onProgress: (elapsed, total) => {
       process.stdout.write(`  ${colors.gray}Verificando PostgreSQL (${elapsed}s / ${total}s)...${colors.reset}\r`);
@@ -2252,16 +2338,23 @@ export async function iniciarEntorno({
     console.error(`\n${colors.red}${colors.bold}[FATAL] ${pgResult.mensaje}${colors.reset}\n`);
     cleanupAndExit(1);
   }
-  logOk('Conexión TCP e identidades autenticadas (lysandri_app, lysandri_admin) confirmadas en 127.0.0.1:5434.');
+  logOk(`Conexión TCP e identidades autenticadas confirmadas en ${dbTarget.host}:${dbTarget.port}/${dbTarget.database}.`);
 
   // 4. Asegurar Backend
   logStep('4/6', 'Comprobando e iniciando backend local en puerto 8080...');
   let estadoJar = comprobarJarActualizado();
 
-  const backendIdent = await verificarIdentidadBackend({ port: 8080 });
+  const backendIdent = await verificarIdentidadBackend({
+    port: 8080,
+    expectedHost: dbTarget.host,
+    expectedPort: dbTarget.port,
+    expectedDb: dbTarget.database,
+    expectedProfile: dbTarget.profile,
+    allowOriginalDatabase: originalDev,
+  });
   if (backendIdent.activo) {
     if (backendIdent.esNuestro) {
-      logOk(`Backend ya activo y verificado (PID ${backendIdent.pid}, perfil 'clone', base 127.0.0.1:5434/lysandri_clone_db). Se reutiliza.`);
+      logOk(`Backend ya activo y verificado (PID ${backendIdent.pid}, perfiles '${dbTarget.profile},sandbox', base ${dbTarget.host}:${dbTarget.port}/${dbTarget.database}). Se reutiliza.`);
       backendReused = true;
       if (estadoJar.desactualizado) {
         logWarn(`Existen modificaciones en el código fuente posteriores al JAR (${path.basename(estadoJar.archivo)}). Recompile cuando desee aplicar cambios.`);
@@ -2279,7 +2372,7 @@ export async function iniciarEntorno({
         : !estadoJar.esEjecutable
           ? 'el JAR no contiene el manifiesto ejecutable de Spring Boot'
           : `el código fuente es más reciente (${path.basename(estadoJar.archivo)})`;
-      logInfo(`Generando artefacto ejecutable del backend con ./mvnw.cmd package -DskipTests (${motivo})...`);
+      logInfo(`Generando artefacto ejecutable del backend con ./mvnw.cmd clean package -DskipTests (${motivo})...`);
       const compRes = compilarBackendJar();
       if (!compRes.success) {
         console.error(
@@ -2295,9 +2388,10 @@ export async function iniciarEntorno({
       logOk('Artefacto backend compilado y verificado correctamente.');
     }
 
-    logInfo('Iniciando proceso Java local con perfil clone en puerto 8080...');
+    logInfo(`Iniciando proceso Java local con perfiles ${dbTarget.profile},sandbox en puerto 8080...`);
     const psScript = INICIAR_BACKEND_SCRIPT.replace(/\\/g, '/');
-    const psArgs = ['-ExecutionPolicy', 'Bypass', '-File', psScript, '-Perfil', 'clone', '-HttpPort', '8080'];
+    const psArgs = ['-ExecutionPolicy', 'Bypass', '-File', psScript, '-Perfil', `${dbTarget.profile},sandbox`, '-HttpPort', '8080'];
+    if (originalDev) psArgs.push('-UsarBaseOriginal');
 
     let backendEarlyExit = false;
     let backendExitCode = null;
@@ -2315,7 +2409,9 @@ export async function iniciarEntorno({
       wrapperPid: startedBackendProcess.pid,
       wrapperProcess: startedBackendProcess,
       wrapperCmdPattern: 'iniciar-backend.ps1',
-      childCmdPattern: 'lysandri-backend',
+      childCmdPattern: (cmdLine) => /lysandri-backend/i.test(cmdLine)
+        || /(?:^|[\\/"\s])ollama\.exe["\s]+serve(?:\s|$)/i.test(cmdLine)
+        || /(?:^|[\\/"\s])llama-server\.exe["\s].*--port\s+\d+/i.test(cmdLine),
       knownPids: new Set([startedBackendProcess.pid]),
       startTime: Date.now(),
     };
@@ -2340,7 +2436,7 @@ export async function iniciarEntorno({
     });
 
     logStep('5/6', 'Esperando respuesta del backend en http://localhost:8080...');
-    const timeoutSeconds = 75;
+    const timeoutSeconds = 110;
     const start = Date.now();
     let backendListo = false;
 
@@ -2520,7 +2616,7 @@ export async function iniciarEntorno({
   console.log(`${colors.green}${colors.bold}================================================================================${colors.reset}`);
   console.log(`  ${colors.bold}Frontend Web:${colors.reset}       http://127.0.0.1:3000`);
   console.log(`  ${colors.bold}Backend API:${colors.reset}        http://localhost:8080`);
-  console.log(`  ${colors.bold}PostgreSQL Clon:${colors.reset}    127.0.0.1:5434/lysandri_clone_db`);
+  console.log(`  ${colors.bold}PostgreSQL:${colors.reset}         ${dbTarget.host}:${dbTarget.port}/${dbTarget.database}`);
   console.log(
     `  ${colors.bold}Iniciados aquí:${colors.reset}     ${[startedBackendPid ? `Backend (PID ${startedBackendPid})` : null, startedFrontendPid ? `Vite (PID ${startedFrontendPid})` : null]
       .filter(Boolean)
@@ -2528,7 +2624,7 @@ export async function iniciarEntorno({
     }`
   );
   console.log(
-    `  ${colors.bold}Reutilizados:${colors.reset}       ${[backendReused ? 'Backend en puerto 8080' : null, frontendReused ? 'Frontend en puerto 3000' : null, 'Docker Desktop', 'PostgreSQL clone']
+    `  ${colors.bold}Reutilizados:${colors.reset}       ${[backendReused ? 'Backend en puerto 8080' : null, frontendReused ? 'Frontend en puerto 3000' : null, !originalDev ? 'Docker Desktop' : null, originalDev ? 'PostgreSQL original (lectura de destino; Flyway se ejecuta al arrancar)' : 'PostgreSQL clone']
       .filter(Boolean)
       .join(', ')
     }`
@@ -2566,10 +2662,12 @@ async function main() {
   const SOLO_VERIFICAR = args.includes('--solo-verificar');
   const PERMITIR_JAR_DESACTUALIZADO = args.includes('--permitir-jar-desactualizado');
   const NO_ABRIR_NAVEGADOR = args.includes('--no-abrir-navegador');
+  const USAR_BASE_ORIGINAL = args.includes('--original-dev');
 
   if (SOLO_VERIFICAR) {
     const res = await ejecutarSoloVerificar({
       permitirJarDesactualizado: PERMITIR_JAR_DESACTUALIZADO,
+      originalDev: USAR_BASE_ORIGINAL,
     });
     process.exit(res.exito ? 0 : 1);
   }
@@ -2577,6 +2675,7 @@ async function main() {
   await iniciarEntorno({
     permitirJarDesactualizado: PERMITIR_JAR_DESACTUALIZADO,
     noAbrirNavegador: NO_ABRIR_NAVEGADOR,
+    originalDev: USAR_BASE_ORIGINAL,
   });
 }
 

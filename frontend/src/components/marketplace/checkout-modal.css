@@ -109,7 +109,8 @@
 .lx-field { display: grid; gap: 6px; min-width: 0; color: #d5e0e6; font-size: 11px; font-weight: 650; }
 .lx-field-wide { grid-column: 1 / -1; }
 .lx-field small { margin-left: 4px; color: #8396a3; font-size: 10px; font-weight: 450; }
-.lx-field input {
+.lx-field input,
+.lx-field select {
   width: 100%;
   min-height: 40px;
   padding: 0 12px;
@@ -122,7 +123,8 @@
   transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
 .lx-field input::placeholder { color: #708392; }
-.lx-field input:focus { border-color: var(--checkout-accent); background: #101e2b; outline: 2px solid rgb(83 203 229 / 30%); outline-offset: 1px; }
+.lx-field input:focus,
+.lx-field select:focus { border-color: var(--checkout-accent); background: #101e2b; outline: 2px solid rgb(83 203 229 / 30%); outline-offset: 1px; }
 
 .lx-invoice-picker { min-width: 0; margin: 14px 0 0; padding: 0; border: 0; }
 .lx-invoice-picker legend { margin-bottom: 7px; color: #d5e0e6; font-size: 11px; font-weight: 650; }
@@ -445,4 +447,3 @@
   .lx-checkout-dialog *, .lx-checkout-dialog *::before, .lx-checkout-dialog *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
   .lx-spinner { animation: none; }
 }
-

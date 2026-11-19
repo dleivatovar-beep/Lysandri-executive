@@ -61,6 +61,24 @@ class SecuritySessionAndJwtTest {
     }
 
     @Test
+    void cambioDePasswordInvalidaLasSesionesAnteriores() {
+        String anterior = jwtService.generateToken(clienteUser);
+        clienteUser.setVersionCredenciales(1);
+        assertFalse(jwtService.isTokenValid(anterior, clienteUser));
+        assertTrue(jwtService.isTokenValid(jwtService.generateToken(clienteUser), clienteUser));
+    }
+
+    @Test
+    void tokenLegadoSoloEsValidoAntesDelPrimerCambioDePassword() {
+        String legado = Jwts.builder().subject(clienteUser.getEmail()).issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis()+60000))
+                .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(VALID_SECRET))).compact();
+        assertTrue(jwtService.isTokenValid(legado, clienteUser));
+        clienteUser.setVersionCredenciales(1);
+        assertFalse(jwtService.isTokenValid(legado, clienteUser));
+    }
+
+    @Test
     @DisplayName("Generación y validación de token JWT para usuario activo con datos válidos")
     void generateToken_usuarioValido_generaTokenCorrecto() {
         String token = jwtService.generateToken(clienteUser);

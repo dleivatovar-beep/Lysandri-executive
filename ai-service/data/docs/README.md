@@ -1,15 +1,9 @@
-# Directorio de Manuales Técnicos y Playbooks para RAG
+# Documentos del asistente de Lysandri Executive
 
-Coloca en este directorio todos los archivos `.pdf` que deseas indexar en la base de datos vectorial PostgreSQL con `pgvector`.
+El sílabo de Globalización de Mercados y Antropología del Consumidor es contenido académico propio en estado PROPUESTA. No confirma oferta comercial, certificación ni disponibilidad en Moodle.
 
-### Ejemplos recomendados:
-* `Manual_Torno_CNC.pdf`
-* `Guia_Seguridad_Industrial.pdf`
-* `Playbook_Arquitectura_Cloud.pdf`
+Para el chat de la plataforma usar la carga del backend Java, documentada en backend/evaluacion/LEEME.md. Conserva título, versión, sección y estado de cada fragmento en documento_chunk con vectores de 1536 dimensiones.
 
-### Ejecución de la ingesta:
-```bash
-# Dentro de ai-service/
-python ingest.py
-```
-El script leerá cada PDF, extraerá el texto por página, dividirá el contenido en fragmentos de 500 caracteres con 50 de solapamiento, calculará los embeddings de 384 dimensiones (`all-MiniLM-L6-v2`) y los insertará en la tabla `documento_chunks`.
+El script ai-service/ingest.py trabaja con otro modelo y otra tabla: documento_chunks, de 384 dimensiones. No carga el índice que consulta el chat Java. No ejecutar ese script para este sílabo.
+
+La subcarpeta borradores conserva materiales de planificación. No cargarla de forma masiva como conocimiento público. El conjunto de preguntas de evaluación se mantiene separado del corpus.

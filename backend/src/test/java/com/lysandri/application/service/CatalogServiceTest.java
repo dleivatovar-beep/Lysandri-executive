@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 
 import java.time.OffsetDateTime;
-
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -120,6 +120,55 @@ class CatalogServiceTest {
 
                 .build();
 
+    }
+
+    @Test
+    void informacionAcademica_noHabilitaVentaNiExponeInactivos() {
+        var activo = Programa.builder().idPrograma(1L).activo(true)
+                .precioAprobado(false).precio(new BigDecimal("89.00")).moneda("USD").build();
+        var inactivo = Programa.builder().idPrograma(2L).activo(false).build();
+        when(programRepository.listarTodos()).thenReturn(List.of(activo, inactivo));
+
+        var cursos = catalogService.listarProgramasInformativos();
+
+        assertEquals(1, cursos.size());
+        assertEquals(1L, cursos.get(0).getIdPrograma());
+        assertFalse(cursos.get(0).getDisponibleParaCompra());
+        assertFalse(cursos.get(0).isPrecioAprobado());
+        assertEquals(new BigDecimal("89.00"), cursos.get(0).getPrecio());
+        verify(programRepository, never()).guardar(any());
+    }
+
+    @Test
+    @DisplayName("Disponibilidad comercial consulta los IDs exactos e informa programas inactivos")
+    void consultarDisponibilidadCompra_noDependeDeCatalogoFiltrado() {
+        Programa inactivo = Programa.builder()
+                .idPrograma(11L)
+                .titulo("Programa desactivado")
+                .precio(new BigDecimal("500.00"))
+                .moneda("PEN")
+                .activo(false)
+                .precioAprobado(true)
+                .moodleCourseId(111L)
+                .moodleVerificado(true)
+                .moodleVerificadoEn(OffsetDateTime.ofInstant(NOW, UTC))
+                .build();
+        when(programRepository.buscarPorIds(List.of(10L, 11L))).thenReturn(List.of(programaBase, inactivo));
+
+        List<Programa> result = catalogService.consultarDisponibilidadCompra(List.of(10L, 11L));
+
+        assertEquals(2, result.size());
+        assertEquals(Boolean.TRUE, result.get(0).getDisponibleParaCompra());
+        assertEquals(Boolean.FALSE, result.get(1).getDisponibleParaCompra());
+        assertEquals("Programa no activo para venta comercial", result.get(1).getMotivoNoDisponible());
+        verify(programRepository).buscarPorIds(List.of(10L, 11L));
+    }
+
+    @Test
+    void consultarDisponibilidadCompra_rechazaIdsVaciosODuplicados() {
+        assertThrows(IllegalArgumentException.class, () -> catalogService.consultarDisponibilidadCompra(List.of()));
+        assertThrows(IllegalArgumentException.class, () -> catalogService.consultarDisponibilidadCompra(List.of(10L, 10L)));
+        verifyNoInteractions(programRepository);
     }
 
     @Test

@@ -14,12 +14,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Adaptador simulado de Izipay para entornos de pruebas locales e integración (@Profile({"test", "clone"})).
+ * Adaptador simulado de Izipay exclusivo para pruebas automatizadas (@Profile("test")).
  * Queda terminantemente prohibido su uso o activación en entornos de producción (prod/production).
  */
 @Slf4j
 @Component("izipayPaymentAdapter")
-@Profile({"test", "clone"})
+@Profile("test")
 public class MockIzipayPaymentAdapter implements PaymentPort {
 
     private final String successUrl;

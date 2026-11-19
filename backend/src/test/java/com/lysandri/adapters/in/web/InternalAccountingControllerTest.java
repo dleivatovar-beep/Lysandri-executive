@@ -43,6 +43,9 @@ class InternalAccountingControllerTest {
     @Mock
     private AccountingAuditPort accountingAuditPort;
 
+    @Mock
+    private org.springframework.core.env.Environment environment;
+
     @InjectMocks
     private InternalAccountingController accountingController;
 

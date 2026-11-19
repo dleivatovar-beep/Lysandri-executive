@@ -10,7 +10,7 @@ public interface LlmClientPort {
     ) {}
 
     /**
-     * Genera un embedding vectorial denso (1536 dimensiones) para un texto dado.
+     * Genera un embedding vectorial denso (las dimensiones del modelo configurado) para un texto dado.
      */
     float[] generarEmbedding(String texto);
 

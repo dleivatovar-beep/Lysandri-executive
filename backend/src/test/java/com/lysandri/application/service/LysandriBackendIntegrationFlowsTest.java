@@ -122,6 +122,7 @@ class LysandriBackendIntegrationFlowsTest {
                 .activo(true)
                 .precioAprobado(true)
                 .moodleVerificado(true)
+                .moodleVerificadoEn(OffsetDateTime.now())
                 .build();
 
         comprobanteMock = ComprobantePago.builder()
@@ -146,6 +147,7 @@ class LysandriBackendIntegrationFlowsTest {
                     .items(List.of(DetalleOrden.builder()
                             .idPrograma(101L)
                             .programa(programaEjecutivo)
+                            .moodleCourseId(404L)
                             .precioUnitario(new BigDecimal("1200.00"))
                             .cantidad(1)
                             .subtotal(new BigDecimal("1200.00"))
@@ -165,6 +167,7 @@ class LysandriBackendIntegrationFlowsTest {
                     .items(List.of(DetalleOrden.builder()
                             .idPrograma(101L)
                             .programa(programaEjecutivo)
+                            .moodleCourseId(404L)
                             .precioUnitario(new BigDecimal("1200.00"))
                             .cantidad(1)
                             .subtotal(new BigDecimal("1200.00"))
@@ -173,7 +176,7 @@ class LysandriBackendIntegrationFlowsTest {
             return ResultadoReservaAprovisionamiento.reservado(o, "mock-lease-token");
         });
 
-        lenient().when(orderFinancialTransactionService.completarAprovisionamiento(anyString(), anyString(), anyBoolean(), anyList()))
+        lenient().when(orderFinancialTransactionService.completarAprovisionamiento(anyString(), anyString(), anyBoolean(), anyList(), nullable(String.class)))
                 .thenAnswer(invocation -> {
                     String codigo = invocation.getArgument(0);
                     boolean allEnrolled = invocation.getArgument(2);
@@ -222,6 +225,7 @@ class LysandriBackendIntegrationFlowsTest {
                 .items(List.of(DetalleOrden.builder()
                         .idPrograma(101L)
                         .programa(programaEjecutivo)
+                        .moodleCourseId(404L)
                         .precioUnitario(new BigDecimal("1200.00"))
                         .cantidad(1)
                         .subtotal(new BigDecimal("1200.00"))
@@ -236,7 +240,7 @@ class LysandriBackendIntegrationFlowsTest {
         });
         when(orderFinancialTransactionService.reservarAprovisionamiento("ORD-77"))
                 .thenReturn(ResultadoReservaAprovisionamiento.reservado(ordenCreada, "token-77"));
-        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-77"), eq("token-77"), anyBoolean(), anyList()))
+        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-77"), eq("token-77"), anyBoolean(), anyList(), nullable(String.class)))
                 .thenAnswer(i -> {
                     ordenCreada.setMoodleMatriculaSincronizada(i.getArgument(2));
                     ordenCreada.setEstadoAprovisionamiento(i.getArgument(2) ? EstadoAprovisionamiento.COMPLETADO : EstadoAprovisionamiento.FALLIDO);
@@ -293,6 +297,7 @@ class LysandriBackendIntegrationFlowsTest {
                 .items(List.of(DetalleOrden.builder()
                         .idPrograma(101L)
                         .programa(programaEjecutivo)
+                        .moodleCourseId(404L)
                         .precioUnitario(new BigDecimal("1200.00"))
                         .cantidad(1)
                         .subtotal(new BigDecimal("1200.00"))
@@ -307,7 +312,7 @@ class LysandriBackendIntegrationFlowsTest {
         });
         when(orderFinancialTransactionService.reservarAprovisionamiento("ORD-99"))
                 .thenAnswer(i -> ResultadoReservaAprovisionamiento.reservado(ordenPendiente, "token-99"));
-        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-99"), eq("token-99"), anyBoolean(), anyList()))
+        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-99"), eq("token-99"), anyBoolean(), anyList(), nullable(String.class)))
                 .thenAnswer(i -> {
                     ordenPendiente.setMoodleMatriculaSincronizada(i.getArgument(2));
                     ordenPendiente.setEstadoAprovisionamiento(i.getArgument(2) ? EstadoAprovisionamiento.COMPLETADO : EstadoAprovisionamiento.FALLIDO);
@@ -430,6 +435,7 @@ class LysandriBackendIntegrationFlowsTest {
                 .items(List.of(DetalleOrden.builder()
                         .idPrograma(101L)
                         .programa(programaEjecutivo)
+                        .moodleCourseId(404L)
                         .precioUnitario(new BigDecimal("1200.00"))
                         .cantidad(1)
                         .subtotal(new BigDecimal("1200.00"))
@@ -457,7 +463,7 @@ class LysandriBackendIntegrationFlowsTest {
             }
         });
 
-        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-CONC-999"), eq("token-lease-hilo-1"), anyBoolean(), anyList()))
+        when(orderFinancialTransactionService.completarAprovisionamiento(eq("ORD-CONC-999"), eq("token-lease-hilo-1"), anyBoolean(), anyList(), nullable(String.class)))
                 .thenAnswer(i -> {
                     ordenCompartida.setMoodleMatriculaSincronizada(true);
                     matriculado.set(true);

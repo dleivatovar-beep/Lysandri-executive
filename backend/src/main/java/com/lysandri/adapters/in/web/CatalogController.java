@@ -33,6 +33,18 @@ public class CatalogController {
         return ResponseEntity.ok(catalogUseCase.listarProgramasActivos());
     }
 
+    @GetMapping("/informacion")
+    @Operation(summary = "Cursos activos para consulta académica, con disponibilidad de compra independiente")
+    public ResponseEntity<List<Programa>> listarInformacion() {
+        return ResponseEntity.ok(catalogUseCase.listarProgramasInformativos());
+    }
+
+    @GetMapping("/disponibilidad-compra")
+    @Operation(summary = "Consulta disponibilidad comercial exacta para los IDs seleccionados")
+    public ResponseEntity<List<Programa>> consultarDisponibilidadCompra(@RequestParam List<Long> ids) {
+        return ResponseEntity.ok(catalogUseCase.consultarDisponibilidadCompra(ids));
+    }
+
     @GetMapping("/admin/todos")
     @PreAuthorize("hasAnyRole('ADMIN', 'COORDINADOR_ACADEMICO', 'TRABAJADOR')")
     @Operation(summary = "Lista todos los programas (incluidos borradores e inactivos) para gestión administrativa")

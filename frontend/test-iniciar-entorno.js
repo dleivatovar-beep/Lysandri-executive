@@ -383,7 +383,7 @@ async function testSeccion3IdentidadBackendYFrontend() {
   // ---------------------------------------------------------------------------
 
   // 3.1 Configuración válida (clone, 127.0.0.1:5434/lysandri_clone_db, JAR local, flyway coincidente)
-  const cmdAutorizado = `java -Dspring.profiles.active=clone -Dspring.datasource.url=jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db -Dspring.flyway.url=jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db -jar "${JAR_PATH}"`;
+  const cmdAutorizado = `java -Dspring.profiles.active=clone,sandbox -Dspring.datasource.url=jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db -Dspring.flyway.url=jdbc:postgresql://127.0.0.1:5434/lysandri_clone_db -jar "${JAR_PATH}"`;
   const rB1 = await verificarIdentidadBackend({
     port: 8080,
     processInfoFn: async () => ({ pid: 7001, name: 'java.exe', cmdLine: cmdAutorizado }),
