@@ -58,3 +58,10 @@ venv/
 .dev-orchestrator.lock
 .tunnel-session.json
 .backup-checkout/
+
+# Credenciales locales de demostración
+.pmv/
+backend/.pmv/
+
+# Local evaluation output
+backend/evaluacion/resultados/

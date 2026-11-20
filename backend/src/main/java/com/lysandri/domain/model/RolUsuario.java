@@ -9,6 +9,7 @@ public enum RolUsuario {
     DOCENTE,
     TRABAJADOR,
     ADMIN,
+    GERENTE,
     CONTABILIDAD,
     FINANZAS,
     VENTAS,
@@ -17,7 +18,7 @@ public enum RolUsuario {
 
     public boolean esRolInterno() {
         return switch (this) {
-            case ADMIN, TRABAJADOR, CONTABILIDAD, FINANZAS, VENTAS, COORDINADOR_ACADEMICO, DOCENTE, AUDITOR -> true;
+            case ADMIN, GERENTE, TRABAJADOR, CONTABILIDAD, FINANZAS, COORDINADOR_ACADEMICO, DOCENTE, AUDITOR -> true;
             default -> false;
         };
     }
@@ -27,6 +28,10 @@ public enum RolUsuario {
 
         String normalized = rol.trim().replace('-', '_').replace(' ', '_').toUpperCase(Locale.ROOT);
 
+        if (java.util.Set.of("VENTAS", "VENDEDOR", "COMERCIAL", "SALES").contains(normalized)) {
+            throw new IllegalArgumentException("El rol Vendedor no está habilitado en Lysandri Executive.");
+        }
+
         try {
             return RolUsuario.valueOf(normalized);
         } catch (IllegalArgumentException e) {
@@ -35,6 +40,7 @@ public enum RolUsuario {
                 case "EJECUTIVO", "ALUMNO" -> ESTUDIANTE;
                 case "ADMINISTRADOR" -> ADMIN;
                 case "COORDINADORACADEMICO", "COORDINADOR_ACADEMICO" -> COORDINADOR_ACADEMICO;
+                case "CONTADOR" -> CONTABILIDAD;
                 case "CONTABLE" -> CONTABILIDAD;
                 case "COMERCIAL", "SALES" -> VENTAS;
                 case "AUDIT" -> AUDITOR;

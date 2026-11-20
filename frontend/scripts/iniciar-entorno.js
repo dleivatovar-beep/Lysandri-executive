@@ -2350,6 +2350,7 @@ export async function iniciarEntorno({
     expectedPort: dbTarget.port,
     expectedDb: dbTarget.database,
     expectedProfile: dbTarget.profile,
+    requiredProfiles: process.argv.includes('--pmv') ? ['sandbox', 'pmv'] : ['sandbox'],
     allowOriginalDatabase: originalDev,
   });
   if (backendIdent.activo) {
@@ -2390,7 +2391,7 @@ export async function iniciarEntorno({
 
     logInfo(`Iniciando proceso Java local con perfiles ${dbTarget.profile},sandbox en puerto 8080...`);
     const psScript = INICIAR_BACKEND_SCRIPT.replace(/\\/g, '/');
-    const psArgs = ['-ExecutionPolicy', 'Bypass', '-File', psScript, '-Perfil', `${dbTarget.profile},sandbox`, '-HttpPort', '8080'];
+    const psArgs = ['-ExecutionPolicy', 'Bypass', '-File', psScript, '-Perfil', `${dbTarget.profile},sandbox${process.argv.includes('--pmv') ? ',pmv' : ''}`, '-HttpPort', '8080'];
     if (originalDev) psArgs.push('-UsarBaseOriginal');
 
     let backendEarlyExit = false;

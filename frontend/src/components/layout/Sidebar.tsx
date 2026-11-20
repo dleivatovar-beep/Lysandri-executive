@@ -46,6 +46,7 @@ const ROLE_LABELS: Record<
   INSTRUCTOR: 'Espacio docente',
   ADMIN: 'Administración',
   CONTABILIDAD: 'Contabilidad',
+  GERENTE: 'Gerencia',
 };
 
 const ROLE_NAVIGATION: Record<
@@ -146,6 +147,7 @@ const ROLE_NAVIGATION: Record<
     },
   ],
 
+  GERENTE: [{ label: 'Resumen de pruebas', view: 'ACCOUNTING', icon: ChartNoAxesColumnIncreasing }],
   CONTABILIDAD: [
     {
       label: 'Área contable',
@@ -179,6 +181,7 @@ export const Sidebar:
               </h2>
             </div>
 
+            <a href="/pmv" className="mb-4 block rounded-lg border border-cyan-800 px-3 py-3 text-sm font-semibold text-cyan-500">Entorno de prueba</a>
             <nav aria-label={role === 'ADMIN' ? 'Navegación de administración' : 'Navegación de usuario'} className="space-y-1.5">
               {navigationItems.map(
                 (item) => {

@@ -41,6 +41,7 @@ import { InstructorStudents } from './pages/instructor/InstructorStudents';
 import { MarketplaceView } from './pages/MarketplaceView';
 import { StudentCourses } from './pages/student/StudentCourses';
 
+import { PmvView } from './pages/PmvView';
 import { RoleProtectedRoute } from './routes/RoleProtectedRoute';
 import { PaymentSuccessView } from './pages/PaymentSuccessView';
 import { ActivarCuentaView } from './pages/ActivarCuentaView';
@@ -208,6 +209,7 @@ const VIEW_PATHS: Record<
       '/admin/contabilidad',
   },
 
+  GERENTE: { ACCOUNTING: '/pmv' },
   CONTABILIDAD: {
     ACCOUNTING:
       '/contabilidad',
@@ -292,6 +294,8 @@ const toNavbarUser = (
   jobTitle:
     user.rol === 'ADMIN'
       ? 'Administrador'
+      : user.rol === 'GERENTE'
+        ? 'Gerente'
       : user.rol === 'CONTABILIDAD'
         ? 'Contabilidad'
       : user.rol === 'INSTRUCTOR'
@@ -745,6 +749,9 @@ const App: React.FC =
 
     return (
       <Routes>
+        <Route element={<RoleProtectedRoute allowedRoles={['ADMIN','CONTABILIDAD','GERENTE','ESTUDIANTE']} />}>
+          <Route element={<ProtectedLayout {...layoutProps} />}><Route path="/pmv" element={<PmvView />} /></Route>
+        </Route>
         {/* Redirección de /login hacia el inicio para ocultar el acceso al público */}
         <Route
           path="/login"

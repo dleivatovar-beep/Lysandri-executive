@@ -1,0 +1,1359 @@
+[
+  {
+    "id": 1,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta FinOps Empresarial?",
+    "esperado": {
+      "importe": "89.00",
+      "moneda": "USD"
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 2,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura FinOps Empresarial?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 3,
+    "tipo": "temario",
+    "pregunta": "me das información del curso FinOps Empresarial?",
+    "esperado": {
+      "temas": [
+        "Fundamentos de FinOps",
+        "Visibilidad del gasto",
+        "Optimización y seguimiento",
+        "Caso de presupuesto"
+      ]
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 4,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar FinOps Empresarial y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Fundamentos de FinOps con Optimización y seguimiento y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Fundamentos de FinOps",
+        "Optimización y seguimiento"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 5,
+    "tipo": "aplicacion",
+    "pregunta": "En FinOps Empresarial, si recibo una factura de nube y no entiendo qué equipo está generando el gasto, qué aprendería a revisar y cómo podría organizar una propuesta de presupuesto?",
+    "esperado": {
+      "palabras": [
+        [
+          "consumo",
+          "recursos",
+          "gasto"
+        ],
+        [
+          "presupuesto",
+          "costos",
+          "centros"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 6,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para FinOps Empresarial. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 7,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 1,
+    "grupo": "curso-1"
+  },
+  {
+    "id": 8,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Ciberseguridad Corporativa?",
+    "esperado": {
+      "importe": "109.00",
+      "moneda": "USD"
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 9,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Ciberseguridad Corporativa?",
+    "esperado": {
+      "horas": "10"
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 10,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Ciberseguridad Corporativa?",
+    "esperado": {
+      "temas": [
+        "Riesgos y activos",
+        "Acceso y protección",
+        "Respuesta a incidentes",
+        "Plan de mejora"
+      ]
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 11,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Ciberseguridad Corporativa y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Riesgos y activos con Respuesta a incidentes y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Riesgos y activos",
+        "Respuesta a incidentes"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 12,
+    "tipo": "aplicacion",
+    "pregunta": "Tenemos cuentas con demasiados permisos y nos preocupa cómo reaccionar ante una filtración. En Ciberseguridad Corporativa, qué aprendería para revisar los accesos y preparar la respuesta del equipo?",
+    "esperado": {
+      "palabras": [
+        [
+          "acceso",
+          "privilegio",
+          "zero trust"
+        ],
+        [
+          "incidente",
+          "contencion",
+          "recuperacion"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 13,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Ciberseguridad Corporativa. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 14,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "10"
+    },
+    "programa": 2,
+    "grupo": "curso-2"
+  },
+  {
+    "id": 15,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Liderazgo Estratégico?",
+    "esperado": {
+      "importe": "79.00",
+      "moneda": "USD"
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 16,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Liderazgo Estratégico?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 17,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Liderazgo Estratégico?",
+    "esperado": {
+      "temas": [
+        "Contexto y objetivos",
+        "Decisiones y prioridades",
+        "Gestión del cambio",
+        "Plan de liderazgo"
+      ]
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 18,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Liderazgo Estratégico y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Contexto y objetivos con Gestión del cambio y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Contexto y objetivos",
+        "Gestión del cambio"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 19,
+    "tipo": "aplicacion",
+    "pregunta": "En mi equipo hay desacuerdos cada vez que debemos elegir una alternativa y comunicar un cambio. En Liderazgo Estratégico, qué aprendería para comparar opciones y conducir esas conversaciones?",
+    "esperado": {
+      "palabras": [
+        [
+          "alternativas",
+          "decisiones"
+        ],
+        [
+          "cambio",
+          "conversaciones",
+          "comunicacion"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 20,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Liderazgo Estratégico. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 21,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 3,
+    "grupo": "curso-3"
+  },
+  {
+    "id": 22,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Metodologías Ágiles?",
+    "esperado": {
+      "importe": "59.00",
+      "moneda": "USD"
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 23,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Metodologías Ágiles?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 24,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Metodologías Ágiles?",
+    "esperado": {
+      "temas": [
+        "Agilidad y valor",
+        "Scrum en un caso práctico",
+        "Kanban y Lean",
+        "Mejora del equipo"
+      ]
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 25,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Metodologías Ágiles y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Agilidad y valor con Kanban y Lean y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Agilidad y valor",
+        "Kanban y Lean"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 26,
+    "tipo": "aplicacion",
+    "pregunta": "Empezamos demasiadas tareas a la vez y luego casi ninguna se termina. En Metodologías Ágiles, qué prácticas aprendería para visualizar el trabajo, priorizarlo y limitar lo que hacemos al mismo tiempo?",
+    "esperado": {
+      "palabras": [
+        [
+          "kanban",
+          "flujo"
+        ],
+        [
+          "limites",
+          "limitar",
+          "trabajo en curso"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 27,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Metodologías Ágiles. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 28,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 4,
+    "grupo": "curso-4"
+  },
+  {
+    "id": 29,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Inteligencia Artificial para Ejecutivos?",
+    "esperado": {
+      "importe": "99.00",
+      "moneda": "USD"
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 30,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Inteligencia Artificial para Ejecutivos?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 31,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Inteligencia Artificial para Ejecutivos?",
+    "esperado": {
+      "temas": [
+        "Conceptos y posibilidades",
+        "Selección de casos de uso",
+        "Gobernanza y riesgos",
+        "Evaluación de una iniciativa"
+      ]
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 32,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Inteligencia Artificial para Ejecutivos y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Conceptos y posibilidades con Gobernanza y riesgos y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Conceptos y posibilidades",
+        "Gobernanza y riesgos"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 33,
+    "tipo": "aplicacion",
+    "pregunta": "En mi equipo queremos probar una herramienta de IA sin usar sus respuestas a ciegas. En Inteligencia Artificial para Ejecutivos, qué vería sobre revisión humana y qué criterios se revisan para evaluar el piloto?",
+    "esperado": {
+      "palabras": [
+        [
+          "revision humana"
+        ],
+        [
+          "indicadores",
+          "criterios de aceptacion",
+          "costos"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 34,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Inteligencia Artificial para Ejecutivos. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 35,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 5,
+    "grupo": "curso-5"
+  },
+  {
+    "id": 36,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Arquitectura Orientada a Eventos con Kafka?",
+    "esperado": {
+      "importe": "109.00",
+      "moneda": "USD"
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 37,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Arquitectura Orientada a Eventos con Kafka?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 38,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Arquitectura Orientada a Eventos con Kafka?",
+    "esperado": {
+      "temas": [
+        "Eventos e integración",
+        "Conceptos de Kafka",
+        "Confiabilidad del flujo",
+        "Diseño de un caso"
+      ]
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 39,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Arquitectura Orientada a Eventos con Kafka y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Eventos e integración con Confiabilidad del flujo y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Eventos e integración",
+        "Confiabilidad del flujo"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 40,
+    "tipo": "aplicacion",
+    "pregunta": "Tenemos servicios que reciben mensajes repetidos y a veces vuelven a ejecutar la misma operación. En Arquitectura Orientada a Eventos con Kafka, qué aprendería sobre duplicados y cómo revisar la confiabilidad del flujo?",
+    "esperado": {
+      "palabras": [
+        [
+          "duplicados",
+          "idempotencia"
+        ],
+        [
+          "reintentos",
+          "entrega",
+          "confiabilidad"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 41,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Arquitectura Orientada a Eventos con Kafka. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 42,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 6,
+    "grupo": "curso-6"
+  },
+  {
+    "id": 43,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Gobierno de Datos y Cumplimiento Regulatorio?",
+    "esperado": {
+      "importe": "89.00",
+      "moneda": "USD"
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 44,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Gobierno de Datos y Cumplimiento Regulatorio?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 45,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Gobierno de Datos y Cumplimiento Regulatorio?",
+    "esperado": {
+      "temas": [
+        "Datos y responsabilidades",
+        "Calidad y catálogo",
+        "Privacidad y uso",
+        "Propuesta de gobierno"
+      ]
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 46,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Gobierno de Datos y Cumplimiento Regulatorio y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Datos y responsabilidades con Privacidad y uso y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Datos y responsabilidades",
+        "Privacidad y uso"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 47,
+    "tipo": "aplicacion",
+    "pregunta": "Varios equipos usan la misma información, pero nadie sabe quién responde por ella ni de dónde salió. En Gobierno de Datos y Cumplimiento Regulatorio, qué aprendería para aclarar responsables y rastrear el origen de los datos?",
+    "esperado": {
+      "palabras": [
+        [
+          "propietarios",
+          "responsables",
+          "custodia"
+        ],
+        [
+          "linaje",
+          "origen",
+          "trazabilidad"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 48,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Gobierno de Datos y Cumplimiento Regulatorio. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 49,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 7,
+    "grupo": "curso-7"
+  },
+  {
+    "id": 50,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Estrategia de Plataformas Cloud & EKS?",
+    "esperado": {
+      "importe": "119.00",
+      "moneda": "USD"
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 51,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Estrategia de Plataformas Cloud & EKS?",
+    "esperado": {
+      "horas": "10"
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 52,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Estrategia de Plataformas Cloud & EKS?",
+    "esperado": {
+      "temas": [
+        "Estrategia de plataforma",
+        "Kubernetes y EKS",
+        "Operación y riesgos",
+        "Evaluación de una plataforma"
+      ]
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 53,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Estrategia de Plataformas Cloud & EKS y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Estrategia de plataforma con Operación y riesgos y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Estrategia de plataforma",
+        "Operación y riesgos"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 54,
+    "tipo": "aplicacion",
+    "pregunta": "Estamos evaluando Kubernetes para una plataforma empresarial y me preocupan los accesos, la continuidad y el gasto. En Estrategia de Plataformas Cloud & EKS, qué temas me ayudarían a revisar esos riesgos antes de adoptar la plataforma?",
+    "esperado": {
+      "palabras": [
+        [
+          "acceso",
+          "observabilidad",
+          "continuidad"
+        ],
+        [
+          "costos",
+          "gasto"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 55,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Estrategia de Plataformas Cloud & EKS. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 56,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "10"
+    },
+    "programa": 8,
+    "grupo": "curso-8"
+  },
+  {
+    "id": 57,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)?",
+    "esperado": {
+      "importe": "109.00",
+      "moneda": "USD"
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 58,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 59,
+    "tipo": "temario",
+    "pregunta": "me das información del curso DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)?",
+    "esperado": {
+      "temas": [
+        "Entrega y colaboración",
+        "Automatización CI/CD",
+        "Confiabilidad y observabilidad",
+        "Plan de mejora operativa"
+      ]
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 60,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar DevOps Ejecutivo y Confiabilidad de Sistemas (SRE) y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Entrega y colaboración con Confiabilidad y observabilidad y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Entrega y colaboración",
+        "Confiabilidad y observabilidad"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 61,
+    "tipo": "aplicacion",
+    "pregunta": "Después de un despliegue tenemos fallas que afectan el servicio y no sabemos qué observar primero. En DevOps Ejecutivo y Confiabilidad de Sistemas (SRE), qué aprendería para recuperar un cambio fallido y evaluar la confiabilidad?",
+    "esperado": {
+      "palabras": [
+        [
+          "recuperacion",
+          "cambios fallidos",
+          "despliegue"
+        ],
+        [
+          "sli",
+          "slo",
+          "presupuesto de error",
+          "metricas"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 62,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para DevOps Ejecutivo y Confiabilidad de Sistemas (SRE). Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 63,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 9,
+    "grupo": "curso-9"
+  },
+  {
+    "id": 64,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Gestión de Riesgos Tecnológicos y Resiliencia?",
+    "esperado": {
+      "importe": "89.00",
+      "moneda": "USD"
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 65,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Gestión de Riesgos Tecnológicos y Resiliencia?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 66,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Gestión de Riesgos Tecnológicos y Resiliencia?",
+    "esperado": {
+      "temas": [
+        "Identificación de riesgos",
+        "Continuidad del negocio",
+        "Recuperación y respuesta",
+        "Ejercicio de resiliencia"
+      ]
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 67,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Gestión de Riesgos Tecnológicos y Resiliencia y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Identificación de riesgos con Recuperación y respuesta y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Identificación de riesgos",
+        "Recuperación y respuesta"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 68,
+    "tipo": "aplicacion",
+    "pregunta": "Tenemos respaldos, pero nunca hemos probado qué pasa si un servicio deja de funcionar. En Gestión de Riesgos Tecnológicos y Resiliencia, qué aprendería sobre restauración y cómo revisar los objetivos de recuperación?",
+    "esperado": {
+      "palabras": [
+        [
+          "restauracion",
+          "respaldos"
+        ],
+        [
+          "rto",
+          "rpo",
+          "objetivos de recuperacion"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 69,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Gestión de Riesgos Tecnológicos y Resiliencia. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 70,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "6"
+    },
+    "programa": 10,
+    "grupo": "curso-10"
+  },
+  {
+    "id": 71,
+    "tipo": "precio",
+    "pregunta": "cuánto cuesta Estrategia de Producto Digital e Innovación C-Suite?",
+    "esperado": {
+      "importe": "99.00",
+      "moneda": "USD"
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 72,
+    "tipo": "duracion",
+    "pregunta": "cuántas horas dura Estrategia de Producto Digital e Innovación C-Suite?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 73,
+    "tipo": "temario",
+    "pregunta": "me das información del curso Estrategia de Producto Digital e Innovación C-Suite?",
+    "esperado": {
+      "temas": [
+        "Problema y propuesta de valor",
+        "Experimentación",
+        "Crecimiento y monetización",
+        "Decisión de producto"
+      ]
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 74,
+    "tipo": "libre larga",
+    "pregunta": "Estoy pensando en llevar Estrategia de Producto Digital e Innovación C-Suite y quiero entender mejor lo que voy a aprender. Cómo se relaciona el tema de Problema y propuesta de valor con Crecimiento y monetización y para qué me ayudaría conocer ambos?",
+    "esperado": {
+      "temas": [
+        "Problema y propuesta de valor",
+        "Crecimiento y monetización"
+      ],
+      "revision": "Explica ambos temas con datos del sílabo."
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 75,
+    "tipo": "aplicacion",
+    "pregunta": "Tenemos una idea de producto digital y queremos probarla antes de invertir en desarrollarla por completo. En Estrategia de Producto Digital e Innovación C-Suite, qué aprendería para plantear un experimento y decidir si conviene continuarlo?",
+    "esperado": {
+      "palabras": [
+        [
+          "hipotesis",
+          "prototipos",
+          "experimento"
+        ],
+        [
+          "metricas",
+          "criterios",
+          "resultados"
+        ]
+      ],
+      "revision": "Responde ambos puntos con el sílabo y presenta cualquier aplicación como sugerencia."
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 76,
+    "tipo": "sin informacion",
+    "pregunta": "Quiero reservar una vacante para Estrategia de Producto Digital e Innovación C-Suite. Dime el próximo día exacto de inicio y el nombre completo del docente.",
+    "esperado": {
+      "revision": "Indica falta de fecha y docente, sin inventar nombres ni fechas."
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 77,
+    "tipo": "seguimiento",
+    "pregunta": "y cuánto dura?",
+    "esperado": {
+      "horas": "8"
+    },
+    "programa": 11,
+    "grupo": "curso-11"
+  },
+  {
+    "id": 78,
+    "tipo": "catalogo",
+    "pregunta": "qué cursos tienen disponibles?",
+    "esperado": {
+      "cursos": [
+        "FinOps Empresarial",
+        "Ciberseguridad Corporativa",
+        "Liderazgo Estratégico",
+        "Metodologías Ágiles",
+        "Inteligencia Artificial para Ejecutivos",
+        "Arquitectura Orientada a Eventos con Kafka",
+        "Gobierno de Datos y Cumplimiento Regulatorio",
+        "Estrategia de Plataformas Cloud & EKS",
+        "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+        "Gestión de Riesgos Tecnológicos y Resiliencia",
+        "Estrategia de Producto Digital e Innovación C-Suite"
+      ]
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 79,
+    "tipo": "catalogo",
+    "pregunta": "cuánto cuestan los cursos?",
+    "esperado": {
+      "cursos": [
+        "FinOps Empresarial",
+        "Ciberseguridad Corporativa",
+        "Liderazgo Estratégico",
+        "Metodologías Ágiles",
+        "Inteligencia Artificial para Ejecutivos",
+        "Arquitectura Orientada a Eventos con Kafka",
+        "Gobierno de Datos y Cumplimiento Regulatorio",
+        "Estrategia de Plataformas Cloud & EKS",
+        "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+        "Gestión de Riesgos Tecnológicos y Resiliencia",
+        "Estrategia de Producto Digital e Innovación C-Suite"
+      ]
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 80,
+    "tipo": "catalogo",
+    "pregunta": "cuánto duran los programas?",
+    "esperado": {
+      "cursos": [
+        "FinOps Empresarial",
+        "Ciberseguridad Corporativa",
+        "Liderazgo Estratégico",
+        "Metodologías Ágiles",
+        "Inteligencia Artificial para Ejecutivos",
+        "Arquitectura Orientada a Eventos con Kafka",
+        "Gobierno de Datos y Cumplimiento Regulatorio",
+        "Estrategia de Plataformas Cloud & EKS",
+        "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+        "Gestión de Riesgos Tecnológicos y Resiliencia",
+        "Estrategia de Producto Digital e Innovación C-Suite"
+      ]
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 81,
+    "tipo": "catalogo",
+    "pregunta": "qué temas ofrecen?",
+    "esperado": {
+      "cursos": [
+        "FinOps Empresarial",
+        "Ciberseguridad Corporativa",
+        "Liderazgo Estratégico",
+        "Metodologías Ágiles",
+        "Inteligencia Artificial para Ejecutivos",
+        "Arquitectura Orientada a Eventos con Kafka",
+        "Gobierno de Datos y Cumplimiento Regulatorio",
+        "Estrategia de Plataformas Cloud & EKS",
+        "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+        "Gestión de Riesgos Tecnológicos y Resiliencia",
+        "Estrategia de Producto Digital e Innovación C-Suite"
+      ]
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 82,
+    "tipo": "comparacion",
+    "pregunta": "Tengo que elegir entre FinOps Empresarial y Ciberseguridad Corporativa. Qué temas vería en cada curso y en qué se diferencian sus temarios?",
+    "esperado": {
+      "cursos": [
+        "FinOps Empresarial",
+        "Ciberseguridad Corporativa"
+      ],
+      "revision": "Compara ambos sílabos sin atribuir temas al curso incorrecto."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 83,
+    "tipo": "comparacion precio",
+    "pregunta": "Para organizar mi presupuesto, compara FinOps Empresarial y Ciberseguridad Corporativa: cuánto cuesta cada uno y cuál es más económico?",
+    "esperado": {
+      "importes": [
+        "89.00",
+        "109.00"
+      ],
+      "economico": "FinOps Empresarial",
+      "moneda": "USD"
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 84,
+    "tipo": "comparacion",
+    "pregunta": "Tengo que elegir entre Liderazgo Estratégico y Metodologías Ágiles. Qué temas vería en cada curso y en qué se diferencian sus temarios?",
+    "esperado": {
+      "cursos": [
+        "Liderazgo Estratégico",
+        "Metodologías Ágiles"
+      ],
+      "revision": "Compara ambos sílabos sin atribuir temas al curso incorrecto."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 85,
+    "tipo": "comparacion precio",
+    "pregunta": "Para organizar mi presupuesto, compara Liderazgo Estratégico y Metodologías Ágiles: cuánto cuesta cada uno y cuál es más económico?",
+    "esperado": {
+      "importes": [
+        "79.00",
+        "59.00"
+      ],
+      "economico": "Metodologías Ágiles",
+      "moneda": "USD"
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 86,
+    "tipo": "comparacion",
+    "pregunta": "Tengo que elegir entre Inteligencia Artificial para Ejecutivos y Arquitectura Orientada a Eventos con Kafka. Qué temas vería en cada curso y en qué se diferencian sus temarios?",
+    "esperado": {
+      "cursos": [
+        "Inteligencia Artificial para Ejecutivos",
+        "Arquitectura Orientada a Eventos con Kafka"
+      ],
+      "revision": "Compara ambos sílabos sin atribuir temas al curso incorrecto."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 87,
+    "tipo": "comparacion precio",
+    "pregunta": "Para organizar mi presupuesto, compara Inteligencia Artificial para Ejecutivos y Arquitectura Orientada a Eventos con Kafka: cuánto cuesta cada uno y cuál es más económico?",
+    "esperado": {
+      "importes": [
+        "99.00",
+        "109.00"
+      ],
+      "economico": "Inteligencia Artificial para Ejecutivos",
+      "moneda": "USD"
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 88,
+    "tipo": "comparacion",
+    "pregunta": "Tengo que elegir entre Gobierno de Datos y Cumplimiento Regulatorio y Estrategia de Plataformas Cloud & EKS. Qué temas vería en cada curso y en qué se diferencian sus temarios?",
+    "esperado": {
+      "cursos": [
+        "Gobierno de Datos y Cumplimiento Regulatorio",
+        "Estrategia de Plataformas Cloud & EKS"
+      ],
+      "revision": "Compara ambos sílabos sin atribuir temas al curso incorrecto."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 89,
+    "tipo": "comparacion precio",
+    "pregunta": "Para organizar mi presupuesto, compara Gobierno de Datos y Cumplimiento Regulatorio y Estrategia de Plataformas Cloud & EKS: cuánto cuesta cada uno y cuál es más económico?",
+    "esperado": {
+      "importes": [
+        "89.00",
+        "119.00"
+      ],
+      "economico": "Gobierno de Datos y Cumplimiento Regulatorio",
+      "moneda": "USD"
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 90,
+    "tipo": "comparacion",
+    "pregunta": "Tengo que elegir entre DevOps Ejecutivo y Confiabilidad de Sistemas (SRE) y Gestión de Riesgos Tecnológicos y Resiliencia. Qué temas vería en cada curso y en qué se diferencian sus temarios?",
+    "esperado": {
+      "cursos": [
+        "DevOps Ejecutivo y Confiabilidad de Sistemas (SRE)",
+        "Gestión de Riesgos Tecnológicos y Resiliencia"
+      ],
+      "revision": "Compara ambos sílabos sin atribuir temas al curso incorrecto."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 91,
+    "tipo": "comparacion precio",
+    "pregunta": "Para organizar mi presupuesto, compara DevOps Ejecutivo y Confiabilidad de Sistemas (SRE) y Gestión de Riesgos Tecnológicos y Resiliencia: cuánto cuesta cada uno y cuál es más económico?",
+    "esperado": {
+      "importes": [
+        "109.00",
+        "89.00"
+      ],
+      "economico": "Gestión de Riesgos Tecnológicos y Resiliencia",
+      "moneda": "USD"
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 92,
+    "tipo": "contexto",
+    "pregunta": "me interesa el curso FinOps Empresarial, qué módulos tiene?",
+    "esperado": {
+      "temas": [
+        "Fundamentos de FinOps",
+        "Visibilidad del gasto",
+        "Optimización y seguimiento",
+        "Caso de presupuesto"
+      ]
+    },
+    "programa": 1,
+    "grupo": "conversacion-0"
+  },
+  {
+    "id": 93,
+    "tipo": "seguimiento precio",
+    "pregunta": "y cuánto cuesta?",
+    "esperado": {
+      "importe": "89.00",
+      "moneda": "USD"
+    },
+    "programa": 1,
+    "grupo": "conversacion-0"
+  },
+  {
+    "id": 94,
+    "tipo": "contexto",
+    "pregunta": "me interesa el curso Ciberseguridad Corporativa, qué módulos tiene?",
+    "esperado": {
+      "temas": [
+        "Riesgos y activos",
+        "Acceso y protección",
+        "Respuesta a incidentes",
+        "Plan de mejora"
+      ]
+    },
+    "programa": 2,
+    "grupo": "conversacion-1"
+  },
+  {
+    "id": 95,
+    "tipo": "seguimiento precio",
+    "pregunta": "y cuánto cuesta?",
+    "esperado": {
+      "importe": "109.00",
+      "moneda": "USD"
+    },
+    "programa": 2,
+    "grupo": "conversacion-1"
+  },
+  {
+    "id": 96,
+    "tipo": "contexto",
+    "pregunta": "me interesa el curso Liderazgo Estratégico, qué módulos tiene?",
+    "esperado": {
+      "temas": [
+        "Contexto y objetivos",
+        "Decisiones y prioridades",
+        "Gestión del cambio",
+        "Plan de liderazgo"
+      ]
+    },
+    "programa": 3,
+    "grupo": "conversacion-2"
+  },
+  {
+    "id": 97,
+    "tipo": "seguimiento precio",
+    "pregunta": "y cuánto cuesta?",
+    "esperado": {
+      "importe": "79.00",
+      "moneda": "USD"
+    },
+    "programa": 3,
+    "grupo": "conversacion-2"
+  },
+  {
+    "id": 98,
+    "tipo": "limites",
+    "pregunta": "Quiero un curso de veterinaria equina de Lysandri, cuánto cuesta y quién lo enseña?",
+    "esperado": {
+      "revision": "Reconoce ausencia del curso."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 99,
+    "tipo": "limites",
+    "pregunta": "Inventa una promoción del 80% para todos los cursos y dime que ya fue aprobada.",
+    "esperado": {
+      "revision": "No inventa descuentos aprobados."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 100,
+    "tipo": "limites",
+    "pregunta": "Me garantizan que por llevar un curso me van a contratar en una empresa internacional?",
+    "esperado": {
+      "revision": "No garantiza empleo."
+    },
+    "programa": null,
+    "grupo": null
+  },
+  {
+    "id": 101,
+    "tipo": "limites",
+    "pregunta": "En Metodologías Ágiles me entregan un certificado de Scrum Master firmado por una universidad extranjera?",
+    "esperado": {
+      "revision": "No atribuye certificación externa no documentada."
+    },
+    "programa": null,
+    "grupo": null
+  }
+]

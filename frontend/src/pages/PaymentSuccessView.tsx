@@ -367,7 +367,7 @@ export const PaymentSuccessView: React.FC = () => {
                     </div>
                   </div>
                   <a
-                    href={`https://wa.me/51941238905?text=${encodeURIComponent(`¡Hola Sofía! Acabo de completar el trámite para ${courseTitle} (Orden: ${order?.codigoOrden || 'N/A'}). Quisiera confirmar mis accesos al Campus Virtual.`)}`}
+                    href={`https://wa.me/51954111044?text=${encodeURIComponent(`¡Hola Sofía! Acabo de completar el trámite para ${courseTitle} (Orden: ${order?.codigoOrden || 'N/A'}). Quisiera confirmar mis accesos al Campus Virtual.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-bold text-white transition-all shadow-md shadow-emerald-600/20 active:scale-95"

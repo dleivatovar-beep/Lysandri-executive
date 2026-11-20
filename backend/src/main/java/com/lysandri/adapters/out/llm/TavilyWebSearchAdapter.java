@@ -2,6 +2,7 @@ package com.lysandri.adapters.out.llm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lysandri.domain.ports.out.WebSearchPort;
+import com.lysandri.exception.WebSearchUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -16,12 +17,12 @@ import java.util.Map;
 
 @Component
 @Slf4j
-public class BraveWebSearchAdapter implements WebSearchPort {
+public class TavilyWebSearchAdapter implements WebSearchPort {
     private final WebClient cliente;
     private final String clave;
 
-    public BraveWebSearchAdapter(WebClient.Builder builder, @Value("${web-search.brave-api-key:}") String clave) {
-        this.cliente = builder.clone().baseUrl("https://api.search.brave.com").build();
+    public TavilyWebSearchAdapter(WebClient.Builder builder, @Value("${web-search.tavily-api-key:}") String clave) {
+        this.cliente = builder.clone().baseUrl("https://api.tavily.com").build();
         this.clave = clave.strip();
     }
 
@@ -34,38 +35,41 @@ public class BraveWebSearchAdapter implements WebSearchPort {
     public List<Resultado> buscar(String pregunta) {
         if (!disponible()) return List.of();
         try {
-            JsonNode respuesta = cliente.post().uri("/res/v1/llm/context")
-                    .header("X-Subscription-Token", clave)
+            JsonNode respuesta = cliente.post().uri("/search")
+                    .headers(headers -> headers.setBearerAuth(clave))
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("q", pregunta, "search_lang", "es", "maximum_number_of_urls", 4,
-                            "maximum_number_of_tokens", 2048, "maximum_number_of_tokens_per_url", 512,
-                            "context_threshold_mode", "strict", "enable_local", false, "operators", false))
-                    .retrieve().bodyToMono(JsonNode.class).timeout(Duration.ofSeconds(7)).block();
+                    .bodyValue(Map.of("query", pregunta, "search_depth", "basic", "max_results", 4,
+                            "language", "es", "topic", "general", "auto_parameters", false,
+                            "include_answer", false, "include_raw_content", false, "include_images", false))
+                    .retrieve().bodyToMono(JsonNode.class).timeout(Duration.ofSeconds(6))
+                    .retryWhen(reactor.util.retry.Retry.max(1).filter(TavilyWebSearchAdapter::esTransitorio)
+                            .onRetryExhaustedThrow((regla, estado) -> estado.failure())).block();
             if (respuesta == null) return List.of();
 
             Map<String, Resultado> resultados = new LinkedHashMap<>();
-            for (JsonNode item : respuesta.path("grounding").path("generic")) {
+            for (JsonNode item : respuesta.path("results")) {
                 String url = item.path("url").asText("");
                 if (!esEnlaceValido(url)) continue;
-                StringBuilder pasajes = new StringBuilder();
-                for (JsonNode pasaje : item.path("snippets")) {
-                    String contenido = pasaje.asText("").strip();
-                    if (contenido.isEmpty()) continue;
-                    if (!pasajes.isEmpty()) pasajes.append('\n');
-                    pasajes.append(contenido, 0, Math.min(contenido.length(), 1500 - pasajes.length()));
-                    if (pasajes.length() >= 1499) break;
-                }
-                if (pasajes.isEmpty()) continue;
+                String contenido = item.path("content").asText("").strip();
+                if (contenido.isEmpty()) continue;
+                String pasaje = contenido.substring(0, Math.min(contenido.length(), 1500));
                 String titulo = item.path("title").asText("").strip();
                 resultados.putIfAbsent(url, new Resultado(titulo.isEmpty() ? URI.create(url).getHost() : titulo,
-                        url, pasajes.toString()));
+                        url, pasaje));
                 if (resultados.size() == 4) break;
             }
             return List.copyOf(resultados.values());
         } catch (RuntimeException e) {
             log.warn("La búsqueda web no devolvió resultados. Tipo de error: {}", e.getClass().getSimpleName());
-            return List.of();
+            throw new WebSearchUnavailableException("La búsqueda web no está disponible temporalmente.");
         }
+    }
+
+    private static boolean esTransitorio(Throwable error) {
+        return error instanceof java.util.concurrent.TimeoutException
+                || error instanceof org.springframework.web.reactive.function.client.WebClientRequestException
+                || (error instanceof org.springframework.web.reactive.function.client.WebClientResponseException http
+                    && http.getStatusCode().is5xxServerError());
     }
 
     private static boolean esEnlaceValido(String url) {

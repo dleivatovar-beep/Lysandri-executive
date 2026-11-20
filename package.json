@@ -12,6 +12,9 @@
     "tunnel": "node scripts/tunnel.js",
     "test:tunnel": "node scripts/test-tunnel.js",
     "mail": "node scripts/buzon.js",
-    "medicion": "node scripts/medicion.js"
+    "configurar:web": "powershell -NoProfile -ExecutionPolicy Bypass -File backend/configurar-web.ps1",
+    "medicion": "node scripts/medicion.js",
+    "prueba": "node frontend/scripts/iniciar-entorno.js --original-dev --pmv",
+    "prueba:clone": "node frontend/scripts/iniciar-entorno.js --pmv"
   }
 }

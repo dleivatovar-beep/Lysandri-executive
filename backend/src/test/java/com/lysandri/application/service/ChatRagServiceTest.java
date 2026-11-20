@@ -19,6 +19,29 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ChatRagServiceTest {
+    @Test
+    void falloDeInternetNoRemiteAlEquipoDeCursos() {
+        when(webSearch.disponible()).thenReturn(true);
+        when(llmClientPort.generarEmbedding(anyString())).thenReturn(new float[]{1});
+        when(vectorStorePort.buscarSimilares(any(), anyInt(), anyDouble(), isNull())).thenReturn(List.of());
+        when(webSearch.buscar(anyString())).thenThrow(new com.lysandri.exception.WebSearchUnavailableException("No disponible"));
+        var r = chatRagService.procesarConsulta(new ChatRagUseCase.ChatRagCommand("cuando sale gta 6?", "fallo-web", null, null));
+        assertEquals("No pude completar la consulta en internet en este momento. Inténtalo de nuevo.", r.respuesta());
+        assertTrue(r.fuentes().isEmpty());
+    }
+
+    @Test
+    void busquedaVaciaNoSePresentaComoUnFalloDelCatalogo() {
+        when(webSearch.disponible()).thenReturn(true);
+        when(llmClientPort.generarEmbedding(anyString())).thenReturn(new float[]{1});
+        when(vectorStorePort.buscarSimilares(any(), anyInt(), anyDouble(), isNull())).thenReturn(List.of());
+        when(webSearch.buscar(anyString())).thenReturn(List.of());
+        var r = chatRagService.procesarConsulta(new ChatRagUseCase.ChatRagCommand("cuando sale gta 6?", "sin-datos-web", null, null));
+        assertTrue(r.respuesta().contains("información suficiente en internet"));
+        assertTrue(r.fuentes().isEmpty());
+        verify(llmClientPort, never()).completarChat(anyString(), anyString(), anyDouble());
+    }
+
 
     @Test
     void precioDocumentadoConservaLaFuenteSinEsperarGeneracion() {
@@ -298,6 +321,33 @@ class ChatRagServiceTest {
     @Mock
     private com.lysandri.domain.ports.out.ProgramRepositoryPort programas;
 
+    @Test
+    void seguimientoDePrecioConservaCursoYSesionSinEnviarLaConsultaALaWeb() {
+        String sesion = "seguimiento-agil";
+        when(historialRepository.ultimaConsulta(sesion, null)).thenReturn(java.util.Optional.of(
+                com.lysandri.domain.model.HistorialConsulta.builder().idPrograma(4L).build()));
+        when(programas.buscarPorId(4L)).thenReturn(java.util.Optional.of(
+                com.lysandri.domain.model.Programa.builder().idPrograma(4L).titulo("Metodologías Ágiles").activo(true).build()));
+        when(llmClientPort.generarEmbedding(anyString())).thenReturn(new float[]{1});
+        when(vectorStorePort.buscarSimilares(any(), anyInt(), anyDouble(), eq(4L))).thenReturn(List.of(
+                DocumentoChunk.builder().idDocumento(4L).idChunk(41L).idPrograma(4L)
+                        .contenido("Precio registrado es USD 59.00.")
+                        .metadata(java.util.Map.of("titulo", "Curso: Metodologías Ágiles", "estado", "VIGENTE")).build()));
+        var respuesta = chatRagService.procesarConsulta(new ChatRagUseCase.ChatRagCommand("y cuánto cuesta?", sesion, null, null));
+        assertEquals("Metodologías Ágiles cuesta USD 59.00.", respuesta.respuesta());
+        verify(historialRepository).guardar(argThat(historial -> historial.getIdPrograma().equals(4L)));
+        verifyNoInteractions(webSearch);
+        verify(llmClientPort, never()).completarChat(anyString(), anyString(), anyDouble());
+    }
+
+    @Test
+    void preguntaNuevaDeOtroTemaNoHeredaElCursoAnterior() {
+        when(llmClientPort.generarEmbedding(anyString())).thenReturn(new float[]{1});
+        when(vectorStorePort.buscarSimilares(any(), anyInt(), anyDouble(), isNull())).thenReturn(List.of());
+        chatRagService.procesarConsulta(new ChatRagUseCase.ChatRagCommand("quién es el papa actual?", "curso-anterior", null, null));
+        verify(historialRepository, never()).ultimaConsulta(anyString(), any());
+    }
+
     @Mock
     private com.lysandri.domain.ports.out.WebSearchPort webSearch;
 
@@ -316,8 +366,8 @@ class ChatRagServiceTest {
         when(webSearch.buscar(pregunta)).thenReturn(List.of(
                 new com.lysandri.domain.ports.out.WebSearchPort.Resultado("Sin relación", "https://ejemplo.test/a", "Otro tema."),
                 new com.lysandri.domain.ports.out.WebSearchPort.Resultado("Fuente institucional", "https://ejemplo.test/b", "La fuente confirma el dato solicitado.")));
-        when(llmClientPort.completarChat(contains("evidencia web"), contains("https://ejemplo.test/b"), eq(0.0)))
-                .thenReturn(new LlmClientPort.LlmCompletion("Respuesta respaldada [2].", 10, 4, 14));
+        when(llmClientPort.completarChat(contains("Devuelve JSON"), contains("https://ejemplo.test/b"), eq(0.0), eq(256), anyMap()))
+                .thenReturn(new LlmClientPort.LlmCompletion("{\"respuesta\":\"Respuesta respaldada.\",\"fuentes\":[2]}", 10, 4, 14));
 
         var respuesta = chatRagService.procesarConsulta(new ChatRagUseCase.ChatRagCommand(pregunta, "externa", null, null));
 

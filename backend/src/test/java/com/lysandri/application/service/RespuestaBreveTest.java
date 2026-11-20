@@ -39,4 +39,35 @@ class RespuestaBreveTest {
         assertNull(RespuestaBreve.obtener("Qué voy a aprender y quién será mi profesor?",1L,List.of(temario)));
         assertNull(RespuestaBreve.obtener("Qué voy a aprender?",2L,List.of(temario)));
     }
+
+    @org.junit.jupiter.api.Test
+    void relacionDeModulosConservaDetallesSinInventarHerramientas() {
+        String temario = "1. Automatización CI/CD: Integración, validación y despliegue.\n"
+                + "2. Plan de mejora: Indicadores y acciones de seguimiento.";
+        String respuesta = RespuestaBreve.relacionModulos(
+                "Qué vería sobre Automatización CI/CD y cómo se conecta con Plan de mejora?", "SRE", temario);
+        org.junit.jupiter.api.Assertions.assertTrue(respuesta.contains("Integración, validación y despliegue."));
+        org.junit.jupiter.api.Assertions.assertTrue(respuesta.contains("Indicadores y acciones de seguimiento."));
+        org.junit.jupiter.api.Assertions.assertFalse(respuesta.contains("Jenkins"));
+        org.junit.jupiter.api.Assertions.assertNull(RespuestaBreve.relacionModulos(
+                "Cómo se relacionan Automatización CI/CD y Plan de mejora, y qué fecha inicia?", "SRE", temario));
+    }
+
+    @org.junit.jupiter.api.Test
+    void preguntaLibreSeleccionaRecuperacionYConfiabilidadDesdeLosModulos() {
+        String texto = "1. Automatización: Despliegue y recuperación ante cambios fallidos.\n"
+                + "2. Observabilidad: Métricas y registros para evaluar la confiabilidad.\n"
+                + "3. Colaboración: Responsabilidades del equipo.\n"
+                + "4. Plan: Propuesta de una mejora.";
+        String respuesta = RespuestaBreve.temasRelevantes(
+                "Qué aprendería para recuperar un cambio fallido después del despliegue y evaluar la confiabilidad?", "SRE", texto);
+        org.junit.jupiter.api.Assertions.assertNotNull(respuesta);
+        org.junit.jupiter.api.Assertions.assertTrue(respuesta.contains("Automatización"));
+        org.junit.jupiter.api.Assertions.assertTrue(respuesta.contains("Observabilidad"));
+        org.junit.jupiter.api.Assertions.assertFalse(respuesta.contains("3. Colaboración"));
+        org.junit.jupiter.api.Assertions.assertNull(RespuestaBreve.temasRelevantes(
+                "Qué aprendería y cuál es el precio?", "SRE", texto));
+        org.junit.jupiter.api.Assertions.assertNull(RespuestaBreve.temasRelevantes(
+                "Qué aprendería sobre astronomía?", "SRE", texto));
+    }
 }

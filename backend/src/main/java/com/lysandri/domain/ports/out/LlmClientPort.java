@@ -18,4 +18,12 @@ public interface LlmClientPort {
      * Completa un prompt utilizando un Modelo de Lenguaje de gran escala (LLM).
      */
     LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura);
+
+    default LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura, int maxTokens) {
+        return completarChat(systemPrompt, userPrompt, temperatura);
+    }
+    default LlmCompletion completarChat(String systemPrompt, String userPrompt, double temperatura, int maxTokens,
+                                       java.util.Map<String, Object> formato) {
+        return completarChat(systemPrompt, userPrompt, temperatura, maxTokens);
+    }
 }

@@ -181,8 +181,59 @@ class ConocimientoPostgresIntegrationTest extends PostgresTestDatabase {
                 VALUES (?, ?, 89.00, 'USD', ?, true)
                 RETURNING id_programa
                 """, Long.class, titulo, slug, idMoodle);
-        servicio.cargar(new DocumentoService.Carga("Sílabo: " + titulo, "1", "VIGENTE", id, "## Temario\n" + modulos));
+        servicio.cargar(new DocumentoService.Carga("Sílabo: " + titulo, "1", "VIGENTE", id,
+                "## Temario\n" + modulos
+                        + "\n## Condiciones por confirmar\nModalidad, horarios, docentes y certificación. No se han confirmado fechas ni apertura de matrícula."));
         return id;
+    }
+
+    @Test
+    void seguimientoHttpRecuerdaElCursoSoloEnLaSesionAutorizada() throws Exception {
+        String titulo = "Curso Seguimiento Documental";
+        Long id = cargarTemarioDePrueba(titulo, "seguimiento-documental-rag", 999984,
+                "1. Fundamentos: Contexto.\n2. Aplicación: Trabajo práctico.");
+        try {
+            servicio.cargar(new DocumentoService.Carga("Curso: " + titulo, "1", "VIGENTE", id,
+                    "## Información del curso\nPrecio registrado es USD 89.00. Duración registrada de 8 horas."));
+            var inicio = web.perform(post("/api/v1/chat/rag").contentType("application/json")
+                            .content(mapper.writeValueAsString(Map.of("pregunta", "dame información del curso " + titulo))))
+                    .andExpect(status().isOk()).andReturn();
+            var sesion = mapper.readTree(inicio.getResponse().getContentAsString());
+            String idSesion = sesion.path("sesionId").asText();
+            String token = sesion.path("sessionToken").asText();
+
+            web.perform(post("/api/v1/chat/rag").contentType("application/json")
+                            .header("X-Chat-Session-Token", token)
+                            .content(mapper.writeValueAsString(Map.of("pregunta",
+                                    "Quiero reservar una vacante para " + titulo + ". Dime la fecha y el docente.",
+                                    "sesionId", idSesion))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.respuesta").value(org.hamcrest.Matchers.allOf(
+                            org.hamcrest.Matchers.containsString("fecha de inicio"),
+                            org.hamcrest.Matchers.containsString("docente"))))
+                    .andExpect(jsonPath("$.tokensUsados").value(0));
+            assertEquals(id, jdbc.queryForObject("SELECT id_programa FROM historial_consulta WHERE sesion_id = ? ORDER BY fecha_consulta DESC, id_historial DESC LIMIT 1",
+                    Long.class, idSesion));
+
+            web.perform(post("/api/v1/chat/rag").contentType("application/json")
+                            .content(mapper.writeValueAsString(Map.of("pregunta", "y cuánto cuesta?", "sesionId", idSesion))))
+                    .andExpect(status().isForbidden());
+            web.perform(post("/api/v1/chat/rag").contentType("application/json")
+                            .header("X-Chat-Session-Token", token)
+                            .content(mapper.writeValueAsString(Map.of("pregunta", "y cuánto cuesta?", "sesionId", idSesion))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.respuesta").value(titulo + " cuesta USD 89.00."))
+                    .andExpect(jsonPath("$.tokensUsados").value(0));
+            web.perform(post("/api/v1/chat/rag").contentType("application/json")
+                            .header("X-Chat-Session-Token", token)
+                            .content(mapper.writeValueAsString(Map.of("pregunta", "y cuánto dura?", "sesionId", idSesion))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.respuesta").value(titulo + " dura 8 horas."));
+        } finally {
+            jdbc.update("DELETE FROM historial_consulta WHERE id_programa = ?", id);
+            jdbc.update("DELETE FROM documento WHERE id_programa = ?", id);
+            jdbc.update("DELETE FROM programa WHERE id_programa = ?", id);
+        }
     }
 
     @Test

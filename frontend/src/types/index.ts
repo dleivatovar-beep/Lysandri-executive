@@ -1,6 +1,6 @@
 export type TierLevel = 'ESSENTIAL' | 'ADVANCED' | 'ENTERPRISE';
 
-export type UserRole = 'ESTUDIANTE' | 'INSTRUCTOR' | 'ADMIN' | 'CONTABILIDAD';
+export type UserRole = 'ESTUDIANTE' | 'INSTRUCTOR' | 'ADMIN' | 'CONTABILIDAD' | 'GERENTE';
 
 export type ActiveView =
   | 'MARKETPLACE'

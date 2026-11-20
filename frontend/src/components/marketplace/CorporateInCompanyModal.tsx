@@ -173,7 +173,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <a
-                  href={`https://wa.me/51941238905?text=${whatsAppDirectText}`}
+                  href={`https://wa.me/51954111044?text=${whatsAppDirectText}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white transition-colors w-full sm:w-auto"
@@ -211,7 +211,7 @@ export const CorporateInCompanyModal: React.FC<CorporateInCompanyModalProps> = (
                   </p>
                 </div>
                 <a
-                  href={`https://wa.me/51941238905?text=${whatsAppDirectText}`}
+                  href={`https://wa.me/51954111044?text=${whatsAppDirectText}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition-colors"

@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Script reproducible y estricto de arranque seguro del backend Lysandri Executive.
 .DESCRIPTION
@@ -120,6 +120,21 @@ foreach ($ep in $envPaths) {
 
 . (Join-Path $scriptDir "correo.ps1")
 Import-Correo
+. (Join-Path $scriptDir "busqueda.ps1")
+Import-Busqueda
+if ($Perfil.Split(',') -contains 'pmv') {
+    $env:BANCO_BCP_ACTIVO = 'false'
+    $env:BANCO_INTERBANK_ACTIVO = 'false'
+    $env:YAPE_ACTIVO = 'false'
+    $env:PLIN_ACTIVO = 'false'
+    $env:SPRING_MAIL_HOST = '127.0.0.1'
+    $env:SPRING_MAIL_PORT = '1025'
+    $env:SPRING_MAIL_USERNAME = 'lysandriideaslab@gmail.com'
+    $env:SPRING_MAIL_PASSWORD = ''
+    $env:SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH = 'false'
+    $env:SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE = 'false'
+    $env:SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED = 'false'
+}
 
 $dataSourceUser = "lysandri_app"
 $flywayUser = "lysandri_admin"

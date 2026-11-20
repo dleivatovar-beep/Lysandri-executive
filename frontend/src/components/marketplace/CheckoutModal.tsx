@@ -887,7 +887,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       (tipoComprobante === 'FACTURA' && razonSocial.trim() ? `- *Razón Social:* ${razonSocial.trim()}\n` : '') +
       `\nAdjunto mi comprobante de abono bancario para la verificación de nuestro equipo administrativo y posterior activación de credenciales en Moodle.`;
 
-    window.open(`https://wa.me/51941238905?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/51954111044?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const cuentasActivas = cuentasBancarias.filter((c) => c.activo && c.numeroCuenta && c.moneda?.toUpperCase() === priceCurrency);
@@ -1645,7 +1645,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
             <a
-              href="https://wa.me/51941238905?text=Hola%20Lysandri,%20deseo%20asistencia%20con%20mi%20matr%C3%ADcula%20y%20m%C3%A9todos%20de%20pago"
+              href="https://wa.me/51954111044?text=Hola%20Lysandri,%20deseo%20asistencia%20con%20mi%20matr%C3%ADcula%20y%20m%C3%A9todos%20de%20pago"
               target="_blank"
               rel="noopener noreferrer"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#123d36', border: '1px solid #287c68', borderRadius: '6px', color: '#e7fff6', fontSize: '10px', fontWeight: 'bold', textDecoration: 'none' }}

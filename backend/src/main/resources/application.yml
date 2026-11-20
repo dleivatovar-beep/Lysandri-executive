@@ -83,7 +83,7 @@ llm:
     keep-alive: ${OLLAMA_KEEP_ALIVE:10m}
 
 web-search:
-  brave-api-key: ${BRAVE_SEARCH_API_KEY:}
+  tavily-api-key: ${TAVILY_API_KEY:}
 
 accounting:
   audit-pin: ${ACCOUNTING_AUDIT_PIN:}

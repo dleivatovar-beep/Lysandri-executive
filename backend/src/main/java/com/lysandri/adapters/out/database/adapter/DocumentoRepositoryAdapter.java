@@ -45,6 +45,32 @@ public class DocumentoRepositoryAdapter implements DocumentoRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
+    public List<DocumentoChunk> buscarFicha(Long idPrograma) {
+        return jdbc.query("""
+                SELECT c.id_chunk, c.id_documento, c.contenido, d.titulo,
+                       COALESCE(c.metadata->>'seccion', '') AS seccion,
+                       COALESCE(c.metadata->>'version', '') AS version,
+                       c.metadata->>'estado' AS estado
+                FROM documento_chunk c
+                JOIN documento d ON d.id_documento = c.id_documento AND d.activo
+                WHERE c.id_programa = ? AND d.id_programa = c.id_programa
+                  AND (
+                      (d.titulo LIKE 'Curso: %' AND c.metadata->>'estado' = 'VIGENTE')
+                      OR (c.metadata->>'seccion' = 'Condiciones por confirmar'
+                          AND c.metadata->>'estado' IN ('PROPUESTA', 'VIGENTE'))
+                  )
+                ORDER BY c.id_chunk
+                LIMIT 16
+                """, (row, index) -> DocumentoChunk.builder()
+                .idChunk(row.getLong("id_chunk")).idDocumento(row.getLong("id_documento")).idPrograma(idPrograma)
+                .contenido(row.getString("contenido"))
+                .metadata(java.util.Map.of("titulo", row.getString("titulo"), "seccion", row.getString("seccion"),
+                        "version", row.getString("version"), "estado", row.getString("estado")))
+                .build(), idPrograma);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<DocumentoChunk> buscarPorTitulo(String titulo, int limite) {
         return jdbc.query("""
                 SELECT c.id_chunk, c.id_documento, c.numero_pagina, c.contenido, d.titulo,

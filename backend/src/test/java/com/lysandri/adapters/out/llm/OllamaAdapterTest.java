@@ -96,6 +96,27 @@ class OllamaAdapterTest {
         assertEquals(400, cuerpo.path("options").path("num_predict").asInt());
     }
 
+    @Test void limiteBreveSeEnviaAlModeloYNoComparteCacheConLimiteNormal() throws Exception {
+        var llm = adapter("/api/chat", 200, "{\"message\":{\"content\":\"Respuesta breve\"},\"done\":true}");
+        llm.completarChat("Reglas", "Pregunta", 0.0, 256);
+        assertEquals(256, cuerpo.path("options").path("num_predict").asInt());
+        llm.completarChat("Reglas", "Pregunta", 0.0, 256);
+        assertEquals(1, llamadas.get());
+        llm.completarChat("Reglas", "Pregunta", 0.0);
+        assertEquals(400, cuerpo.path("options").path("num_predict").asInt());
+        assertEquals(2, llamadas.get());
+    }
+    @Test void esquemaDeFuentesSeEnviaAlModeloYSuCacheEsIndependiente() throws Exception {
+        var llm = adapter("/api/chat", 200, "{\"message\":{\"content\":\"{}\"},\"done\":true}");
+        var esquema = java.util.Map.<String,Object>of("type", "object");
+        llm.completarChat("Reglas", "Pregunta", 0.0, 256, esquema);
+        assertEquals("object", cuerpo.path("format").path("type").asText());
+        llm.completarChat("Reglas", "Pregunta", 0.0, 256, esquema);
+        assertEquals(1, llamadas.get());
+        llm.completarChat("Reglas", "Pregunta", 0.0, 256);
+        assertFalse(cuerpo.has("format"));
+        assertEquals(2, llamadas.get());
+    }
     @Test void respuestaIncompletaSeRechaza() throws Exception {
         var llm = adapter("/api/chat", 200, "{\"message\":{\"content\":\"Parcial\"},\"done\":false}");
         assertThrows(RagUnavailableException.class, () -> llm.completarChat("Reglas", "Pregunta", 0.2));

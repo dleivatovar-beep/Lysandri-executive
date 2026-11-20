@@ -19,6 +19,9 @@ export const getRoleHomePath = (
     case 'ADMIN':
       return '/admin/cursos';
 
+    case 'GERENTE':
+      return '/pmv';
+
     case 'CONTABILIDAD':
       return '/contabilidad';
 

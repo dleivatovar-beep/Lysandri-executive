@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface SpringDataHistorialRepository extends JpaRepository<HistorialConsultaEntity, Long> {
     List<HistorialConsultaEntity> findBySesionIdOrderByFechaConsultaAsc(String sesionId);
+
+    java.util.Optional<HistorialConsultaEntity> findFirstBySesionIdAndIdUserOrderByFechaConsultaDescIdHistorialDesc(
+            String sesionId, Long idUser);
 }

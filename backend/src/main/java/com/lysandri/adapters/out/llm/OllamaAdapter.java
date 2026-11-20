@@ -74,8 +74,19 @@ public class OllamaAdapter implements LlmClientPort {
 
     @Override
     public LlmCompletion completarChat(String sistema, String pregunta, double temperatura) {
+        return completarChat(sistema, pregunta, temperatura, 400);
+    }
+
+    @Override
+    public LlmCompletion completarChat(String sistema, String pregunta, double temperatura, int maxTokens) {
+        return completarChat(sistema, pregunta, temperatura, maxTokens, Map.of());
+    }
+
+    @Override
+    public LlmCompletion completarChat(String sistema, String pregunta, double temperatura, int maxTokens, Map<String, Object> formato) {
+        if (maxTokens < 1 || maxTokens > 400) throw new IllegalArgumentException("Límite de respuesta inválido.");
         try {
-            String clave = clave(modelo, sistema, pregunta, Double.toHexString(temperatura));
+            String clave = clave(modelo, sistema, pregunta, Double.toHexString(temperatura), Integer.toString(maxTokens), formato.toString());
             String guardada = recientes.obtener(clave);
             if (guardada != null) return new LlmCompletion(guardada, 0, 0, 0);
             var enCurso = new CompletableFuture<String>();
@@ -89,11 +100,16 @@ public class OllamaAdapter implements LlmClientPort {
                 }
                 var opciones = new HashMap<>(opcionesModelo());
                 opciones.put("temperature", temperatura);
-                opciones.put("num_predict", 400);
-                JsonNode datos = solicitar("/api/chat", Map.of("model", modelo, "stream", false, "keep_alive", permanencia,
-                        "messages", List.of(Map.of("role", "system", "content", sistema),
-                                Map.of("role", "user", "content", pregunta)),
-                        "options", opciones), 120);
+                opciones.put("num_predict", maxTokens);
+                var cuerpo = new HashMap<String, Object>();
+                cuerpo.put("model", modelo);
+                cuerpo.put("stream", false);
+                cuerpo.put("keep_alive", permanencia);
+                cuerpo.put("messages", List.of(Map.of("role", "system", "content", sistema),
+                        Map.of("role", "user", "content", pregunta)));
+                cuerpo.put("options", opciones);
+                if (!formato.isEmpty()) cuerpo.put("format", formato);
+                JsonNode datos = solicitar("/api/chat", cuerpo, 120);
                 String respuesta = datos.path("message").path("content").asText("");
                 if (!datos.path("done").asBoolean() || respuesta.isBlank() || "length".equals(datos.path("done_reason").asText())) {
                     throw new IllegalArgumentException("Respuesta incompleta de Ollama.");

@@ -250,7 +250,7 @@ export const SyllabusModal: React.FC<SyllabusModalProps> = ({
               </div>
             </div>
             <a
-              href={`https://wa.me/51941238905?text=${encodeURIComponent('Hola Sofía, tengo dudas sobre la malla curricular de: ' + playbook.title)}`}
+              href={`https://wa.me/51954111044?text=${encodeURIComponent('Hola Sofía, tengo dudas sobre la malla curricular de: ' + playbook.title)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-950/50 px-3 py-1.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-900/40 transition-colors shadow-sm shrink-0"

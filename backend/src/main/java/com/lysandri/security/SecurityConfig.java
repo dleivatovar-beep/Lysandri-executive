@@ -110,22 +110,22 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/usuarios/*").authenticated()
 
                         // Operaciones administrativas de órdenes y gestión del flujo comercial
-                        .requestMatchers(HttpMethod.GET, "/api/v1/orders").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "FINANZAS", "CONTABILIDAD", "AUDITOR")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/confirmar-pago-manual").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "FINANZAS", "CONTABILIDAD")
-                        .requestMatchers("/api/v1/admin/orders/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "FINANZAS", "CONTABILIDAD")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/orders").hasAnyRole("ADMIN", "TRABAJADOR", "FINANZAS", "CONTABILIDAD", "AUDITOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/*/confirmar-pago-manual").hasAnyRole("ADMIN", "TRABAJADOR", "FINANZAS", "CONTABILIDAD")
+                        .requestMatchers("/api/v1/admin/orders/**").hasAnyRole("ADMIN", "TRABAJADOR", "FINANZAS", "CONTABILIDAD")
 
                         // Operaciones corporativas masivas y gestión B2B
-                        .requestMatchers("/api/v1/corporativo/**", "/api/v1/admin/corporativo/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "COORDINADOR_ACADEMICO")
-                        .requestMatchers("/api/v1/admin/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "COORDINADOR_ACADEMICO")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "COORDINADOR_ACADEMICO")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "COORDINADOR_ACADEMICO")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "COORDINADOR_ACADEMICO")
+                        .requestMatchers("/api/v1/corporativo/**", "/api/v1/admin/corporativo/**").hasAnyRole("ADMIN", "TRABAJADOR", "COORDINADOR_ACADEMICO")
+                        .requestMatchers("/api/v1/admin/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "COORDINADOR_ACADEMICO")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "COORDINADOR_ACADEMICO")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "COORDINADOR_ACADEMICO")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/solicitudes-informacion/**").hasAnyRole("ADMIN", "TRABAJADOR", "COORDINADOR_ACADEMICO")
 
                         // Endpoints contables internos y de auditoría tributaria SIRE
                         .requestMatchers("/api/v1/internal/**").hasAnyRole("ADMIN", "CONTABILIDAD", "FINANZAS", "AUDITOR", "TRABAJADOR")
 
                         // Prefijo general de administración
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "TRABAJADOR", "VENTAS", "FINANZAS", "CONTABILIDAD", "COORDINADOR_ACADEMICO", "AUDITOR")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "TRABAJADOR", "FINANZAS", "CONTABILIDAD", "COORDINADOR_ACADEMICO", "AUDITOR")
 
                         // Cualquier otra petición debe estar autenticada
                         .requestMatchers(HttpMethod.GET, "/api/v1/pruebas/conversion/disponible").permitAll()

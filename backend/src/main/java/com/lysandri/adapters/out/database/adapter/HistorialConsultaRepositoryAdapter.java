@@ -33,6 +33,12 @@ public class HistorialConsultaRepositoryAdapter implements HistorialConsultaRepo
         return toDomain(saved);
     }
 
+    @Override
+    public java.util.Optional<HistorialConsulta> ultimaConsulta(String sesionId, Long idUsuario) {
+        return repository.findFirstBySesionIdAndIdUserOrderByFechaConsultaDescIdHistorialDesc(sesionId, idUsuario)
+                .map(this::toDomain);
+    }
+
     private HistorialConsulta toDomain(HistorialConsultaEntity e) {
         return HistorialConsulta.builder()
                 .idHistorial(e.getIdHistorial())

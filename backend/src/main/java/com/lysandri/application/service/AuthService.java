@@ -221,7 +221,7 @@ public class AuthService implements AuthUseCase {
         }
 
         // 2. Si la contraseña es válida, comprobar las restricciones de estado de la cuenta
-        if (usuario.isBloqueadoAdmin()) {
+        if (usuario.getRol() == RolUsuario.VENTAS || usuario.isBloqueadoAdmin()) {
             log.warn("Fallo de login: cuenta bloqueada por administración [userId: {}]", usuario.getIdUser());
             throw new LockedException(MENSAJE_ERROR_LOGIN);
         }
@@ -286,7 +286,7 @@ public class AuthService implements AuthUseCase {
 
         // 2. Comprobación estricta de bloqueo administrativo:
         // Un token de activación NUNCA puede levantar un bloqueo administrativo.
-        if (usuario.isBloqueadoAdmin()) {
+        if (usuario.getRol() == RolUsuario.VENTAS || usuario.isBloqueadoAdmin()) {
             throw new IllegalStateException("La cuenta está deshabilitada administrativamente y no puede ser activada.");
         }
 
@@ -352,7 +352,7 @@ public class AuthService implements AuthUseCase {
         Usuario usuario = usuarioOpt.get();
 
         // Si la cuenta está bloqueada administrativamente, NUNCA enviar enlace de activación
-        if (usuario.isBloqueadoAdmin()) {
+        if (usuario.getRol() == RolUsuario.VENTAS || usuario.isBloqueadoAdmin()) {
             log.warn("Cuenta con bloqueo administrativo intentó solicitar activación. Omitiendo envío.");
             return respuestaUniforme;
         }

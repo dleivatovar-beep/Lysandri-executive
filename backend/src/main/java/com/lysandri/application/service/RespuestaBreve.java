@@ -44,8 +44,60 @@ final class RespuestaBreve {
         return respuesta;
     }
 
+    static String relacionModulos(String pregunta, String curso, String contenido) {
+        String consulta = normalizar(pregunta);
+        if (!consulta.matches(".*\\b(relacion[a-z]*|conecta[a-z]*|veria sobre)\\b.*")
+                || consulta.matches(".*\\b(precio|cuesta|duracion|fecha|docente|certific[a-z]*|requisito[a-z]*|garantiz[a-z]*)\\b.*")) return null;
+        var elegidos = modulos(contenido).stream()
+                .filter(modulo -> (" " + consulta + " ").contains(" " + normalizar(modulo.titulo()) + " ")).toList();
+        if (elegidos.size() < 2) return null;
+        String respuesta = "En " + curso + " trabajarás estos temas:\n\n"
+                + elegidos.stream().map(modulo -> "- " + modulo.titulo() + ": " + modulo.detalle())
+                        .collect(java.util.stream.Collectors.joining("\n"));
+        return respuesta + "\n\nPuedes relacionarlos al trabajar sobre un mismo caso de tu empresa,"
+                + " utilizando los aspectos que describe cada módulo.";
+    }
+
+    static String temasRelevantes(String pregunta, String curso, String contenido) {
+        String consulta = normalizar(pregunta);
+        if (!consulta.matches(".*\\b(aprender[a-z]*|temas|practicas?|veria|ensen[a-z]*)\\b.*")
+                || consulta.matches(".*\\b(precios?|cuestan?|duracion|horas|fechas?|docentes?|certific[a-z]*|requisitos?|garanti[a-z]*)\\b.*")) return null;
+        var modulos = modulos(contenido);
+        if (modulos.isEmpty()) return null;
+        consulta = consulta.replace(normalizar(curso), "");
+        Set<String> comunes = Set.of("puedo", "podria", "curso", "programa", "empresa", "aprender", "aprenderia",
+                "temas", "saber", "quiero", "sobre", "antes", "despues", "equipo", "trabajo", "primero",
+                "tenemos", "varios", "mismo", "nuestro", "estos", "tengo", "estamos", "hacer", "haria");
+        Set<String> palabras = Arrays.stream(consulta.split(" ")).filter(palabra -> palabra.length() >= 5)
+                .filter(palabra -> !comunes.contains(palabra)).map(palabra -> palabra.substring(0, 5))
+                .collect(java.util.stream.Collectors.toSet());
+        var vocabularios = modulos.stream().map(modulo -> Arrays.stream(modulo.normalizado().split(" "))
+                .filter(palabra -> palabra.length() >= 5).map(palabra -> palabra.substring(0, 5))
+                .collect(java.util.stream.Collectors.toSet())).toList();
+        palabras.removeIf(palabra -> vocabularios.stream().filter(vocabulario -> vocabulario.contains(palabra)).count()
+                > modulos.size() / 2);
+        var puntos = consulta.split("\\s+y\\s+(?=(?:como|que|cual|cuando|para que|evaluar|definir|revisar|medir|comparar|preparar|rastrear|organizar|conducir|limitar|priorizar|recuperar|decidir)\\b)");
+        for (String punto : puntos) {
+            boolean respaldado = Arrays.stream(punto.split(" ")).filter(palabra -> palabra.length() >= 5)
+                    .map(palabra -> palabra.substring(0, 5)).filter(palabras::contains)
+                    .anyMatch(palabra -> vocabularios.stream().anyMatch(vocabulario -> vocabulario.contains(palabra)));
+            if (!respaldado) return null;
+        }
+        var puntuaciones = vocabularios.stream().map(vocabulario -> palabras.stream().filter(vocabulario::contains).count()).toList();
+        if (puntuaciones.stream().mapToLong(Long::longValue).max().orElse(0) < 2) return null;
+        List<Modulo> pertinentes = new ArrayList<>();
+        for (int i = 0; i < modulos.size(); i++) {
+            if (puntuaciones.get(i) > 0) pertinentes.add(modulos.get(i));
+        }
+        if (pertinentes.size() > 3) return null;
+        return "En " + curso + " verás estos temas relacionados con tu consulta:\n\n"
+                + pertinentes.stream().map(modulo -> "- " + modulo.titulo() + ": " + modulo.detalle())
+                        .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
     static String obtener(String pregunta, Long programa, List<DocumentoChunk> fuentes) {
         String consulta = normalizar(pregunta);
+        if (programa != null) consulta = consulta.replaceFirst("^y ", "").replaceFirst(" ese (curso|programa)$", " este curso");
         if (programa != null && Set.of("cuanto dura", "cuanto cuesta", "cuanto vale").contains(consulta)) consulta += " este curso";
         if (programa != null && Set.of("que voy a aprender", "que temas tiene este curso", "que temas ofrece este curso", "cuales son los modulos", "que temas incluye", "que temas incluye este curso", "cual es el temario", "cual es el temario de este curso").contains(consulta)) {
             Set<String> temarios = new LinkedHashSet<>();
@@ -80,8 +132,11 @@ final class RespuestaBreve {
             boolean seleccionado = programa != null && Set.of("este curso", "el curso", "este programa", "el programa").contains(objeto);
             if (!seleccionado && !normalizar(nombre).equals(objeto)) continue;
             String contenido = normalizarDatos(fuente.getContenido());
+            if (!precio && "duracion".equals(normalizar(String.valueOf(datos.getOrDefault("seccion", ""))))) {
+                contenido = "Duracion registrada de " + contenido;
+            }
             var patron = precio
-                    ? Pattern.compile("precio registrado (?:de|es) (USD|PEN) ([0-9]+\\.[0-9]{2})(?![0-9])")
+                    ? Pattern.compile("precio registrado (?:de|es) (USD|PEN) ([0-9]+\\.[0-9]{2})(?![0-9])", Pattern.CASE_INSENSITIVE)
                     : Pattern.compile("duracion registrada (?:de|es) ([0-9]+) horas\\b", Pattern.CASE_INSENSITIVE);
             var coincidencia = patron.matcher(contenido);
             while (coincidencia.find()) respuestas.add(precio
@@ -152,7 +207,7 @@ final class RespuestaBreve {
     }
 
     static String normalizar(String texto) {
-        return normalizarDatos(texto).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").strip().replaceAll("\\s+", " ");
+        return normalizarDatos(LenguajeConsulta.interpretar(texto)).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").strip().replaceAll("\\s+", " ");
     }
 
     private static String normalizarDatos(String texto) {

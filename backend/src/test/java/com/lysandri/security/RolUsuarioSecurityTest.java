@@ -13,7 +13,12 @@ class RolUsuarioSecurityTest {
         assertEquals(RolUsuario.TRABAJADOR, RolUsuario.fromString("trabajador"));
         assertEquals(RolUsuario.CONTABILIDAD, RolUsuario.fromString("contabilidad"));
         assertEquals(RolUsuario.FINANZAS, RolUsuario.fromString("finanzas"));
-        assertEquals(RolUsuario.VENTAS, RolUsuario.fromString("ventas"));
+        assertThrows(IllegalArgumentException.class, () -> RolUsuario.fromString("ventas"));
+        assertThrows(IllegalArgumentException.class, () -> RolUsuario.fromString("vendedor"));
+        assertEquals(RolUsuario.GERENTE, RolUsuario.fromString("gerente"));
+        assertEquals(RolUsuario.CONTABILIDAD, RolUsuario.fromString("contador"));
+        assertTrue(RolUsuario.GERENTE.esRolInterno());
+        assertFalse(RolUsuario.VENTAS.esRolInterno());
         assertEquals(RolUsuario.COORDINADOR_ACADEMICO, RolUsuario.fromString("coordinador_academico"));
         assertEquals(RolUsuario.AUDITOR, RolUsuario.fromString("auditor"));
     }
