@@ -47,7 +47,7 @@ En modo PMV el envío se dirige a Mailpit, en `127.0.0.1:1025`. Abrir `http://12
 
 El primer arranque con PMV crea cuatro cuentas ficticias: Cliente, Administrador, Contador y Gerente. Cada instalación genera sus propias contraseñas en `.pmv/accesos.txt`, bajo el directorio de trabajo desde el que se inició el proyecto. Si se inició desde la raíz, el archivo estará allí. Ese directorio está excluido de Git.
 
-No se reinician las contraseñas ni se duplican los ejemplos al volver a arrancar. Conservar el archivo de accesos de esa instalación. Las cuentas bancarias incluidas en el código son marcadores de prueba; los datos financieros reales del desarrollador no se distribuyen.
+No se reinician las contraseñas ni se duplican los ejemplos al volver a arrancar. Conservar el archivo de accesos de esa instalación. El panel incluye las cuentas bancarias reales facilitadas para la revisión, junto con el contacto real de la empresa. Permanecen deshabilitadas: los titulares y las monedas pendientes no se presuponen. La migración V60 sustituye el juego original de marcadores en instalaciones anteriores, sin sobrescribir configuraciones editadas. Las contraseñas y claves de servicios no se distribuyen por Git.
 
 ## Recorrido sugerido
 

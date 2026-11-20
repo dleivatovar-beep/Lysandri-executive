@@ -37,9 +37,9 @@ public class PmvPreparacion implements ApplicationRunner {
             Files.writeString(acceso,persona[1]+"\nCorreo: "+email+"\nContraseña: "+password+"\n\n",StandardCharsets.UTF_8,StandardOpenOption.APPEND);
         }
         var cuentas=List.of(
-            Map.of("banco","BCP","cuenta","CUENTA-BCP-PRUEBA","cci","Pendiente","moneda","Por confirmar","titular","Por confirmar","habilitada",false),
-            Map.of("banco","Interbank","cuenta","CUENTA-INTERBANK-PRUEBA","cci","CCI-INTERBANK-PRUEBA","moneda","Por confirmar","titular","Por confirmar","habilitada",false),
-            Map.of("banco","Interbank","cuenta","CUENTA-USD-PRUEBA","cci","CCI-USD-PRUEBA","moneda","USD","titular","Por confirmar","habilitada",false));
+            Map.of("banco","BCP","cuenta","355-38314750-0-04","cci","Pendiente","moneda","Por confirmar","titular","Por confirmar","habilitada",false),
+            Map.of("banco","Interbank","cuenta","512-3100675547","cci","003-512-013100675547-17","moneda","Por confirmar","titular","Por confirmar","habilitada",false),
+            Map.of("banco","Interbank","cuenta","488-3421127895","cci","003-488-013421127895-44","moneda","USD","titular","Por confirmar","habilitada",false));
         guardar("contacto",Map.of("dominioEjecutivo","Gestión empresarial — prueba","whatsapp","51954111044","correo","lysandriideaslab@gmail.com"));
         guardar("cuentas",cuentas);
         guardar("pendientes",List.of("Confirmar significado y nombre del dominio ejecutivo", "Confirmar titular y moneda de cuentas; celular de Yape/Plin", "Elegir pasarela y entregar credenciales", "Entregar acceso e identificadores de Moodle", "Configurar correo real antes de producción", "Definir servidor y responsables de operación"));
