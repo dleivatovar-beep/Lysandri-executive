@@ -4,6 +4,7 @@ import com.lysandri.adapters.out.database.entity.UsuarioEntity;
 import com.lysandri.domain.model.RolUsuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +15,16 @@ import java.util.Optional;
 public interface SpringDataUserRepository extends JpaRepository<UsuarioEntity, Long> {
     Optional<UsuarioEntity> findByEmail(String email);
     boolean existsByEmail(String email);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE usuario SET activo = true, pendiente_activacion = false, fecha_actualizacion = now()
+            WHERE id_user = :id AND rol = 'CLIENTE' AND pendiente_activacion = true
+              AND bloqueado_admin = false
+              AND EXISTS (SELECT 1 FROM consentimiento_usuario c
+                          WHERE c.id_user = usuario.id_user AND c.terminos AND c.privacidad)
+            """, nativeQuery = true)
+    int activarRegistroPropio(@Param("id") Long id);
     List<UsuarioEntity> findByRol(RolUsuario rol);
 
     @Query("SELECT u FROM UsuarioEntity u WHERE " +

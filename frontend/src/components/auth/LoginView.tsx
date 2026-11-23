@@ -205,13 +205,18 @@ export const LoginView:
           if (!registrationConditions || !registrationTerms || !registrationPrivacy) {
             throw new Error('Revisa y acepta las condiciones de registro y privacidad.');
           }
-          const message = await authService.register({
+          const resultado = await authService.register({
             nombre: fullName.trim(), apellidos: lastName.trim(),
             email: requestEmail.trim().toLowerCase(), password: registrationPassword,
             telefono: phone.trim(), aceptaTerminos: registrationTerms,
             aceptaPrivacidad: registrationPrivacy, version: registrationConditions.version,
           });
-          setRegistrationMessage(message);
+          if (!resultado.pendienteActivacion) {
+            setSessionUser(resultado.sesion, resultado.sesion.token);
+            navigate(getRoleHomePath(resultado.sesion.rol), { replace: true });
+            return;
+          }
+          setRegistrationMessage(resultado.mensaje);
           setRegistrationPassword('');
           setRegistrationPasswordAgain('');
           return;

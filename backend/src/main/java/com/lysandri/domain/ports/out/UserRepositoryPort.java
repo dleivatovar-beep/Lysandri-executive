@@ -16,6 +16,9 @@ public interface UserRepositoryPort {
 
     boolean existePorEmail(String email);
 
+    /** Solo para registros propios con consentimiento, nunca cuentas suspendidas o invitadas. */
+    default boolean activarRegistroPropio(Long idUser) { return false; }
+
     List<Usuario> listarTodos();
 
     List<Usuario> listarPorRol(RolUsuario rol);

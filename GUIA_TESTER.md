@@ -61,6 +61,25 @@ No se reinician las contraseñas ni se duplican los ejemplos al volver a arranca
 8. Intentar acceder a operaciones ajenas al perfil. El backend debe rechazar esas operaciones aunque se conozca la dirección.
 9. Revisar el catálogo y el chat. Las fuentes locales requieren cargar documentos de prueba en Administración > IA. Probar precios, temarios y preguntas informales. No cargar contraseñas, datos de compradores ni documentos internos en la IA.
 
+## Registro público e inicio de sesión
+
+Desde `/intranet`, abrir **Personal**, mantener el área **Cliente**, completar los datos y aceptar
+las condiciones. El registro crea una cuenta CLIENTE activa y devuelve una sesión firmada; la interfaz
+abre su panel automáticamente. Cerrar sesión, volver a entrar con la misma contraseña y recargar
+la página deben conservar el acceso correcto. El correo repetido debe informar que ya existe.
+
+La configuración `PUBLIC_REGISTRATION_REQUIRE_EMAIL_VERIFICATION` vale `false` por defecto.
+No requiere SMTP para crear la cuenta. Esto no acredita que el usuario controle el correo introducido.
+Si la empresa establece esa verificación, configurar la variable en `true` junto con el correo saliente;
+la cuenta quedará pendiente hasta completar el enlace. Ambos flujos están cubiertos por las pruebas.
+
+Para cuentas creadas previamente como registro público pendiente, el inicio de sesión puede habilitarlas
+al comprobar su contraseña y su consentimiento. No habilita cuentas bloqueadas por administración,
+cuentas inactivas sin activación pendiente ni invitaciones sin consentimiento de registro.
+
+El registro público asigna exclusivamente CLIENTE; no sirve para solicitar ADMIN ni CONTABILIDAD.
+Probar con cuentas ficticias propias. No copiar credenciales del desarrollador a otro equipo.
+
 ## Búsqueda web del asistente
 
 Es opcional y requiere una clave de Tavily propia del entorno, configurada con `npm run configurar:web`. La clave se guarda cifrada para el usuario de Windows. Reiniciar el backend después de configurarla. No se incluye la clave del desarrollador ni se ejecuta la prueba real de Tavily por defecto.

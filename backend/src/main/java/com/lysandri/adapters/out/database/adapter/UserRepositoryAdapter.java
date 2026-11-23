@@ -40,6 +40,11 @@ public class UserRepositoryAdapter implements UserRepositoryPort {
     }
 
     @Override
+    public boolean activarRegistroPropio(Long idUser) {
+        return repository.activarRegistroPropio(idUser) == 1;
+    }
+
+    @Override
     public List<Usuario> listarTodos() {
         return repository.findAll().stream()
                 .map(this::toDomain)

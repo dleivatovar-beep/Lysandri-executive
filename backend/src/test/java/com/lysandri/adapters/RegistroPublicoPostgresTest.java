@@ -54,6 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringJUnitConfig(RegistroPublicoPostgresTest.Config.class)
 @ActiveProfiles({"test", "sandbox"})
 @TestPropertySource(properties = {
+        "app.public-registration.require-email-verification=true",
         "spring.mail.host=127.0.0.1",
         "app.frontend.url=http://127.0.0.1:3000",
         "app.security.activation-encryption-key=clave-ficticia-exclusiva-de-prueba-registro",
@@ -67,6 +68,7 @@ class RegistroPublicoPostgresTest {
     private static final String CONFIRMADA = "Activada2026!";
 
     @Autowired AuthController controller;
+    @Autowired com.lysandri.domain.ports.in.AuthUseCase authService;
     @Autowired JdbcTemplate jdbc;
     @Autowired ActivationOutboxService outbox;
     @Autowired GuestActivationHttpMockSmtpIntegrationTest.SimpleMockSmtpServer smtp;
@@ -131,6 +133,48 @@ class RegistroPublicoPostgresTest {
                 SELECT count(*) FROM usuario u JOIN usuario_activacion_token t USING (id_user)
                 WHERE u.activo AND NOT u.pendiente_activacion AND t.usado
                 """, Integer.class));
+
+        // Cuentas creadas antes del cambio: solo se habilita el registro propio con contraseña válida.
+        String previo = solicitud.replace("Registro@lysandri.invalid", "previo@lysandri.invalid");
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(previo))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.pendienteActivacion").value(true));
+        org.springframework.test.util.ReflectionTestUtils.setField(authService, "requireEmailVerification", false);
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+                        .content(json.writeValueAsString(Map.of("email", "previo@lysandri.invalid", "password", "incorrecta"))))
+                .andExpect(status().isUnauthorized());
+        assertTrue(jdbc.queryForObject("SELECT pendiente_activacion FROM usuario WHERE email = 'previo@lysandri.invalid'", Boolean.class));
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+                        .content(json.writeValueAsString(Map.of("email", "previo@lysandri.invalid", "password", INICIAL))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.token").isNotEmpty());
+        assertFalse(jdbc.queryForObject("SELECT pendiente_activacion FROM usuario WHERE email = 'previo@lysandri.invalid'", Boolean.class));
+
+        String directo = solicitud.replace("Registro@lysandri.invalid", "directo@lysandri.invalid");
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(directo))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.rol").value("CLIENTE"))
+                .andExpect(jsonPath("$.pendienteActivacion").value(false)).andExpect(jsonPath("$.token").isNotEmpty());
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(directo))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+                        .content(json.writeValueAsString(Map.of("email", "directo@lysandri.invalid", "password", INICIAL))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.token").isNotEmpty());
+        assertEquals(3, jdbc.queryForObject("SELECT count(*) FROM consentimiento_usuario", Integer.class));
+
+        org.springframework.test.util.ReflectionTestUtils.setField(authService, "requireEmailVerification", true);
+        String invitado = solicitud.replace("Registro@lysandri.invalid", "sin-consentimiento@lysandri.invalid");
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(invitado))
+                .andExpect(status().isCreated());
+        jdbc.update("DELETE FROM consentimiento_usuario WHERE id_user = (SELECT id_user FROM usuario WHERE email = 'sin-consentimiento@lysandri.invalid')");
+        String bloqueado = solicitud.replace("Registro@lysandri.invalid", "bloqueado@lysandri.invalid");
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(bloqueado))
+                .andExpect(status().isCreated());
+        jdbc.update("UPDATE usuario SET bloqueado_admin = true WHERE email = 'bloqueado@lysandri.invalid'");
+        org.springframework.test.util.ReflectionTestUtils.setField(authService, "requireEmailVerification", false);
+        for (String email : new String[]{"sin-consentimiento@lysandri.invalid", "bloqueado@lysandri.invalid"}) {
+            mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+                            .content(json.writeValueAsString(Map.of("email", email, "password", INICIAL))))
+                    .andExpect(status().isUnauthorized());
+            assertFalse(jdbc.queryForObject("SELECT activo FROM usuario WHERE email = ?", Boolean.class, email));
+        }
     }
 
     private org.springframework.test.web.servlet.ResultActions ingresar(MockMvc mvc, String password) throws Exception {

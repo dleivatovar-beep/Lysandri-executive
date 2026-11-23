@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { getRoleHomePath } from '../routes/RoleProtectedRoute';
 import { authService, getApiErrorMessage, type CondicionesRegistro } from '../services/authService';
 
 const campos = [
@@ -12,6 +14,8 @@ const campos = [
 ] as const;
 
 export function RegistroCliente() {
+  const navigate = useNavigate();
+  const { setSessionUser } = useAuth();
   const [condiciones, setCondiciones] = useState<CondicionesRegistro | null>();
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
@@ -50,11 +54,17 @@ export function RegistroCliente() {
     enviando.current = true;
     setOcupado(true);
     try {
-      setMensaje(await authService.register({
+      const resultado = await authService.register({
         nombre, apellidos, email: campo('email').trim().toLowerCase(), password,
         telefono: campo('telefono').trim() || undefined,
         aceptaTerminos, aceptaPrivacidad, version: condiciones.version,
-      }));
+      });
+      if (resultado.pendienteActivacion) {
+        setMensaje(resultado.mensaje);
+      } else {
+        setSessionUser(resultado.sesion, resultado.sesion.token);
+        navigate(getRoleHomePath(resultado.sesion.rol), { replace: true });
+      }
     } catch (fallo) {
       setError(getApiErrorMessage(fallo));
     } finally {
@@ -72,7 +82,7 @@ export function RegistroCliente() {
       <Link to="/activar-cuenta" className="font-semibold text-cyan-700 underline dark:text-cyan-300">Solicitar otro enlace</Link>
     </div>}
     {condiciones && !mensaje && <form onSubmit={registrar} className="space-y-5">
-      <p>Crea tu cuenta y verifica tu correo para activarla.</p>
+      <p>Completa tus datos para crear tu cuenta de cliente.</p>
       {error && <p role="alert" className="rounded border border-red-400 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
       <fieldset disabled={ocupado} className="grid gap-4 sm:grid-cols-2">
         <legend className="sr-only">Datos de la cuenta</legend>

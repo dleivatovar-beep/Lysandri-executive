@@ -79,6 +79,9 @@ export const AuthProvider: React.FC<
   const saveSession = (
     response: AuthResponse,
   ): AuthUser => {
+    if (!response.token || isJwtExpired(response.token)) {
+      throw new Error('El servidor no confirmó una sesión válida. Vuelve a iniciar sesión.');
+    }
     const authenticatedUser: AuthUser = {
       id: response.id,
       nombre: response.nombre,
@@ -158,9 +161,10 @@ export const AuthProvider: React.FC<
   };
 
   const setSessionUser = (authUser: AuthUser, customToken?: string) => {
-    const validToken =
-      customToken ||
-      'eyJhbGciOiJIUzI1NiJ9.eyJleHAiOjE5MDAwMDAwMDAsInN1YiI6ImFkbWluQGx5c2FuZHJpLmNvbSIsInJvbCI6IkFETUlOIn0.dummy';
+    if (!customToken || isJwtExpired(customToken)) {
+      throw new Error('El servidor no confirmó una sesión válida. Vuelve a iniciar sesión.');
+    }
+    const validToken = customToken;
     localStorage.setItem(TOKEN_KEY, validToken);
     localStorage.setItem(USER_KEY, JSON.stringify(authUser));
     setToken(validToken);

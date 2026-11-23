@@ -98,7 +98,8 @@ try {
 
   cleanup();
   localStorage.clear();
-  const registroPublico = () => render(React.createElement(MemoryRouter, null, React.createElement(RegistroCliente)));
+  const registroPublico = () => render(React.createElement(MemoryRouter, null,
+    React.createElement(AuthProvider, null, React.createElement(RegistroCliente))));
   globalThis.apiPrueba.get = async () => { throw new Error('No disponible'); };
   registroPublico();
   await screen.findByText('El registro de clientes no está disponible en este entorno.');
@@ -135,6 +136,47 @@ try {
   assert.equal(altas[0].body.version, 'prueba');
   assert.equal(localStorage.getItem('lysandri_token'), null);
   console.log('PASS Registro público dentro de Personal, consentimientos y verificación sin sesión');
+
+  cleanup();
+  localStorage.clear();
+  globalThis.apiPrueba.post = async (url, body) => {
+    assert.equal(url, '/auth/register');
+    return { data: { token: 'sesion-firmada-cliente', idUser: 41, email: body.email,
+      nombreCompleto: 'Ana Prueba', rol: 'CLIENTE', pendienteActivacion: false } };
+  };
+  montar();
+  fireEvent.click(screen.getByRole('button', { name: 'Personal' }));
+  await screen.findByRole('button', { name: 'Crear cuenta' });
+  llenar('Nombres', 'Ana');
+  llenar('Apellidos', 'Prueba');
+  llenar('Correo electrónico', 'ANA@LYSANDRI.INVALID');
+  llenar('Teléfono', '999123456');
+  llenar('Contraseña (mínimo 10 caracteres)', 'Prueba2026!');
+  llenar('Confirma tu contraseña', 'Prueba2026!');
+  fireEvent.click(screen.getByLabelText('Acepto los términos de registro.'));
+  fireEvent.click(screen.getByLabelText('Acepto el tratamiento de datos descrito.'));
+  fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+  await screen.findByRole('button', { name: 'Crear cuenta' });
+  assert.equal(localStorage.getItem('lysandri_token'), 'sesion-firmada-cliente');
+  assert.equal(JSON.parse(localStorage.getItem('lysandri_user')).rol, 'ESTUDIANTE');
+  assert.equal(screen.queryByText('Verifica tu correo.'), null);
+  console.log('PASS Registro de cliente inicia sesión y conserva el perfil sin privilegios internos');
+
+  cleanup();
+  localStorage.clear();
+  globalThis.apiPrueba.post = async () => ({ data: { token: null, pendienteActivacion: false } });
+  montar();
+  fireEvent.click(screen.getByRole('button', { name: 'Personal' }));
+  await screen.findByRole('button', { name: 'Crear cuenta' });
+  llenar('Nombres', 'Ana');llenar('Apellidos', 'Prueba');
+  llenar('Correo electrónico', 'ana@lysandri.invalid');llenar('Teléfono', '999123456');
+  llenar('Contraseña (mínimo 10 caracteres)', 'Prueba2026!');llenar('Confirma tu contraseña', 'Prueba2026!');
+  fireEvent.click(screen.getByLabelText('Acepto los términos de registro.'));
+  fireEvent.click(screen.getByLabelText('Acepto el tratamiento de datos descrito.'));
+  fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+  assert.match((await screen.findByRole('alert')).textContent, /no confirmó una sesión válida/);
+  assert.equal(localStorage.getItem('lysandri_token'), null);
+  console.log('PASS Una respuesta incompleta no se presenta como sesión iniciada');
 } finally {
   cleanup();
   dom.window.close();

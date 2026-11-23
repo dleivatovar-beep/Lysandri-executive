@@ -47,6 +47,9 @@ public class AuthService implements AuthUseCase {
     private final ConsentimientoPort consentimientos;
     public static final String VERSION_CONDICIONES = "2026-11-registro-v1";
 
+    @Value("${app.public-registration.require-email-verification:false}")
+    private boolean requireEmailVerification;
+
     public static final String MENSAJE_ERROR_LOGIN = "No se pudo iniciar sesión con los datos proporcionados";
     private static final String DUMMY_BCRYPT_HASH = "$2a$10$wK1nK8v6eE89P4l0F5B7nOBK.wD8vJtLkWsR82e.k1P3F4x5r1y8e";
 
@@ -120,11 +123,14 @@ public class AuthService implements AuthUseCase {
             throw new IllegalArgumentException("Revisa y acepta las condiciones vigentes de registro y privacidad.");
         }
         validarPassword(command.password(), 10);
-        if (consentimientos == null || activationOutboxService == null) {
-            throw new IllegalStateException("No está disponible el registro con verificación de correo.");
+        if (consentimientos == null || (requireEmailVerification && activationOutboxService == null)) {
+            throw new IllegalStateException("No está disponible el registro de clientes.");
         }
-        Usuario usuario = crearCuenta(command, RolUsuario.CLIENTE);
+        Usuario usuario = crearCuenta(command, RolUsuario.CLIENTE, requireEmailVerification);
         consentimientos.registrar(usuario.getIdUser(), VERSION_CONDICIONES);
+        if (!requireEmailVerification) {
+            return emitirSesion(usuario);
+        }
         var token = userActivationPort.crearTokenActivacion(usuario.getIdUser());
         activationOutboxService.crearTareaActivacion(
                 null, null, usuario.getIdUser(), token.getIdToken(), token.getToken(),
@@ -157,6 +163,10 @@ public class AuthService implements AuthUseCase {
     }
 
     private Usuario crearCuenta(RegisterCommand command, RolUsuario role) {
+        return crearCuenta(command, role, role == RolUsuario.CLIENTE);
+    }
+
+    private Usuario crearCuenta(RegisterCommand command, RolUsuario role, boolean pendienteActivacion) {
         String email = command.email() != null ? command.email().trim().toLowerCase() : "";
 
         if (userRepository.existePorEmail(email)) {
@@ -170,9 +180,9 @@ public class AuthService implements AuthUseCase {
                 .passw(passwordEncoder.encode(command.password()))
                 .telefono(command.telefono())
                 .rol(role)
-                .activo(role != RolUsuario.CLIENTE)
+                .activo(!pendienteActivacion)
                 .bloqueadoAdmin(false)
-                .pendienteActivacion(role == RolUsuario.CLIENTE)
+                .pendienteActivacion(pendienteActivacion)
                 .fechaCreacion(OffsetDateTime.now())
                 .fechaActualizacion(OffsetDateTime.now())
                 .build();
@@ -195,7 +205,7 @@ public class AuthService implements AuthUseCase {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse login(LoginCommand command) {
         log.info("Intento de login para usuario (solicitud recibida)");
 
@@ -225,6 +235,16 @@ public class AuthService implements AuthUseCase {
         if (usuario.getRol() == RolUsuario.VENTAS || usuario.isBloqueadoAdmin()) {
             log.warn("Fallo de login: cuenta bloqueada por administración [userId: {}]", usuario.getIdUser());
             throw new LockedException(MENSAJE_ERROR_LOGIN);
+        }
+
+        // La contraseña ya fue comprobada. Solo habilitar registros propios con consentimiento.
+        if (!requireEmailVerification && usuario.getRol() == RolUsuario.CLIENTE
+                && usuario.isPendienteActivacion()
+                && !usuario.getPassw().startsWith("$2a$10$INVALIDATED_PROVISIONAL_PASSWORD_HASH")
+                && userRepository.activarRegistroPropio(usuario.getIdUser())) {
+            usuario.setActivo(true);
+            usuario.setPendienteActivacion(false);
+            userActivationPort.revocarTokensUsuario(usuario.getIdUser());
         }
 
         if (usuario.isPendienteActivacion()

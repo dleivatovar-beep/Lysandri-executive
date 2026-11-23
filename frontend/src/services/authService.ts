@@ -30,6 +30,10 @@ export interface CondicionesRegistro {
   privacidad: string;
 }
 
+export type RegistroResultado =
+  | { pendienteActivacion: true; mensaje: string }
+  | { pendienteActivacion: false; sesion: AuthResponse };
+
 export const authService = {
   async condicionesRegistro(signal: AbortSignal): Promise<CondicionesRegistro> {
     const response = await apiClient.get<CondicionesRegistro>('/auth/condiciones-registro', { signal });
@@ -62,8 +66,8 @@ export const authService = {
 
   async register(
     data: RegisterRequest,
-  ): Promise<string> {
-    const response = await apiClient.post<{
+  ): Promise<RegistroResultado> {
+    const response = await apiClient.post<Omit<BackendAuthResponse, 'token'> & {
       token: string | null;
       pendienteActivacion: boolean;
       mensaje?: string;
@@ -81,11 +85,13 @@ export const authService = {
       },
     );
 
-    if (!response.data.pendienteActivacion || response.data.token) {
-      throw new Error('El servidor no confirmó que la cuenta esté pendiente de verificación.');
+    if (response.data.pendienteActivacion && !response.data.token) {
+      return { pendienteActivacion: true, mensaje: response.data.mensaje || 'Verifica tu correo antes de iniciar sesión.' };
     }
-
-    return response.data.mensaje || 'Verifica tu correo antes de iniciar sesión.';
+    if (!response.data.pendienteActivacion && response.data.token && response.data.idUser && response.data.rol === 'CLIENTE') {
+      return { pendienteActivacion: false, sesion: toAuthResponse({ ...response.data, token: response.data.token }) };
+    }
+    throw new Error('El servidor no confirmó una sesión válida de cliente. Intenta iniciar sesión con tu correo y contraseña.');
   },
 
   async registerInternal(data: {
