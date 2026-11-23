@@ -63,8 +63,9 @@ try {
   montar();
   assert.deepEqual(screen.getAllByRole('button', { pressed: false }).map(button => button.textContent.trim()),
     ['Personal']);
+  assert.equal(screen.queryByRole('button', { name: 'Crear cuenta', exact: true }), null);
   fireEvent.click(screen.getByRole('button', { name: 'Personal' }));
-  assert.ok(screen.getByRole('heading', { name: 'Crea tu acceso interno.' }));
+  assert.ok(screen.getByRole('heading', { name: 'Crea tu cuenta.' }));
   assert.equal(screen.queryByText('Condiciones y privacidad de prueba'), null);
   assert.equal(screen.getByLabelText('Teléfono').required, true);
   const llenar = (label, value) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
@@ -101,7 +102,7 @@ try {
   globalThis.apiPrueba.get = async () => { throw new Error('No disponible'); };
   registroPublico();
   await screen.findByText('El registro de clientes no está disponible en este entorno.');
-  assert.equal(screen.queryByRole('button', { name: 'Crear cuenta de prueba' }), null);
+  assert.equal(screen.queryByRole('button', { name: 'Crear cuenta' }), null);
 
   cleanup();
   globalThis.apiPrueba.get = async url => {
@@ -113,11 +114,13 @@ try {
     altas.push({ url, body });
     return { data: { token: null, pendienteActivacion: true, mensaje: 'Verifica tu correo.' } };
   };
-  registroPublico();
-  const crear = await screen.findByRole('button', { name: 'Crear cuenta de prueba' });
+  montar();
+  fireEvent.click(screen.getByRole('button', { name: 'Personal' }));
+  const crear = await screen.findByRole('button', { name: 'Crear cuenta' });
   llenar('Nombres', 'Ana');
   llenar('Apellidos', 'Prueba');
   llenar('Correo electrónico', 'ANA@LYSANDRI.INVALID');
+  llenar('Teléfono', '999123456');
   llenar('Contraseña (mínimo 10 caracteres)', 'Prueba2026!');
   llenar('Confirma tu contraseña', 'Prueba2026!');
   fireEvent.click(crear);
@@ -126,12 +129,12 @@ try {
   fireEvent.click(screen.getByLabelText('Acepto el tratamiento de datos descrito.'));
   fireEvent.click(crear);
   await screen.findByText('Verifica tu correo.');
-  assert.equal(screen.getByRole('link', { name: 'Solicitar otro enlace' }).getAttribute('href'), '/activar-cuenta');
+  assert.ok(screen.getByRole('button', { name: 'Solicitar otro enlace' }));
   assert.equal(altas[0].url, '/auth/register');
   assert.equal(altas[0].body.email, 'ana@lysandri.invalid');
   assert.equal(altas[0].body.version, 'prueba');
   assert.equal(localStorage.getItem('lysandri_token'), null);
-  console.log('PASS Registro de cliente separado, consentimientos y verificación sin sesión');
+  console.log('PASS Registro público dentro de Personal, consentimientos y verificación sin sesión');
 } finally {
   cleanup();
   dom.window.close();

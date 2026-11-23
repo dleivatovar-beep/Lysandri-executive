@@ -72,7 +72,7 @@ export function RegistroCliente() {
       <Link to="/activar-cuenta" className="font-semibold text-cyan-700 underline dark:text-cyan-300">Solicitar otro enlace</Link>
     </div>}
     {condiciones && !mensaje && <form onSubmit={registrar} className="space-y-5">
-      <p>Crea una cuenta de prueba y verifica tu correo para activarla.</p>
+      <p>Crea tu cuenta y verifica tu correo para activarla.</p>
       {error && <p role="alert" className="rounded border border-red-400 p-3 text-sm text-red-700 dark:text-red-300">{error}</p>}
       <fieldset disabled={ocupado} className="grid gap-4 sm:grid-cols-2">
         <legend className="sr-only">Datos de la cuenta</legend>
@@ -84,14 +84,14 @@ export function RegistroCliente() {
         </label>)}
       </fieldset>
       <fieldset disabled={ocupado} className="space-y-3 rounded-md border border-slate-400 p-4 text-sm dark:border-slate-600">
-        <legend className="px-2 font-semibold">Condiciones de prueba</legend>
+        <legend className="px-2 font-semibold">Condiciones de registro y privacidad</legend>
         <p>{condiciones.terminos}</p>
         <label className="flex items-start gap-2"><input type="checkbox" name="terminos" required />Acepto los términos de registro.</label>
         <p>{condiciones.privacidad}</p>
         <label className="flex items-start gap-2"><input type="checkbox" name="privacidad" required />Acepto el tratamiento de datos descrito.</label>
       </fieldset>
       <button type="submit" disabled={ocupado} className="rounded-md bg-cyan-400 px-5 py-3 font-bold text-slate-950 disabled:opacity-60">
-        {ocupado ? 'Creando cuenta…' : 'Crear cuenta de prueba'}
+        {ocupado ? 'Creando cuenta…' : 'Crear cuenta'}
       </button>
     </form>}
     <Link to="/intranet" className="mt-6 inline-block font-semibold text-cyan-700 underline dark:text-cyan-300">Iniciar sesión</Link>

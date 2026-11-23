@@ -47,7 +47,6 @@ import { PaymentSuccessView } from './pages/PaymentSuccessView';
 import { ActivarCuentaView } from './pages/ActivarCuentaView';
 import { AccountingView } from './pages/AccountingView';
 import { CuentaView } from './pages/CuentaView';
-import { RegistroCliente } from './pages/RegistroCliente';
 import { PruebasView } from './pages/PruebasView';
 import './admin-workspace.css';
 
@@ -817,7 +816,7 @@ const App: React.FC =
               <MarketplacePage />
             }
           />
-          <Route path="/registro-cliente" element={<RegistroCliente />} />
+          <Route path="/registro-cliente" element={<Navigate to="/intranet?modo=registro" replace />} />
           <Route path="/cuenta" element={<CuentaView />} />
           <Route
             path="pago-exitoso"

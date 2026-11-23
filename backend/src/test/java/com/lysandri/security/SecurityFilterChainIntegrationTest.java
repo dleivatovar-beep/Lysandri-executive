@@ -84,6 +84,41 @@ class SecurityFilterChainIntegrationTest {
     @MockBean
     private AuthUseCase authUseCase;
 
+    @Test void registroPublicoAdmiteClientesRemotosSinPerfilDePruebaNiSmtpLocal() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/condiciones-registro")
+                        .with(request -> { request.setRemoteAddr("203.0.113.24"); return request; }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(com.lysandri.application.service.AuthService.VERSION_CONDICIONES));
+        when(authUseCase.register(any())).thenReturn(new AuthUseCase.AuthResponse(
+                null, 91L, "cliente@ejemplo.invalid", "Cliente Remoto", "CLIENTE", null, true, "Verifica tu correo."));
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .with(request -> { request.setRemoteAddr("203.0.113.24"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombres":"Cliente","apellidos":"Remoto","email":"cliente@ejemplo.invalid",
+                                 "password":"RegistroSeguro2026!","aceptaTerminos":true,"aceptaPrivacidad":true,
+                                 "version":"%s","rol":"ADMIN","area":"ADMINISTRACION"}
+                                """.formatted(com.lysandri.application.service.AuthService.VERSION_CONDICIONES)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.rol").value("CLIENTE"))
+                .andExpect(jsonPath("$.pendienteActivacion").value(true))
+                .andExpect(jsonPath("$.token").isEmpty());
+        org.mockito.Mockito.verify(authUseCase).register(any());
+        org.mockito.Mockito.verify(authUseCase, org.mockito.Mockito.never()).registerInternal(any(), any());
+    }
+
+    @Test void registroInternoSigueRestringidoParaSolicitudesRemotas() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/register-interno")
+                        .with(request -> { request.setRemoteAddr("203.0.113.24"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombres":"Cliente","apellidos":"Remoto","email":"cliente@ejemplo.invalid",
+                                 "password":"RegistroSeguro2026!","telefono":"999123456","area":"ADMINISTRACION"}
+                                """))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.verify(authUseCase, org.mockito.Mockito.never()).registerInternal(any(), any());
+    }
+
     @MockBean
     private UserManagementUseCase userManagementUseCase;
 

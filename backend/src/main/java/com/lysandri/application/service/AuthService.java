@@ -45,7 +45,7 @@ public class AuthService implements AuthUseCase {
     private final ActivationOutboxService activationOutboxService;
     private final String frontendUrl;
     private final ConsentimientoPort consentimientos;
-    public static final String VERSION_CONDICIONES = "2026-11-pruebas";
+    public static final String VERSION_CONDICIONES = "2026-11-registro-v1";
 
     public static final String MENSAJE_ERROR_LOGIN = "No se pudo iniciar sesión con los datos proporcionados";
     private static final String DUMMY_BCRYPT_HASH = "$2a$10$wK1nK8v6eE89P4l0F5B7nOBK.wD8vJtLkWsR82e.k1P3F4x5r1y8e";
@@ -133,7 +133,8 @@ public class AuthService implements AuthUseCase {
         );
         return new AuthResponse(null, usuario.getIdUser(), usuario.getEmail(), usuario.getNombreCompleto(),
                 usuario.getRol().name(), null, true,
-                "Revisa el buzón de prueba. Abre el enlace y establece tu contraseña para activar la cuenta.");
+                "Cuenta creada. Revisa tu correo y abre el enlace para activar tu cuenta. "
+                        + "Revisa también la carpeta de spam.");
     }
 
     private void validarPassword(String password, int minimo) {

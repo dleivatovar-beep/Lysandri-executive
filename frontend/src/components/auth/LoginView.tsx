@@ -15,7 +15,7 @@ import animatedLogo from '../../assets/logo-animado.gif';
 import companyLogo from '../../assets/mi-logo.png';
 import { useAuth } from '../../context/AuthContext';
 import { getRoleHomePath } from '../../routes/RoleProtectedRoute';
-import { authService, getApiErrorMessage } from '../../services/authService';
+import { authService, getApiErrorMessage, type CondicionesRegistro } from '../../services/authService';
 import { RecuperarCuenta } from './RecuperarCuenta';
 import './login-editorial.css';
 
@@ -96,9 +96,25 @@ export const LoginView:
       setPhone,
     ] = useState('');
 
-    const [registrationArea, setRegistrationArea] = useState('ADMINISTRACION');
+    const [registrationArea, setRegistrationArea] = useState('CLIENTE');
     const [registrationPassword, setRegistrationPassword] = useState('');
     const [registrationPasswordAgain, setRegistrationPasswordAgain] = useState('');
+    const [registrationConditions, setRegistrationConditions] = useState<CondicionesRegistro | null>();
+    const [registrationTerms, setRegistrationTerms] = useState(false);
+    const [registrationPrivacy, setRegistrationPrivacy] = useState(false);
+    const [registrationMessage, setRegistrationMessage] = useState('');
+
+    useEffect(() => {
+      if (activeTab !== 'register' || registrationArea !== 'CLIENTE') return;
+      const controller = new AbortController();
+      setRegistrationConditions(undefined);
+      void authService.condicionesRegistro(controller.signal).then(conditions => {
+        if (!controller.signal.aborted) setRegistrationConditions(conditions);
+      }).catch(() => {
+        if (!controller.signal.aborted) setRegistrationConditions(null);
+      });
+      return () => controller.abort();
+    }, [activeTab, registrationArea]);
 
     const fullText =
       'Eleva tu flujo de trabajo';
@@ -170,6 +186,7 @@ export const LoginView:
       setRegistrationPassword('');
       setRegistrationPasswordAgain('');
       setErrorMessage('');
+      setRegistrationMessage('');
     };
 
     const submitRegistration =
@@ -182,6 +199,22 @@ export const LoginView:
         }
         if (registrationPassword !== registrationPasswordAgain) {
           throw new Error('Las contraseñas no coinciden.');
+        }
+
+        if (registrationArea === 'CLIENTE') {
+          if (!registrationConditions || !registrationTerms || !registrationPrivacy) {
+            throw new Error('Revisa y acepta las condiciones de registro y privacidad.');
+          }
+          const message = await authService.register({
+            nombre: fullName.trim(), apellidos: lastName.trim(),
+            email: requestEmail.trim().toLowerCase(), password: registrationPassword,
+            telefono: phone.trim(), aceptaTerminos: registrationTerms,
+            aceptaPrivacidad: registrationPrivacy, version: registrationConditions.version,
+          });
+          setRegistrationMessage(message);
+          setRegistrationPassword('');
+          setRegistrationPasswordAgain('');
+          return;
         }
 
         const registro = await authService.registerInternal({
@@ -307,14 +340,14 @@ export const LoginView:
                 {recuperando ? (tokenRecuperacion ? 'Cambia tu contraseña.' : 'Recupera tu acceso.') : activeTab ===
                 'login'
                   ? 'Accede a tu cuenta.'
-                  : 'Crea tu acceso interno.'}
+                  : 'Crea tu cuenta.'}
               </h2>
 
               <p>
                 {recuperando ? (tokenRecuperacion ? 'Elige una contraseña nueva para tu cuenta.' : 'Te enviaremos un enlace al correo de tu cuenta.') : activeTab ===
                 'login'
                   ? 'Ingresa tus credenciales para continuar con tus programas.'
-                  : 'Regístrate desde la red privada de Lysandri para entrar al módulo de tu área.'}
+                  : 'Completa tus datos y selecciona el tipo de acceso que necesitas.'}
               </p>
             </div>
 
@@ -359,7 +392,13 @@ export const LoginView:
               </div>
             )}
 
-            <form
+            {registrationMessage ? (
+              <div className="space-y-4">
+                <p role="status" className="lx-login-alert is-success px-4 py-3 text-sm">{registrationMessage}</p>
+                <button type="button" onClick={() => changeTab('login')} className="lx-login-link text-sm">Volver a iniciar sesión</button>
+                <button type="button" onClick={() => navigate('/activar-cuenta')} className="lx-login-link ml-4 text-sm">Solicitar otro enlace</button>
+              </div>
+            ) : <form
               key={activeTab}
               onSubmit={
                 handleSubmit
@@ -478,10 +517,11 @@ export const LoginView:
                     <select
                       id="registrationArea"
                       value={registrationArea}
-                      onChange={(event) => setRegistrationArea(event.target.value)}
+                      onChange={(event) => { setRegistrationArea(event.target.value); setErrorMessage(''); }}
                       className="h-12 w-full px-4 text-sm"
                       required
                     >
+                      <option value="CLIENTE">Cliente</option>
                       <option value="ADMINISTRACION">Administración</option>
                       <option value="CONTABILIDAD">Contabilidad</option>
                       <option value="DOCENCIA">Docencia</option>
@@ -509,13 +549,23 @@ export const LoginView:
                     onChange={setRegistrationPasswordAgain}
                   />
 
+                  {registrationArea === 'CLIENTE' ? (
+                    registrationConditions ? <fieldset disabled={isSubmitting} className="lx-login-consent space-y-3 text-sm">
+                      <legend className="mb-2 font-semibold">Condiciones de registro y privacidad</legend>
+                      <p>{registrationConditions.terminos}</p>
+                      <label className="flex items-start gap-2"><input type="checkbox" checked={registrationTerms} onChange={event => setRegistrationTerms(event.target.checked)} required />Acepto los términos de registro.</label>
+                      <p>{registrationConditions.privacidad}</p>
+                      <label className="flex items-start gap-2"><input type="checkbox" checked={registrationPrivacy} onChange={event => setRegistrationPrivacy(event.target.checked)} required />Acepto el tratamiento de datos descrito.</label>
+                    </fieldset> : <p role="status" className="lx-login-subtle text-sm">{registrationConditions === undefined ? 'Cargando condiciones de registro…' : 'No se pudieron cargar las condiciones. Inténtalo nuevamente.'}</p>
+                  ) : <p className="lx-login-subtle text-sm">El registro de personal requiere la red privada y la autorización de Lysandri.</p>}
+
                 </>
               )}
 
               <button
                 type="submit"
                 disabled={
-                  isSubmitting
+                  isSubmitting || (activeTab === 'register' && registrationArea === 'CLIENTE' && !registrationConditions)
                 }
                 className="lx-login-submit mt-6 flex h-12 w-full items-center justify-center gap-2 text-sm font-bold"
               >
@@ -531,9 +581,9 @@ export const LoginView:
                   : activeTab ===
                       'login'
                     ? 'Ingresar a la plataforma'
-                    : 'Crear cuenta y entrar'}
+                    : registrationArea === 'CLIENTE' ? 'Crear cuenta' : 'Crear cuenta y entrar'}
               </button>
-            </form>
+            </form>}
             </>}
           </div>
         </div>

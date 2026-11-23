@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -29,9 +28,6 @@ import java.util.Map;
 @Tag(name = "Autenticación", description = "Registro e inicio de sesión de clientes y administradores")
 public class AuthController {
 
-    private static final Profiles REGISTRO_DE_PRUEBA = Profiles.of(
-            "sandbox & (original-dev | clone | test) & !prod & !production");
-
     private final AuthUseCase authUseCase;
     private final Environment environment;
 
@@ -40,21 +36,26 @@ public class AuthController {
 
     @GetMapping("/condiciones-registro")
     public ResponseEntity<Map<String, String>> condicionesRegistro() {
-        if (!registroDePruebaHabilitado()) {
+        if (!registroPublicoHabilitado()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(Map.of(
                 "version", AuthService.VERSION_CONDICIONES,
-                "terminos", "Crea una cuenta de prueba para verificar el registro y el acceso. No uses datos reales.",
-                "privacidad", "Los datos de prueba se guardan en el entorno habilitado. "
-                        + "El correo ingresado se usa para enviar el enlace de activación."
+                "terminos", environment.getProperty("app.public-registration.terms",
+                        "La cuenta permite acceder a tus operaciones en Lysandri Executive. "
+                                + "Usa datos propios y conserva tus credenciales de forma segura. "
+                                + "Crear una cuenta no confirma una compra ni una matrícula."),
+                "privacidad", environment.getProperty("app.public-registration.privacy",
+                        "Los datos ingresados se guardan para identificar tu cuenta y gestionar su acceso. "
+                                + "El correo se utiliza para enviarte los enlaces de activación y recuperación "
+                                + "y los avisos relacionados con tu cuenta.")
         ));
     }
 
     @PostMapping("/register")
     @Operation(summary = "Registra una nueva cuenta de cliente")
     public ResponseEntity<AuthUseCase.AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        if (!registroDePruebaHabilitado()) {
+        if (!registroPublicoHabilitado()) {
             return ResponseEntity.notFound().build();
         }
         AuthUseCase.RegisterCommand command = new AuthUseCase.RegisterCommand(
@@ -70,10 +71,8 @@ public class AuthController {
         return new ResponseEntity<>(authUseCase.register(command), HttpStatus.CREATED);
     }
 
-    private boolean registroDePruebaHabilitado() {
-        String smtp = environment.getProperty("spring.mail.host", "");
-        return environment.acceptsProfiles(REGISTRO_DE_PRUEBA)
-                && ("127.0.0.1".equals(smtp) || "localhost".equalsIgnoreCase(smtp) || "::1".equals(smtp));
+    private boolean registroPublicoHabilitado() {
+        return environment.getProperty("app.public-registration.enabled", Boolean.class, true);
     }
 
     @PostMapping("/register-interno")
