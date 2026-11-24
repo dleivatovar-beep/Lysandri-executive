@@ -77,7 +77,13 @@ Para cuentas creadas previamente como registro público pendiente, el inicio de 
 al comprobar su contraseña y su consentimiento. No habilita cuentas bloqueadas por administración,
 cuentas inactivas sin activación pendiente ni invitaciones sin consentimiento de registro.
 
-El registro público asigna exclusivamente CLIENTE; no sirve para solicitar ADMIN ni CONTABILIDAD.
+El registro público asigna exclusivamente CLIENTE. Para probar los otros perfiles en la instalación local,
+abrir **Personal** y elegir Administración, Contabilidad, Gerencia, Docencia o Ejecutivo / Estudiante.
+El perfil `sandbox`, usado también en el entorno local del tester, habilita estas altas desde la red privada.
+Cada alta inicia sesión con su rol y permite salir y volver a entrar con la contraseña elegida.
+Para recorrer también el panel de Gerencia, iniciar con `npm run prueba` en el equipo del desarrollador
+o `npm run prueba:clone` en el entorno preparado del tester; ese panel requiere el perfil PMV.
+Fuera del entorno local de pruebas, el registro interno permanece deshabilitado por defecto.
 Probar con cuentas ficticias propias. No copiar credenciales del desarrollador a otro equipo.
 
 ## Búsqueda web del asistente

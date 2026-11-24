@@ -1,3 +1,6 @@
 purchase:
   sandbox:
     enabled: true
+app:
+  internal-registration:
+    enabled: true

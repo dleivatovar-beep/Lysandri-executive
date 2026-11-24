@@ -91,6 +91,7 @@ public class AuthController {
         RolUsuario role = switch (request.getArea()) {
             case "ADMINISTRACION" -> RolUsuario.ADMIN;
             case "CONTABILIDAD" -> RolUsuario.CONTABILIDAD;
+            case "GERENCIA" -> RolUsuario.GERENTE;
             case "DOCENCIA" -> RolUsuario.INSTRUCTOR;
             case "ESTUDIANTE" -> RolUsuario.ESTUDIANTE;
             default -> throw new IllegalArgumentException("Área no válida.");

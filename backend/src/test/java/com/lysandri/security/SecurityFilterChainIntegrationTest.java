@@ -119,6 +119,26 @@ class SecurityFilterChainIntegrationTest {
         org.mockito.Mockito.verify(authUseCase, org.mockito.Mockito.never()).registerInternal(any(), any());
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "ADMINISTRACION,ADMIN", "CONTABILIDAD,CONTABILIDAD", "GERENCIA,GERENTE",
+            "DOCENCIA,INSTRUCTOR", "ESTUDIANTE,ESTUDIANTE"
+    })
+    void cadaAreaPermiteRegistroEnElEntornoLocalDePruebas(String area, String rol) throws Exception {
+        when(authUseCase.registerInternal(any(), eq(RolUsuario.valueOf(rol))))
+                .thenReturn(new AuthUseCase.AuthResponse("sesion-firmada", 92L,
+                        "registro@ejemplo.invalid", "Registro Local", rol, null));
+        mockMvc.perform(post("/api/v1/auth/register-interno")
+                        .with(request -> { request.setRemoteAddr("127.0.0.1"); return request; })
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombres":"Registro","apellidos":"Local","email":"registro@ejemplo.invalid",
+                                 "password":"RegistroSeguro2026!","area":"%s"}
+                                """.formatted(area)))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.rol").value(rol))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
     @MockBean
     private UserManagementUseCase userManagementUseCase;
 

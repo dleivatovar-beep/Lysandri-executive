@@ -152,11 +152,12 @@ public class AuthService implements AuthUseCase {
     @Override
     @Transactional
     public AuthResponse registerInternal(RegisterCommand command, RolUsuario role) {
-        if (role == null || !java.util.Set.of(RolUsuario.ADMIN, RolUsuario.CONTABILIDAD,
+        if (role == null || !java.util.Set.of(RolUsuario.ADMIN, RolUsuario.CONTABILIDAD, RolUsuario.GERENTE,
                 RolUsuario.INSTRUCTOR, RolUsuario.ESTUDIANTE).contains(role)) {
             throw new IllegalArgumentException("El área seleccionada no está habilitada para el registro interno.");
         }
 
+        validarPassword(command.password(), 10);
         Usuario usuario = crearCuenta(command, role);
         log.info("Se creó una cuenta interna con rol {}", role.name());
         return emitirSesion(usuario);

@@ -529,6 +529,7 @@ export const LoginView:
                       <option value="CLIENTE">Cliente</option>
                       <option value="ADMINISTRACION">Administración</option>
                       <option value="CONTABILIDAD">Contabilidad</option>
+                      <option value="GERENCIA">Gerencia</option>
                       <option value="DOCENCIA">Docencia</option>
                       <option value="ESTUDIANTE">Ejecutivo / Estudiante</option>
                     </select>
